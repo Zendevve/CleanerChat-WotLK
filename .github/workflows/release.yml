@@ -1,0 +1,95 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for changelog generation
+
+      - name: Extract version from TOC
+        id: version
+        run: |
+          VERSION=$(grep -oP '## Version: \K.*' ChatCleaner.toc | tr -d '\r')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get commits since last tag, or all commits if no tags exist
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          if [ -z "$LAST_TAG" ]; then
+            echo "No previous tags found, using all commits"
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -20)
+          else
+            echo "Last tag: $LAST_TAG"
+            COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          fi
+          
+          # Handle empty commits
+          if [ -z "$COMMITS" ]; then
+            COMMITS="- Initial release"
+          fi
+          
+          # Write to file for multiline support
+          echo "$COMMITS" > changelog.txt
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat changelog.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create addon zip
+        run: |
+          # Create a clean directory for the addon
+          mkdir -p release/ChatCleaner
+          
+          # Copy addon files (exclude git, github, and other non-addon files)
+          rsync -av --exclude='.git' \
+                    --exclude='.github' \
+                    --exclude='.gitignore' \
+                    --exclude='release' \
+                    --exclude='*.zip' \
+                    --exclude='changelog.txt' \
+                    ./ release/ChatCleaner/
+          
+          # Create the zip file
+          cd release
+          zip -r ../ChatCleaner-${{ steps.version.outputs.version }}.zip ChatCleaner
+          cd ..
+          
+          echo "Created: ChatCleaner-${{ steps.version.outputs.version }}.zip"
+          ls -la *.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}-${{ github.run_number }}
+          name: ChatCleaner v${{ steps.version.outputs.version }}
+          body: |
+            ## ChatCleaner v${{ steps.version.outputs.version }}
+            
+            **3.3.5 WotLK Backport** for Ascension WoW
+            
+            ### Changes
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ### Installation
+            1. Download `ChatCleaner-${{ steps.version.outputs.version }}.zip`
+            2. Extract to `Interface\AddOns\`
+            3. Restart WoW or `/reload`
+          files: ChatCleaner-${{ steps.version.outputs.version }}.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
