@@ -67,7 +67,11 @@ local G = {
 	COMBATLOG_HONORAWARD = COMBATLOG_HONORAWARD, -- "You have been awarded %d honor points."
 	COMBATLOG_HONORGAIN  = COMBATLOG_HONORGAIN, -- "%s dies, honorable kill Rank: %s (%d Honor Points)"
 	COMBATLOG_HONORGAIN_NO_RANK  = COMBATLOG_HONORGAIN_NO_RANK, -- "%s dies, honorable kill (%d Honor Points)"
-	COMBATLOG_ARENAPOINTSAWARD = COMBATLOG_ARENAPOINTSAWARD -- "You have been awarded %d arena points."
+	COMBATLOG_ARENAPOINTSAWARD = COMBATLOG_ARENAPOINTSAWARD, -- "You have been awarded %d arena points."
+
+	-- 3.3.5 Quest reward items (no trailing period in Ascension client)
+	QUEST_LOG_RECEIVED_ITEM = "Received item: %s", -- Quest reward item message
+	QUEST_LOG_RECEIVED_ITEM_MULTIPLE = "Received item: %sx%d" -- Quest reward item message with count
 
 }
 
@@ -220,6 +224,24 @@ Module.OnChatEvent = function(self, chatFrame, event, message, author, ...)
 
 	elseif (event == "CHAT_MSG_SYSTEM") then
 
+		-- 3.3.5 Quest reward items: "Received item: [Item Name]"
+		local item, count = safeMatch(message, P[G.QUEST_LOG_RECEIVED_ITEM_MULTIPLE])
+		if (item) then
+			item = string_gsub(item, "[%[/%]]", "") -- kill brackets
+			count = tonumber(count)
+			if (count) and (count > 1) then
+				return false, string_format(ns.out.item_multiple, item, count), author, ...
+			else
+				return false, string_format(ns.out.item_single, item), author, ...
+			end
+		end
+
+		item = safeMatch(message, P[G.QUEST_LOG_RECEIVED_ITEM])
+		if (item) then
+			item = string_gsub(item, "[%[/%]]", "") -- kill brackets
+			return false, string_format(ns.out.item_single, item), author, ...
+		end
+
 		-- When new toys are learned and put into the toy box.
 		local toy = safeMatch(message, P[G.LEARN_TOY])
 		if (toy) then
@@ -327,6 +349,11 @@ Module.OnInitialize = function(self)
 			table_insert(self.patterns, makePattern(msg))
 		end
 	end
+
+	-- Add hardcoded patterns for 3.3.5 quest reward messages
+	-- These use "Received item:" instead of "You receive item:"
+	table_insert(self.patterns, makePattern(G.QUEST_LOG_RECEIVED_ITEM))
+	table_insert(self.patterns, makePattern(G.QUEST_LOG_RECEIVED_ITEM_MULTIPLE))
 
 end
 
