@@ -70,6 +70,14 @@ local safeMatch = function(msg, pattern)
 	return string_match(msg, pattern)
 end
 
+-- A real quest completion is ALWAYS the entire system line ("<name> completed."),
+-- so we anchor the pattern to the whole message with ^...$. Without anchoring,
+-- the greedy "(.+) completed." swallows any line that merely contains the word
+-- "completed" -- e.g. Ascension's custom "<icons> <player> has completed ..."
+-- Adventure Mode / Prestige broadcasts -- and reformats them into a bogus
+-- "+ Complete: ..." line with the words out of order.
+local QUEST_COMPLETE_ANCHORED = G.QUEST_COMPLETE and ("^"..makePattern(G.QUEST_COMPLETE).."$")
+
 Module.OnChatEvent = function(self, chatFrame, event, message, author, ...)
 	if (ns:IsProtectedMessage(message)) then return end
 
@@ -96,7 +104,7 @@ Module.OnChatEvent = function(self, chatFrame, event, message, author, ...)
 		not safeMatch(message, P[G.QUEST_FAILED_TOO_MANY_DAILY]) and
 		not safeMatch(message, P[G.NO_DAILY_QUESTS_REMAINING])) then
 
-		name = safeMatch(message, P[G.QUEST_COMPLETE])
+		name = QUEST_COMPLETE_ANCHORED and string_match(message, QUEST_COMPLETE_ANCHORED)
 		if (name) then
 			name = string_gsub(name, "[%[/%]]", "")
 			return false, string_format(ns.out.quest_complete, G.COMPLETE, name), author, ...
