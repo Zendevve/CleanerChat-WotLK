@@ -17,5 +17,6 @@
 	<Script file="Status.lua"/>
 	<Script file="Tradeskills.lua"/>
 	<Script file="Windows.lua"/>
+	<Script file="_Debug.lua"/>
 
 </Ui>

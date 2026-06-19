@@ -126,9 +126,14 @@ Module.OnInitialize = function(self)
 	table_insert(self.replacements, { "^Changed Channel: |Hchannel:(.-):(%d+)|h%[(%d)%. (.-)%]|h", "|Hchannel:%1:%2|h%3. %4|h" })
 	-- |Hchannel:%d|h[%s]|h
 
-	-- Turns "[1. General - The Barrens]" into "1. [G]"
-	table_insert(self.replacements, {"|Hchannel:(.-):(%d+)|h%[(%d+)%. (.-)(%s%-%s.-)%]|h", formatChannelTag})
-	table_insert(self.replacements, {"|Hchannel:(.-):(%d+)|h%[(%d+)%. (.-)%]|h", formatChannelTag})
+	-- Turns "[1. General - The Barrens]" into "1. [G]".
+	-- The name and suffix captures explicitly exclude "]" and "|" so the
+	-- pattern can never run past the channel link into a following player or
+	-- item link. (An item like "[Keystone: Scarlet Monastery - Library (1)]"
+	-- also contains " - ", which previously made the lazy ".-" swallow the
+	-- whole line, deleting the sender's name and the item link.)
+	table_insert(self.replacements, {"|Hchannel:([^|]-):(%d+)|h%[(%d+)%. ([^%]|]-)(%s%-%s[^%]|]-)%]|h", formatChannelTag})
+	table_insert(self.replacements, {"|Hchannel:([^|]-):(%d+)|h%[(%d+)%. ([^%]|]-)%]|h", formatChannelTag})
 
 end
 

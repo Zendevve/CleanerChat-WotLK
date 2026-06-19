@@ -1,0 +1,119 @@
+--[[
+
+	TEMPORARY DIAGNOSTIC FILE - SAFE TO DELETE
+
+	Captures, for every chat line:
+	  [RAW] = the exact text the chat frame receives BEFORE ChatCleaner
+	          modifies it (escaped so color codes / hyperlinks are visible).
+	  [EVT] = the underlying CHAT_MSG_* event, including the `author` field,
+	          IF the line actually arrives as a normal chat event.
+
+	Use this to find where a player name goes missing:
+	  * If [EVT] shows a populated author but the displayed line has no name,
+	    ChatCleaner is stripping it.
+	  * If [EVT] never appears for the line (only [RAW]), the line is being
+	    printed straight to the chat frame (e.g. a server relay) and never
+	    came through a real event.
+	  * If [RAW] already lacks the name, the server/relay never sent one.
+
+	Toggle with:  /ccdebug
+
+--]]
+local Addon, ns = ...
+
+local ipairs = ipairs
+local tostring = tostring
+
+local active = false
+local printing = false
+local hookedFrames = {}
+
+local esc = function(s)
+	if (s == nil) then return "<nil>" end
+	if (s == "") then return "<empty>" end
+	return (tostring(s):gsub("|", "||"))
+end
+
+local out = function(text)
+	printing = true
+	DEFAULT_CHAT_FRAME:AddMessage(text)
+	printing = false
+end
+
+-- Collapse the per-chat-frame duplication: the same line is delivered to
+-- every tab subscribed to a channel, so without this each message would log
+-- many times. Identical signatures seen within half a second are skipped.
+local recent = {}
+local isDuplicate = function(sig)
+	local now = GetTime()
+	for k,t in pairs(recent) do
+		if (now - t > 1) then recent[k] = nil end
+	end
+	if (recent[sig] and (now - recent[sig]) < 0.5) then
+		return true
+	end
+	recent[sig] = now
+	return false
+end
+
+-- Wrap each chat frame's AddMessage ON TOP of ChatCleaner's hook so we see
+-- the unmodified text. Done lazily on first enable, after ChatCleaner has
+-- already installed its own hook.
+local ensureHooks = function()
+	for _,name in ipairs(CHAT_FRAMES) do
+		local frame = _G[name]
+		if (frame and not hookedFrames[frame]) then
+			local inner = frame.AddMessage
+			hookedFrames[frame] = inner
+			frame.AddMessage = function(self, msg, ...)
+				if (active and not printing and msg and msg ~= "" and not isDuplicate("RAW"..msg)) then
+					out("|cff00ff00[RAW]|r \""..esc(msg).."\"")
+				end
+				return inner(self, msg, ...)
+			end
+		end
+	end
+end
+
+local eventFilter = function(self, event, message, author, ...)
+	if (active and not printing and not isDuplicate("EVT"..tostring(event)..tostring(author)..tostring(message))) then
+		out("|cff33ccff[EVT]|r "..event.." author=\""..esc(author).."\" msg=\""..esc(message).."\"")
+	end
+	return false
+end
+
+local watchedEvents = {
+	"CHAT_MSG_CHANNEL",
+	"CHAT_MSG_SAY",
+	"CHAT_MSG_YELL",
+	"CHAT_MSG_GUILD",
+	"CHAT_MSG_OFFICER",
+	"CHAT_MSG_PARTY",
+	"CHAT_MSG_PARTY_LEADER",
+	"CHAT_MSG_RAID",
+	"CHAT_MSG_RAID_LEADER",
+}
+
+SLASH_CCDEBUG1 = "/ccdebug"
+SlashCmdList["CCDEBUG"] = function()
+	active = not active
+	if (active) then
+		ensureHooks()
+		for _,event in ipairs(watchedEvents) do
+			ChatFrame_AddMessageEventFilter(event, eventFilter)
+		end
+		print("|cffff7d0aChatCleaner|r raw debug: |cff00ff00ON|r - say something in the affected channel.")
+	else
+		for _,event in ipairs(watchedEvents) do
+			ChatFrame_RemoveMessageEventFilter(event, eventFilter)
+		end
+		print("|cffff7d0aChatCleaner|r raw debug: |cffff0000OFF|r")
+	end
+end
+
+-- Expose the toggle on the addon namespace so it can also be reached through
+-- the addon's normal AceConsole command registration (in Options.lua), which
+-- is known to work on this client even when a bare SlashCmdList entry doesn't.
+ns.ToggleRawDebug = function()
+	SlashCmdList["CCDEBUG"]()
+end
