@@ -83,8 +83,8 @@ end })
 local out = ns.out
 
 -- Local templates
-local plus = "*gray*+** %s"
-local plus_yellow = "*gray*+** *white*%s:** *yellow*%s**"
+local plus = "*green*+** %s"
+local plus_yellow = "*green*+** *white*%s:** *yellow*%s**"
 
 -- Output formats used in the modules.
 -- *everything should be gathered here, in this file.
@@ -94,36 +94,36 @@ out.afk_added = "*orange*+ "..AWAY.."**"
 out.afk_added_message = "*orange*+ "..AWAY..": ***white*%s**"
 out.afk_cleared = "*green*- "..AWAY.."**"
 out.auction_sold = "*green*"..string_gsub(AUCTION_SOLD_MAIL, "%%s", "*white*%%s**").."**"
-out.auction_single = "*gray*+** *white*"..AUCTION_CREATED.."**"
-out.auction_multiple = "*gray*+** *white*"..AUCTION_CREATED.."** *offwhite*(%d)**"
+out.auction_single = "*green*+** *white*"..AUCTION_CREATED.."**"
+out.auction_multiple = "*green*+** *white*"..AUCTION_CREATED.."** *offwhite*(%d)**"
 out.auction_canceled_single = "*palered*- "..AUCTION_REMOVED.."**"
 out.auction_canceled_multiple = "*palered*- "..AUCTION_REMOVED.."** *offwhite*(%d)**"
-out.currency = "*gray*+** *white*%d** %s"
+out.currency = "*green*+** *white*%d** %s"
 out.dnd_added = "*darkorange*+ "..BUSY.."**"
 out.dnd_added_message = "*darkorange*+ "..BUSY..": ***white*%s**"
 out.dnd_cleared = "*green*- "..BUSY.."**"
 out.item_single = plus
-out.item_multiple = "*gray*+** %s *offwhite*(%d)**"
+out.item_multiple = "*green*+** %s *offwhite*(%d)**"
 out.item_single_other = "%s*gray*:** %s"
 out.item_multiple_other = "%s*gray*:** %s *offwhite*(%d)**"
 out.item_deficit = "*red*- %s**"
 out.item_deficit_multiple = "*red*- %s** *offwhite*(%d)**"
-out.item_transfer = "*gray*+** *white*%s:** %s"
+out.item_transfer = "*green*+** *white*%s:** %s"
 out.money = plus
 out.money_deficit = "*gray*-** %s"
 out.objective_status = plus_yellow
 out.quest_accepted = plus_yellow
 out.quest_complete = plus_yellow
-out.rested_added = "*gray*+ "..RESTED.."**"
+out.rested_added = "*green*+** *gray*"..RESTED.."**"
 out.rested_cleared = "*orange*- "..RESTED.."**"
 out.set_complete = plus_yellow
-out.standing = "*gray*+** *white*".."%d** *white*%s:** %s"
-out.standing_generic = "*gray*+ %s:** %s"
+out.standing = "*green*+** *white*".."%d** *white*%s:** %s"
+out.standing_generic = "*green*+** *gray*%s:** %s"
 out.standing_deficit = "*red*-** *white*".."%d** *white*%s:** %s"
 out.standing_deficit_generic = "*red*-** *palered** %s:** %s"
 out.xp_levelup = "%s"
-out.xp_named = "*gray*+** *white*%d** *white*%s:** *yellow*%s**"
-out.xp_unnamed = "*gray*+** *white*%d** *white*%s**"
+out.xp_named = "*green*+** *white*%d** *white*%s:** *yellow*%s**"
+out.xp_unnamed = "*green*+** *white*%d** *white*%s**"
 
 -- Loot roll outputs
 out.roll_won_self = "*green*Won:** %s"
@@ -143,8 +143,8 @@ out.roll_all_passed = "*gray*All Passed:** %s"
 
 -- Level up outputs (3.3.5)
 out.levelup_ding = "*yellow*Level %d**"
-out.levelup_hp = "*gray*+** *white*%d** *green*HP**"
-out.levelup_talent = "*gray*+** *white*%d** *yellow*Talent Point**"
-out.levelup_talents = "*gray*+** *white*%d** *yellow*Talent Points**"
-out.levelup_stat = "*gray*+** *white*%d** *green*%s**"
+out.levelup_hp = "*green*+** *white*%d** *green*HP**"
+out.levelup_talent = "*green*+** *white*%d** *yellow*Talent Point**"
+out.levelup_talents = "*green*+** *white*%d** *yellow*Talent Points**"
+out.levelup_stat = "*green*+** *white*%d** *green*%s**"
 out.levelup_essence = "*darkorange*Unspent Talent Essence**"
