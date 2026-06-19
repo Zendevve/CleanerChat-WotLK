@@ -27,6 +27,10 @@ local Addon, ns = ...
 
 local Module = ns:NewModule("Names")
 
+-- Lua API
+local string_gsub = string.gsub
+local string_upper = string.upper
+
 local replacements = {
 	{"|Hplayer:(.-)-(.-):(.-)|h%[|c(%w%w%w%w%w%w%w%w)(.-)-(.-)|r%]|h", "|Hplayer:%1-%2:%3|h|c%4%5|r|h"},
 	{"|Hplayer:(.-)-(.-):(.-)|h|c(%w%w%w%w%w%w%w%w)(.-)-(.-)|r|h", "|Hplayer:%1-%2:%3|h|c%4%5|r|h"},
@@ -34,10 +38,30 @@ local replacements = {
 	{"|HBNplayer:(.-)|h%[(.-)%]|h", "|HBNplayer:%1|h%2|h"}
 }
 
+-- Capitalize the first letter of the displayed name,
+-- handling both colored (|cAARRGGBBname|r) and plain names.
+local capitalizeDisplay = function(open, display, close)
+	display = string_gsub(display, "^(|c%x%x%x%x%x%x%x%x)(%a)", function(color, letter)
+		return color .. string_upper(letter)
+	end)
+	display = string_gsub(display, "^(%a)", string_upper)
+	return open .. display .. close
+end
+
+-- Function replacement that capitalizes the first initial of player names.
+local capitalizeNames = function(msg)
+	if (not msg) then return end
+	msg = string_gsub(msg, "(|Hplayer:.-|h)(.-)(|h)", capitalizeDisplay)
+	msg = string_gsub(msg, "(|HBNplayer:.-|h)(.-)(|h)", capitalizeDisplay)
+	return msg
+end
+
 Module.OnEnable = function(self)
 	self:RegisterMessageReplacement(replacements, true)
+	self:RegisterMessageReplacement(capitalizeNames, true)
 end
 
 Module.OnDisable = function(self)
 	self:UnregisterMessageReplacement(replacements)
+	self:UnregisterMessageReplacement(capitalizeNames)
 end

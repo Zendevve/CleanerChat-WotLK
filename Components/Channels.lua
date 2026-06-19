@@ -36,7 +36,16 @@ local rawset = rawset
 local setmetatable = setmetatable
 local string_gsub = string.gsub
 local string_match = string.match
+local string_sub = string.sub
+local string_upper = string.upper
 local table_insert = table.insert
+
+-- Rebuilds a channel link as "N. [X]" where N is the channel number
+-- and X is the uppercased first letter of the channel name.
+-- e.g. "|Hchannel:CHANNEL:1|h[1. General - The Barrens]|h" -> "1. [G]"
+local formatChannelTag = function(channel, number, displaynum, name)
+	return "|Hchannel:"..channel..":"..number.."|h"..displaynum..". ["..string_upper(string_sub(name, 1, 1)).."]|h"
+end
 
 -- WoW Globals (some may be nil in older clients like 3.3.5)
 local G = {
@@ -89,10 +98,9 @@ Module.OnInitialize = function(self)
 	table_insert(self.replacements, { "^Changed Channel: |Hchannel:(.-):(%d+)|h%[(%d)%. (.-)%]|h", "|Hchannel:%1:%2|h%3. %4|h" })
 	-- |Hchannel:%d|h[%s]|h
 
-	-- Turns "[1. General - The Barrens]" into "1."
-	-- *Only works half of the time. What is wrong?
-	table_insert(self.replacements, {"|Hchannel:(.-):(%d+)|h%[(%d)%. (.-)(%s%-%s.-)%]|h", "|Hchannel:%1:%2|h%3.|h"})
-	table_insert(self.replacements, {"|Hchannel:(.-):(%d+)|h%[(%d)%. (.-)%]|h", "|Hchannel:%1:%2|h%3.|h"})
+	-- Turns "[1. General - The Barrens]" into "1. [G]"
+	table_insert(self.replacements, {"|Hchannel:(.-):(%d+)|h%[(%d+)%. (.-)(%s%-%s.-)%]|h", formatChannelTag})
+	table_insert(self.replacements, {"|Hchannel:(.-):(%d+)|h%[(%d+)%. (.-)%]|h", formatChannelTag})
 
 end
 
