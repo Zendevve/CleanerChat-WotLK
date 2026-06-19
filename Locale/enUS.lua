@@ -23,6 +23,8 @@ L["Show the channel's first letter in brackets, e.g. \"1. [G]\". Requires the Ch
 L["Capitalize Player Names"] = true
 L["Capitalize the first letter of player names shown in chat. Requires the Player Names filter."] = true
 
+L["Settings changed - the UI will reload when you close this window."] = true
+
 L["Filter Selection"] = true
 L["Choose which chat filters should be activated. Setting changes require a reload to take effect."] = true
 L["Apply the current settings and reload the UI. Settings will still be stored if you don't do this, but won't be applied until you reload the user interface, relog or exit the game."] = true

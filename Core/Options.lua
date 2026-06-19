@@ -33,9 +33,9 @@ local L = LibStub("AceLocale-3.0"):GetLocale((...))
 -- Libraries
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
---local AceGUI = LibStub("AceGUI-3.0")
+local AceGUI = LibStub("AceGUI-3.0")
 
--- GLOBALS: CopyTable, GetAddOnEnableState, GetNumAddOns, UnitName
+-- GLOBALS: CopyTable, GetAddOnEnableState, GetNumAddOns, UnitName, ReloadUI
 
 -- Lua API
 local ipairs = ipairs
@@ -74,6 +74,7 @@ local setter = function(info,val)
 			module:Disable()
 		end
 	end
+	Options:UpdateReloadStatus()
 end
 
 local getter = function(info)
@@ -109,7 +110,7 @@ local optionDB = {
 			width = "full",
 			type = "toggle",
 			disabled = function(info) return not ns.db.filters.channels end,
-			set = function(info,value) ns.db.channelInitials = value end,
+			set = function(info,value) ns.db.channelInitials = value; Options:UpdateReloadStatus() end,
 			get = function(info) return ns.db.channelInitials end,
 		},
 		capitalizeNames = {
@@ -119,7 +120,7 @@ local optionDB = {
 			width = "full",
 			type = "toggle",
 			disabled = function(info) return not ns.db.filters.names end,
-			set = function(info,value) ns.db.capitalizeNames = value end,
+			set = function(info,value) ns.db.capitalizeNames = value; Options:UpdateReloadStatus() end,
 			get = function(info) return ns.db.capitalizeNames end,
 		},
 		filterHeader = {
@@ -255,6 +256,42 @@ Options.GenerateOptionsMenu = function(self)
 	AceConfigDialog:SetDefaultSize(Addon, 400, 180 + (count + 2)*24)
 end
 
+-- Reload-on-close tracking
+-------------------------------------------------------
+-- Snapshot of the settings as they were when the window was opened.
+-- Used to detect whether the user actually changed anything.
+Options.TakeSettingsSnapshot = function(self)
+	self.snapshot = {
+		channelInitials = ns.db.channelInitials,
+		capitalizeNames = ns.db.capitalizeNames,
+		filters = CopyTable(ns.db.filters)
+	}
+end
+
+-- Returns true if the current settings differ from the snapshot.
+-- Reverting all changes back to the saved values makes this false again.
+Options.IsDirty = function(self)
+	local snapshot = self.snapshot
+	if (not snapshot) then return false end
+	if (snapshot.channelInitials ~= ns.db.channelInitials) then return true end
+	if (snapshot.capitalizeNames ~= ns.db.capitalizeNames) then return true end
+	for key,value in next,snapshot.filters do
+		if (ns.db.filters[key] ~= value) then return true end
+	end
+	return false
+end
+
+-- Updates the status text shown left of the Close button.
+Options.UpdateReloadStatus = function(self)
+	local frame = AceConfigDialog.OpenFrames[Addon]
+	if (not frame or not frame.SetStatusText) then return end
+	if (self:IsDirty()) then
+		frame:SetStatusText("|cffffd200"..L["Settings changed - the UI will reload when you close this window."].."|r")
+	else
+		frame:SetStatusText("")
+	end
+end
+
 Options.OpenOptionsMenu = function(self)
 
 	-- Build the menu on demand if it hasn't been generated yet.
@@ -274,10 +311,28 @@ Options.OpenOptionsMenu = function(self)
 		if (not ok) then
 			print("|cffff7d0aChatCleaner|r: failed to open the options window.")
 			print("|cffff0000"..tostring(err).."|r")
+			return
 		end
 	else
 		print("|cffff7d0aChatCleaner|r: the options table is missing after generation.")
+		return
 	end
+
+	-- Remember the current settings so we can detect real changes,
+	-- and reload the UI on close only if something actually changed.
+	self:TakeSettingsSnapshot()
+
+	local frame = AceConfigDialog.OpenFrames[Addon]
+	if (frame and frame.frame and not frame.frame.ccReloadHooked) then
+		frame.frame.ccReloadHooked = true
+		frame.frame:HookScript("OnHide", function()
+			if (Options:IsDirty()) then
+				ReloadUI()
+			end
+		end)
+	end
+
+	self:UpdateReloadStatus()
 end
 
 Options.OnEvent = function(self, event, ...)
