@@ -90,7 +90,7 @@ local function GetClassColoredName(name)
 	local colors = ns.Colors
 	if (not colors) or (not colors.class) then return name end
 
-	local units = { "player", "target", "focus", "mouseover" }
+	local units = { "player", "target", "targettarget", "focus", "focustarget", "mouseover" }
 	for i = 1, 4 do units[#units + 1] = "party"..i end
 	for i = 1, 40 do units[#units + 1] = "raid"..i end
 
