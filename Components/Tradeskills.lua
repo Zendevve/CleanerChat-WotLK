@@ -31,6 +31,7 @@ local Module = ns:NewModule("Tradeskills")
 local L = LibStub("AceLocale-3.0"):GetLocale((...))
 
 -- Lua API
+local ipairs = ipairs
 local rawget = rawget
 local rawset = rawset
 local setmetatable = setmetatable
@@ -38,6 +39,12 @@ local string_format = string.format
 local string_match = string.match
 local table_insert = table.insert
 local tonumber = tonumber
+
+-- WoW API
+local UnitClass = UnitClass
+local UnitExists = UnitExists
+local UnitIsPlayer = UnitIsPlayer
+local UnitName = UnitName
 
 -- WoW Globals (some may be nil in older clients like 3.3.5)
 local G = {
@@ -73,6 +80,33 @@ end
 local CREATE_MULTIPLE_PATTERN = "^(%S+) creates:? (.+)x(%d+)%.$"
 local CREATE_SINGLE_PATTERN = "^(%S+) creates:? (.+)%.$"
 
+-- Best-effort class colour for a crafter's name. There is no API to look up an
+-- arbitrary player's class in 3.3.5, but we can read it from any unit that
+-- currently matches the name (the player, target, focus, mouseover, party or
+-- raid) -- like inspecting /target without actually targeting them.
+local function GetClassColoredName(name)
+	if (not name) or (name == "") then return name end
+
+	local colors = ns.Colors
+	if (not colors) or (not colors.class) then return name end
+
+	local units = { "player", "target", "targettarget", "focus", "focustarget", "mouseover" }
+	for i = 1, 4 do units[#units + 1] = "party"..i end
+	for i = 1, 40 do units[#units + 1] = "raid"..i end
+
+	for _, unit in ipairs(units) do
+		if (UnitExists(unit) and UnitIsPlayer(unit) and UnitName(unit) == name) then
+			local _, class = UnitClass(unit)
+			local color = class and colors.class[class]
+			if (color and color.colorCode) then
+				return color.colorCode .. name .. "|r"
+			end
+		end
+	end
+
+	return name
+end
+
 Module.OnChatEvent = function(self, chatFrame, event, message, author, ...)
 
 	local skill, gain = safeMatch(message, P[G.SKILL_RANK_UP])
@@ -100,15 +134,15 @@ Module.OnReplacementSet = function(self, msg, r, g, b, chatID, ...)
 	end
 
 	-- "<player> creates <item>." craft broadcasts (direct-printed, no event).
-	-- Reformat them like other players' loot: "<player>: <item>".
+	-- Reformat them as: "<player>" created: <item>, class-colouring the name.
 	local who, item, count = string_match(msg, CREATE_MULTIPLE_PATTERN)
 	if (who and item and count) then
-		return string_format(ns.out.item_multiple_other, who, item, tonumber(count))
+		return string_format(ns.out.craft_multiple_other, GetClassColoredName(who), item, tonumber(count))
 	end
 
 	who, item = string_match(msg, CREATE_SINGLE_PATTERN)
 	if (who and item) then
-		return string_format(ns.out.item_single_other, who, item)
+		return string_format(ns.out.craft_single_other, GetClassColoredName(who), item)
 	end
 end
 

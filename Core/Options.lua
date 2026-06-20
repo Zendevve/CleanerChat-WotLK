@@ -265,8 +265,10 @@ Options.GenerateOptionsMenu = function(self)
 	end
 	table_sort(sorted, function(a,b) return a.item.name < b.item.name end)
 
-	-- Generate the options table.
-	local options = CopyTable(optionDB)
+	-- Build the CleanerChat "Filters" category from optionDB + the filter toggles.
+	local ccGroup = CopyTable(optionDB)
+	ccGroup.name = "Filters"
+	ccGroup.order = 1
 	local order,count = 0,0
 	for i,data in ipairs(sorted) do
 		local item
@@ -279,13 +281,36 @@ Options.GenerateOptionsMenu = function(self)
 			count = count + 1
 			order = order + 10
 			item.order = 100 + order
-			options.args[data.name] = item
+			ccGroup.args[data.name] = item
+		end
+	end
+
+	-- Top-level tree. The Glass UI settings are merged in as additional
+	-- categories so everything lives under /cc (Glass no longer has /glass).
+	local options = {
+		name = "CleanerChat",
+		type = "group",
+		args = {
+			cleanerchat = ccGroup,
+		}
+	}
+
+	local glass = _G.Glass
+	if (glass and glass.configGroups) then
+		-- Order them after the Filters tab; keep Profiles last.
+		local glassOrders = {
+			general = 2, editBox = 3, messages = 4, topBar = 5, profile = 100
+		}
+		for key,group in next,glass.configGroups do
+			if (type(group) == "table") then
+				group.order = glassOrders[key] or 50
+				options.args[key] = group
+			end
 		end
 	end
 
 	AceConfigRegistry:RegisterOptionsTable(Addon, options)
-	-- Account for the four extra controls shown above the filter header.
-	AceConfigDialog:SetDefaultSize(Addon, 400, 180 + (count + 4)*24)
+	AceConfigDialog:SetDefaultSize(Addon, 800, 520)
 end
 
 -- Reload-on-close tracking
@@ -328,18 +353,23 @@ Options.UpdateReloadStatus = function(self)
 	end
 end
 
-Options.OpenOptionsMenu = function(self)
+Options.OpenOptionsMenu = function(self, input)
 
-	-- Build the menu on demand if it hasn't been generated yet.
-	-- (It's normally generated on PLAYER_ENTERING_WORLD, but if that
-	--  didn't run or errored, the command would otherwise do nothing.)
-	if (not AceConfigRegistry:GetOptionsTable(Addon)) then
-		local ok, err = pcall(self.GenerateOptionsMenu, self)
-		if (not ok) then
-			print("|cffff7d0aCleanerChat|r: failed to build the options menu.")
-			print("|cffff0000"..tostring(err).."|r")
-			return
+	-- "/cc lock" unlocks the Glass frame (mirrors the old "/glass lock").
+	if (input == "lock") then
+		if (_G.Glass and _G.Glass.UnlockFrame) then
+			_G.Glass.UnlockFrame()
 		end
+		return
+	end
+
+	-- Always rebuild so categories that load later (e.g. the Glass UI tabs)
+	-- are picked up, and so the table reflects the latest settings.
+	local genOk, genErr = pcall(self.GenerateOptionsMenu, self)
+	if (not genOk) then
+		print("|cffff7d0aCleanerChat|r: failed to build the options menu.")
+		print("|cffff0000"..tostring(genErr).."|r")
+		return
 	end
 
 	if (AceConfigRegistry:GetOptionsTable(Addon)) then

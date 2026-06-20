@@ -256,6 +256,10 @@ Module.OnSpecialFrameHide = function(self, frame, ...)
 end
 
 Module.OnAddMessage = function(self, chatFrame, msg, r, g, b, chatID, ...)
+	-- Don't blacklist the clean money line we emit ourselves -- it carries coin
+	-- icons too, so it would otherwise match here and get dropped.
+	if (self.emittingOwnMessage) then return end
+
 	local g,s,c = parseForMoney(msg)
 	if (g+s+c > 0) then
 		return true
@@ -288,23 +292,30 @@ Module.OnReplacementSet = function(self, msg, r, g, b, chatID, ...)
 	end
 end
 
--- Output the message only to windows with the MONEY channel enabled.
--- Note: We need to bypass the addon's hooked AddMessage to avoid infinite loops
+-- Output our own clean money line.
+-- This has to reach every display layer, including the Glass chat UI, which
+-- renders through a post-hook on the frame's AddMessage. The previous code
+-- called the *cached original* AddMessage to dodge our money blacklist -- but
+-- that bypasses Glass, and since Glass hides the native chat frame the money
+-- line ended up invisible. Instead we call the public AddMessage (so Glass sees
+-- it) and set a guard flag so our own blacklist filter lets this one line pass.
 Module.AddMessage = function(self, msg, r, g, b, chatID, ...)
 	if (not msg) or (msg == "") then return end
 
-	-- In 3.3.5, just print to the default chat frame
-	-- The hooked AddMessage causes issues, so we use the raw print method
 	local chatFrame = DEFAULT_CHAT_FRAME or ChatFrame1
-	if (chatFrame) then
-		-- Use the cached original method if available, otherwise use raw AddMessage
-		local originalMethod = ns.MethodCache and ns.MethodCache[chatFrame]
-		if (originalMethod) then
-			originalMethod(chatFrame, msg, r, g, b)
-		else
-			-- Fallback: print is always safe
-			print(msg)
-		end
+	if (not chatFrame) or (not chatFrame.AddMessage) then
+		print(msg)
+		return
+	end
+
+	self.emittingOwnMessage = true
+	-- pcall so a rendering error can never leave the guard flag stuck on, which
+	-- would silently disable money filtering for every later message.
+	local ok = pcall(chatFrame.AddMessage, chatFrame, msg, r, g, b)
+	self.emittingOwnMessage = false
+
+	if (not ok) then
+		print(msg)
 	end
 end
 
