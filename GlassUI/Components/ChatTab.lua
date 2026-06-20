@@ -302,10 +302,11 @@ Core.Components.SelectChatTab = function(selectedTab)
       if smf.chatFrame == selectedChatFrame then
         smf:Show()
       else
-        -- Don't hide combat log's SMF (it doesn't have one really)
-        if not (smf.state and smf.state.isCombatLog) then
-          smf:Hide()
-        end
+        -- Hide every other frame's messages -- including the Combat Log -- so
+        -- only the selected tab is visible. Otherwise all SlidingMessageFrames
+        -- render at the same spot and different chats look merged onto one tab
+        -- (and their lines overlap).
+        smf:Hide()
       end
     end
   end

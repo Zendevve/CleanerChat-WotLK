@@ -148,6 +148,21 @@ function UIManager:OnEnable()
         self.dock:FadeOutTabs()
       end
     end
+
+    -- Show exactly one tab's messages. Every active chat frame gets its own
+    -- SlidingMessageFrame anchored at the same spot, so without an explicit
+    -- selection they all render together and different chats appear merged onto
+    -- the first tab. Only (re)assert this on an explicit reveal, so the
+    -- combat-driven re-asserts don't override the user's current tab.
+    if reveal then
+      local SelectChatTab = Core.Components.SelectChatTab
+      if SelectChatTab then
+        local tabToSelect = Core.Components.selectedTab or self.state.tabs[1]
+        if tabToSelect then
+          SelectChatTab(tabToSelect)
+        end
+      end
+    end
   end
   
   -- Run setup now, then re-assert it. The Blizzard chat dock
