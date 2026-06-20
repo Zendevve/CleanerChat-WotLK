@@ -13,17 +13,6 @@ local Mixin = Mixin
 local EditBoxMixin = {}
 
 function EditBoxMixin:Init(parent)
-  -- Hide default styling
-  _G[self:GetName().."Left"]:Hide()
-  _G[self:GetName().."Mid"]:Hide()
-  _G[self:GetName().."Right"]:Hide()
-
-  self:RawHook(_G[self:GetName().."Left"], "Show", function () end, true)
-  self:RawHook(_G[self:GetName().."Mid"], "Show", function () end, true)
-  self:RawHook(_G[self:GetName().."Right"], "Show", function () end, true)
-
-  -- Note: Focus textures don't exist in WotLK 3.3.5, so we skip them
-
   -- Reparent the edit box out of the native chat frame.
   -- In FrameXML, ChatFrame1EditBox is defined as a child of ChatFrame1 (it is
   -- the template's "$parentEditBox"). The SlidingMessageFrame hides ChatFrame1
@@ -58,6 +47,27 @@ function EditBoxMixin:Init(parent)
     Colors.codGray.r, Colors.codGray.g, Colors.codGray.b, Core.db.profile.editBoxBackgroundOpacity
   )
   bg:SetAllPoints()
+
+  -- Strip the native edit box skin. The original backport only hid the
+  -- Left/Mid/Right background slices and assumed focus textures don't exist on
+  -- 3.3.5 -- but this client draws extra textures (notably a gold focus
+  -- outline, which Blizzard re-Shows every time the box gains focus) that sat
+  -- on top of our background, so the gold border lingered and the
+  -- editBoxBackgroundOpacity setting looked like it did nothing. Hide *every*
+  -- texture region except our own bg and pin them hidden, so our bg is the
+  -- only skin and its opacity is actually visible.
+  for _, region in ipairs({ self:GetRegions() }) do
+    if region ~= bg and region.GetObjectType and region:GetObjectType() == "Texture" then
+      region:Hide()
+      self:RawHook(region, "Show", function () end, true)
+    end
+  end
+
+  -- Defensive: clear a bordered backdrop if this client skinned the edit box
+  -- frame with one instead of (or in addition to) slice textures.
+  if self.GetBackdrop and self:GetBackdrop() then
+    self:SetBackdrop(nil)
+  end
 
   -- WotLK compatibility: GetLineHeight may not exist, use GetStringHeight or fallback
   local function GetFontHeight(fontString)
