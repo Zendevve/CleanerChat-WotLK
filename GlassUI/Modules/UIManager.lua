@@ -39,10 +39,6 @@ function UIManager:OnEnable()
   self.moverFrame = CreateMoverFrame("GlassMoverFrame", UIParent)
   self.moverDialog = CreateMoverDialog("GlassMoverDialog", UIParent)
 
-  -- Mover
-  self.moverFrame = CreateMoverFrame("GlassMoverFrame", UIParent)
-  self.moverDialog = CreateMoverDialog("GlassMoverDialog", UIParent)
-
   -- Main Container
   self.container = CreateMainContainerFrame("GlassFrame", UIParent)
   self.container:SetPoint("TOPLEFT", self.moverFrame)
