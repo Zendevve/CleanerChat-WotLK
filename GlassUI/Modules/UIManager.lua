@@ -101,8 +101,14 @@ function UIManager:OnEnable()
             table.insert(activeTabs, tab)
           end
           
-          -- Hide the original Blizzard chat frame visuals
-          chatFrame:SetAlpha(0)
+          -- Hide the original Blizzard chat frame visuals so Glass can render
+          -- them. Exception: the Combat Log (ChatFrame2). Glass deliberately
+          -- does not render it (to avoid breaking Blizzard_CombatLog), so it
+          -- must keep its normal alpha to show combat events. Blizzard shows
+          -- and hides it natively based on which dock tab is selected.
+          if not (smf.state and smf.state.isCombatLog) then
+            chatFrame:SetAlpha(0)
+          end
         else
           -- Hide unused chat frame and tab
           if chatTab then
@@ -127,8 +133,39 @@ function UIManager:OnEnable()
     end
   end
   
-  -- Run setup once
+  -- Run setup now, then re-assert it. The Blizzard chat dock
+  -- (GeneralDockManager / FCFDock) finishes initializing after login and can
+  -- re-dock the tabs, pulling them back into the now-hidden dock manager so
+  -- they appear to vanish. Re-running SetupTabs re-parents the tabs into the
+  -- Glass dock and shows them; it is idempotent (frames and tabs are reused).
   SetupTabs()
+
+  if (C_Timer and C_Timer.After) then
+    C_Timer.After(0.5, SetupTabs)
+    C_Timer.After(2, SetupTabs)
+  end
+
+  -- Keep the tabs in the Glass dock whenever Blizzard re-lays out its chat dock.
+  if (not self.dockUpdateHooked) then
+    self.dockUpdateHooked = true
+
+    local reasserting = false
+    local function ReassertTabs()
+      if (reasserting) then return end
+      reasserting = true
+      SetupTabs()
+      reasserting = false
+    end
+
+    if (_G.hooksecurefunc) then
+      if (_G.FCF_DockUpdate) then
+        _G.hooksecurefunc("FCF_DockUpdate", ReassertTabs)
+      end
+      if (_G.FCFDock_UpdateTabs) then
+        _G.hooksecurefunc("FCFDock_UpdateTabs", ReassertTabs)
+      end
+    end
+  end
 
   -- Edit box
   self.editBox = CreateEditBox(self.container)
