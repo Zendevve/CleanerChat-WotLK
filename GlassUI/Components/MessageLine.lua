@@ -103,13 +103,22 @@ end
 ---
 -- Update height based on text height
 function MessageLineMixin:UpdateFrame()
-  local Ypadding = GetFontHeight(self.text) * Core.db.profile.messageLinePadding
-  local messageLineHeight = (self.text:GetStringHeight() + Ypadding * 2)
-  self:SetHeight(messageLineHeight)
-
+  -- Set the widths first so wrapped text reports its real (multi-line) height.
   self:SetWidth(Core.db.profile.frameWidth)
   self.text:SetWidth(Core.db.profile.frameWidth - Constants.TEXT_XPADDING * 2)
   self.text:SetIndentedWordWrap(Core.db.profile.indentWordWrap)
+
+  -- WotLK quirk: GetStringHeight() can return 0 / a too-small value (especially
+  -- right after SetText), which collapses the frame and makes messages overlap.
+  -- Never let a line be shorter than a single text line.
+  local lineHeight = GetFontHeight(self.text)
+  local stringHeight = self.text:GetStringHeight() or 0
+  if stringHeight < lineHeight then
+    stringHeight = lineHeight
+  end
+
+  local Ypadding = lineHeight * Core.db.profile.messageLinePadding
+  self:SetHeight(stringHeight + Ypadding * 2)
 
   local rightBgWidth = math.min(250, Core.db.profile.frameWidth - 50)
   self:SetGradientBackground(50, rightBgWidth, Colors.codGray, Core.db.profile.chatBackgroundOpacity)
