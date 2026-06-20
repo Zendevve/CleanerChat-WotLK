@@ -31,7 +31,7 @@ function Fonts:OnEnable()
   self.fonts.GlassChatDockFont = CreateFont("GlassChatDockFont")
   self.fonts.GlassChatDockFont:SetFont(
     LSM:Fetch(LSM.MediaType.FONT, Core.db.profile.font),
-    12,
+    Core.db.profile.dockFontSize,
     Core.db.profile.fontFlags
   )
   self.fonts.GlassChatDockFont:SetShadowColor(0, 0, 0, 0)
@@ -66,10 +66,10 @@ function Fonts:OnEnable()
       self.fonts.GlassMessageFont:SetSpacing(Core.db.profile.messageLeading)
     end
 
-    if key == "font" then
+    if key == "font" or key == "dockFontSize" then
       self.fonts.GlassChatDockFont:SetFont(
         LSM:Fetch(LSM.MediaType.FONT, Core.db.profile.font),
-        12,
+        Core.db.profile.dockFontSize,
         Core.db.profile.fontFlags
       )
     end

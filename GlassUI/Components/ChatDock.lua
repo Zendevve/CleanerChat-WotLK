@@ -39,9 +39,8 @@ function ChatDockMixin:Init(parent)
   -- Note: In WotLK 3.3.5, GeneralDockManager doesn't exist
   -- We create our own dock frame instead
 
-  -- Gradient background
-  local opacity = 0.4
-  self:SetGradientBackground(50, 250, Colors.black, opacity)
+  -- Gradient background. Opacity is user-configurable via the Top Bar settings.
+  self:SetGradientBackground(50, 250, Colors.black, Core.db.profile.dockBackgroundOpacity or 0.4)
 
   -- Override drag behaviour
   -- Disable undocking frames (if GENERAL_CHAT_DOCK exists)
@@ -78,8 +77,10 @@ function ChatDockMixin:Init(parent)
       Core:Subscribe(UPDATE_CONFIG, function (key)
         if key == "frameWidth" then
           self:SetWidth(Core.db.profile.frameWidth)
+        end
 
-          self:SetGradientBackground(50, 250, Colors.black, opacity)
+        if key == "frameWidth" or key == "dockBackgroundOpacity" then
+          self:SetGradientBackground(50, 250, Colors.black, Core.db.profile.dockBackgroundOpacity or 0.4)
         end
       end)
     }
@@ -97,7 +98,24 @@ function ChatDockMixin:ShowTabs()
     self.fadeHandle = nil
   end
   self:Show()
-  self:SetAlpha(1)
+
+  -- Slide/fade the tabs in over the configured duration (0 = instant).
+  local duration = Core.db.profile.dockFadeInDuration or 0
+  if duration > 0 then
+    self.fadeHandle = LibEasing:Ease(
+      function (a) self:SetAlpha(a) end,
+      self:GetAlpha(),
+      1,
+      duration,
+      LibEasing.OutCubic,
+      function ()
+        self.fadeHandle = nil
+        self:SetAlpha(1)
+      end
+    )
+  else
+    self:SetAlpha(1)
+  end
 end
 
 -- Fade the tab dock out after the configured hold time.
@@ -106,11 +124,11 @@ function ChatDockMixin:FadeOutTabs()
     self.fadeOutTimer:Cancel()
   end
 
-  self.fadeOutTimer = C_Timer.NewTimer(Core.db.profile.chatHoldTime or 10, function ()
+  self.fadeOutTimer = C_Timer.NewTimer(Core.db.profile.dockHoldTime or 10, function ()
     self.fadeOutTimer = nil
     if self.state.mouseOver then return end
 
-    local duration = Core.db.profile.chatFadeOutDuration or 0.6
+    local duration = Core.db.profile.dockFadeOutDuration or 0.6
     if self.fadeHandle then
       LibEasing:StopEasing(self.fadeHandle)
       self.fadeHandle = nil

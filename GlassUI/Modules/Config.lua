@@ -534,6 +534,117 @@ function C:OnEnable()
             },
           },
         },
+        topBar = {
+          name = "Top bar",
+          type = "group",
+          order = 4,
+          args = {
+            section1 = {
+              name = "Appearance",
+              type = "group",
+              inline = true,
+              order = 1,
+              args = {
+                dockFontSize = {
+                  name = "Font size",
+                  desc = "Default: "..Core.defaults.profile.dockFontSize.."\nMin: 1\nMax: 100"..
+                    "\nTab widths refit on /reload.",
+                  type = "range",
+                  order = 1.1,
+                  min = 1,
+                  max = 100,
+                  softMin = 6,
+                  softMax = 24,
+                  step = 1,
+                  get = function ()
+                    return Core.db.profile.dockFontSize
+                  end,
+                  set = function (info, input)
+                    Core.db.profile.dockFontSize = input
+                    Core:Dispatch(UpdateConfig("dockFontSize"))
+                  end,
+                },
+                dockBackgroundOpacity = {
+                  name = "Background opacity",
+                  desc = "Default: "..Core.defaults.profile.dockBackgroundOpacity,
+                  type = "range",
+                  order = 1.2,
+                  min = 0,
+                  max = 1,
+                  softMin = 0,
+                  softMax = 1,
+                  step = 0.01,
+                  get = function ()
+                    return Core.db.profile.dockBackgroundOpacity
+                  end,
+                  set = function (info, input)
+                    Core.db.profile.dockBackgroundOpacity = input
+                    Core:Dispatch(UpdateConfig("dockBackgroundOpacity"))
+                  end,
+                },
+              },
+            },
+            section2 = {
+              name = "Animations",
+              type = "group",
+              inline = true,
+              order = 2,
+              args = {
+                dockHoldTime = {
+                  name = "Fade out delay",
+                  desc = "Default: "..Core.defaults.profile.dockHoldTime.."\nMin: 1\nMax: 180",
+                  type = "range",
+                  order = 2.1,
+                  min = 1,
+                  max = 180,
+                  softMin = 1,
+                  softMax = 20,
+                  step = 1,
+                  get = function ()
+                    return Core.db.profile.dockHoldTime
+                  end,
+                  set = function (info, input)
+                    Core.db.profile.dockHoldTime = input
+                  end,
+                },
+                dockFadeOutDuration = {
+                  name = "Fade out duration",
+                  desc = "Default: "..Core.defaults.profile.dockFadeOutDuration.."\nMin: 0\nMax: 30",
+                  type = "range",
+                  order = 2.2,
+                  min = 0,
+                  max = 30,
+                  softMin = 0,
+                  softMax = 10,
+                  step = 0.05,
+                  get = function ()
+                    return Core.db.profile.dockFadeOutDuration
+                  end,
+                  set = function (_, input)
+                    Core.db.profile.dockFadeOutDuration = input
+                  end,
+                },
+                dockFadeInDuration = {
+                  name = "Slide in duration",
+                  desc = "Default: "..Core.defaults.profile.dockFadeInDuration.."\nMin: 0\nMax: 30",
+                  type = "range",
+                  order = 2.3,
+                  min = 0,
+                  max = 30,
+                  softMin = 0,
+                  softMax = 5,
+                  step = 0.05,
+                  get = function ()
+                    return Core.db.profile.dockFadeInDuration
+                  end,
+                  set = function (_, input)
+                    Core.db.profile.dockFadeInDuration = input
+                  end,
+                },
+              },
+            },
+          },
+        },
         profile = AceDBOptions:GetOptionsTable(Core.db)
       }
   }

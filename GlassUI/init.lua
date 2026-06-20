@@ -76,6 +76,13 @@ Core.defaults = {
     chatFadeOutDuration = 0.6,
     chatSlideInDuration = 0.3,
 
+    -- Top bar (chat tabs dock)
+    dockFontSize = 12,
+    dockBackgroundOpacity = 0.4,
+    dockHoldTime = 10,
+    dockFadeOutDuration = 0.6,
+    dockFadeInDuration = 0.3,
+
     indentWordWrap = true,
     mouseOverTooltips = true,
     iconTextureYOffset = 4,
