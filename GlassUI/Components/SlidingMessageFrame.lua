@@ -83,6 +83,13 @@ function SlidingMessageFrameMixin:Init(chatFrame)
     end, true)
   end
 
+  -- The native chat frame is invisible but still has mouse + mouse-wheel input
+  -- enabled, so it captures the scroll wheel over its area (blocking camera
+  -- zoom) and swallows clicks. Disable its mouse input entirely -- the Glass
+  -- frame does its own scrolling, so nothing is lost.
+  chatFrame:EnableMouse(false)
+  chatFrame:EnableMouseWheel(false)
+
   -- Chat scroll frame for our custom messages
   self:SetHeight(self.config.height + self.config.overflowHeight)
   self:SetWidth(self.config.width)
