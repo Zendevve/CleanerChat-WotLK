@@ -17,9 +17,13 @@ local ScrollOverlayFrame = {}
 
 function ScrollOverlayFrame:Init()
     local overlayOpacity = 0.65
-    local topOffset = Core.db.profile.frameHeight - (Constants.DOCK_HEIGHT + 5 + 62)
+    -- Keep the overlay just tall enough for the snap-to-bottom arrow and the
+    -- "Unread messages" line. The "-2" keeps its bottom edge anchored in the
+    -- same place as the frame height changes (height - 2).
+    local overlayHeight = 28
+    local topOffset = Core.db.profile.frameHeight - (Constants.DOCK_HEIGHT + 5 + (overlayHeight - 2))
 
-    self:SetHeight(64)
+    self:SetHeight(overlayHeight)
     self:SetPoint("TOPLEFT", 0, -topOffset)
     self:SetPoint("TOPRIGHT", 0, -topOffset)
     self:SetFadeInDuration(0.3)
