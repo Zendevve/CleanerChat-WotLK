@@ -2,6 +2,8 @@
 
 A World of Warcraft (3.3.5a / WotLK) addon that **cleans up and overhauls** the chat — it filters message clutter *and* replaces the default chat frame with an immersive, modern chat UI.
 
+![CleanerChat in action](https://i.imgur.com/8lj13ch.gif)
+
 ## Description
 
 CleanerChat filters and reformats chat messages to reduce clutter and improve readability. It handles:
@@ -19,6 +21,12 @@ CleanerChat filters and reformats chat messages to reduce clutter and improve re
 - **Channel names** - Shortened channel prefixes
 - **Player names** - Class-colored names in chat
 - **Item quality** - Color-coded item names by rarity
+
+Examples of the cleaned-up chat:
+
+![Cleaned chat example 1](https://media.forgecdn.net/attachments/397/12/wowscrnshot_092421_171744-crop.jpg)
+![Cleaned chat example 2](https://media.forgecdn.net/attachments/397/11/wowscrnshot_092121_183602-crop.jpg)
+![Cleaned chat example 3](https://media.forgecdn.net/attachments/397/13/wowscrnshot_092421_183813-crop.jpg)
 
 ## Chat Overhaul
 
