@@ -31,6 +31,8 @@ local Module = ns:NewModule("Loot")
 local L = LibStub("AceLocale-3.0"):GetLocale((...))
 
 -- GLOBALS: UnitClass
+-- GLOBALS: MerchantFrame, ChatTypeInfo, DEFAULT_CHAT_FRAME, ChatFrame1
+-- GLOBALS: hooksecurefunc, GetContainerItemLink, GetContainerItemInfo
 -- Lua API
 local ipairs = ipairs
 local rawget = rawget
@@ -452,6 +454,35 @@ Module.OnInitialize = function(self)
 
 end
 
+-- Selling an item to a vendor generates no chat message of its own -- only the
+-- coin gain -- so the bag side of the trade was invisible. Buying shows
+-- "+ item" / "- money", but selling only showed "+ money". Mirror it: emit a
+-- matching "- item" deficit line when the player sells.
+Module.ReportItemSold = function(self, link, count)
+	if (not link) then return end
+
+	-- Match the loot styling: strip the [] from the link (keeps the |H..|h
+	-- hyperlink + quality colour so the line stays clickable and coloured).
+	local item = string_gsub(link, "[%[/%]]", "")
+
+	local msg
+	if (count and count > 1) then
+		msg = string_format(ns.out.item_deficit_multiple, item, count)
+	else
+		msg = string_format(ns.out.item_deficit, item)
+	end
+
+	local info = ChatTypeInfo and ChatTypeInfo["LOOT"]
+	local r = info and info.r or 1
+	local g = info and info.g or 1
+	local b = info and info.b or 1
+
+	local chatFrame = DEFAULT_CHAT_FRAME or ChatFrame1
+	if (chatFrame) and (chatFrame.AddMessage) then
+		chatFrame:AddMessage(msg, r, g, b)
+	end
+end
+
 local onAddMessageProxy = function(...)
 	return Module:OnAddMessage(...)
 end
@@ -471,6 +502,25 @@ Module.OnEnable = function(self)
 	self:RegisterMessageEventFilter("CHAT_MSG_CURRENCY", onChatEventProxy)
 	self:RegisterMessageEventFilter("CHAT_MSG_LOOT", onChatEventProxy)
 	self:RegisterMessageEventFilter("CHAT_MSG_SYSTEM", onChatEventProxy)
+
+	-- Track vendor sales so they show a "- item" line (see ReportItemSold).
+	-- Right-clicking a bag item while the merchant window is open sells it, so
+	-- we post-hook UseContainerItem. The slot still resolves inside the hook
+	-- because the server-confirmed removal happens a moment later. Hooked once;
+	-- gated on IsEnabled so disabling the Loot module also stops the tracking.
+	if (not self.merchantHooked) then
+		self.merchantHooked = true
+		hooksecurefunc("UseContainerItem", function(bag, slot)
+			if (not Module:IsEnabled()) then return end
+			if (not MerchantFrame) or (not MerchantFrame:IsShown()) then return end
+
+			local link = GetContainerItemLink(bag, slot)
+			if (not link) then return end
+
+			local _, count = GetContainerItemInfo(bag, slot)
+			Module:ReportItemSold(link, count or 1)
+		end)
+	end
 end
 
 Module.OnDisable = function(self)

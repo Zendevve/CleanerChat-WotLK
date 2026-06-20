@@ -235,26 +235,6 @@ local parseForMoney = function(message)
 	return gold_amount, silver_amount, copper_amount
 end
 
-Module.SpecialFrameWasHidden = function(self, frame)
-	if (MailFrame:IsShown()) or (MerchantFrame:IsShown()) or (ClassTrainerFrame and ClassTrainerFrame:IsShown()) then
-		return
-	end
-
-	local money = GetMoney()
-
-	if ((self.playerMoney or 0) > money) then
-		self.playerMoney = money
-
-		return
-	end
-
-	self:OnEvent("PLAYER_MONEY")
-end
-
-Module.OnSpecialFrameHide = function(self, frame, ...)
-	return (self:IsEnabled()) and self:SpecialFrameWasHidden(frame, ...)
-end
-
 Module.OnAddMessage = function(self, chatFrame, msg, r, g, b, chatID, ...)
 	-- Don't blacklist the clean money line we emit ourselves -- it carries coin
 	-- icons too, so it would otherwise match here and get dropped.
@@ -326,14 +306,11 @@ Module.OnEvent = function(self, event, ...)
 	elseif (event == "PLAYER_MONEY") then
 		local currentMoney = GetMoney()
 
-		if (MerchantFrame:IsShown()) or (MailFrame:IsShown()) or (ClassTrainerFrame and ClassTrainerFrame:IsShown()) then
-			if (ClassTrainerFrame and not self:IsHooked(ClassTrainerFrame, "OnHide")) then
-				self:HookScript(ClassTrainerFrame, "OnHide", "OnSpecialFrameHide")
-			end
-
-			return
-		end
-
+		-- Money changes are reported immediately as they happen, including while a
+		-- vendor/mail/trainer window is open -- buying and selling each fire
+		-- PLAYER_MONEY, so each transaction prints its own gain/loss line. We still
+		-- suppress the auction house and taxi, where money moves around (deposits,
+		-- bids, flight costs) in ways that would just be noise.
 		if (AuctionHouseFrame and AuctionHouseFrame:IsShown()) or (AuctionFrame and AuctionFrame:IsShown()) or (UnitOnTaxi("player")) then
 
 			self.playerMoney = currentMoney
@@ -388,14 +365,6 @@ Module.OnEnable = function(self)
 
 	self.playerMoney = GetMoney()
 
-	if (not self:IsHooked(MailFrame, "OnHide")) then
-		self:HookScript(MailFrame, "OnHide", "OnSpecialFrameHide")
-	end
-
-	if (not self:IsHooked(MerchantFrame, "OnHide")) then
-		self:HookScript(MerchantFrame, "OnHide", "OnSpecialFrameHide")
-	end
-
 	self:RegisterEvent("PLAYER_ENTERING_WORLD", "OnEvent")
 	self:RegisterEvent("PLAYER_MONEY", "OnEvent")
 
@@ -411,14 +380,6 @@ end
 Module.OnDisable = function(self)
 
 	self.playerMoney = 0
-
-	if (self:IsHooked(MailFrame, "OnHide")) then
-		self:Unhook(MailFrame, "OnHide")
-	end
-
-	if (self:IsHooked(MerchantFrame, "OnHide")) then
-		self:Unhook(MerchantFrame, "OnHide")
-	end
 
 	self:UnregisterEvent("PLAYER_ENTERING_WORLD", "OnEvent")
 	self:UnregisterEvent("PLAYER_MONEY", "OnEvent")
