@@ -17,7 +17,7 @@ L["O"] = true 		-- Officer
 L["Channel Name Style"] = true
 L["Choose whether to show the channel's full name or just its first letter. Requires the Chat Channel Names filter."] = true
 L["Shortened (e.g. \"[G]\")"] = true
-L["Full name (e.g. \"General\")"] = true
+L["Full name (e.g. \"[General]\")"] = true
 
 L["Show Channel Number"] = true
 L["Prefix the channel display with its number, e.g. \"1. \". Requires the Chat Channel Names filter."] = true

@@ -76,7 +76,7 @@ local optionDB = {
 			type = "select",
 			values = {
 				initial = L["Shortened (e.g. \"[G]\")"],
-				full = L["Full name (e.g. \"General\")"],
+				full = L["Full name (e.g. \"[General]\")"],
 			},
 			disabled = function(info) return not ns.db.filters.channels end,
 			set = function(info,value) ns.db.channelNameMode = value; Options:UpdateReloadStatus() end,
