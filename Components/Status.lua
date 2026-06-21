@@ -34,7 +34,9 @@ local L = LibStub("AceLocale-3.0"):GetLocale((...))
 local rawget = rawget
 local rawset = rawset
 local setmetatable = setmetatable
+local string_find = string.find
 local string_format = string.format
+local string_gsub = string.gsub
 local string_match = string.match
 
 -- WoW Globals
@@ -94,6 +96,34 @@ Module.OnChatEvent = function(self, chatFrame, event, message, author, ...)
 	end
 	if (message == EXHAUSTION_NORMAL) then
 		return false, ns.out.rested_cleared, author, ...
+	end
+
+	-- Arena Points (Ascension): "You've received 25 Arena Points. Current Points: (25) Cap: (25/110000)"
+	if (string_find(message, "Arena Points")) then
+		local amount = string_match(message, "received (%d+) Arena Points")
+		local current, cap = string_match(message, "Cap: %((%d+)/(%d+)%)")
+		if (amount and current and cap) then
+			local line1 = string_format(ns.out.arena_points, tonumber(amount))
+			local line2 = string_format(ns.out.arena_points_status, tonumber(current), tonumber(cap))
+			return false, line1 .. "\n" .. line2, author, ...
+		end
+	end
+
+	-- Glory (Ascension): "|CFF1CB619 You gained 50 Glory for winning a battleground. 5502 Glory needed to reach the next rank|r."
+	-- Strip color codes (both |c and |C formats) before parsing
+	local cleanMessage = string_gsub(message, "|[cC]%x%x%x%x%x%x%x%x", "")
+	cleanMessage = string_gsub(cleanMessage, "|r", "")
+	if (string_find(cleanMessage, "Glory")) then
+		local amount = string_match(cleanMessage, "gained (%d+) Glory")
+		local needed = string_match(cleanMessage, "(%d+) Glory needed")
+		if (amount) then
+			local line1 = string_format(ns.out.glory, tonumber(amount))
+			if (needed) then
+				local line2 = string_format(ns.out.glory_progress, tonumber(needed))
+				return false, line1 .. "\n" .. line2, author, ...
+			end
+			return false, line1, author, ...
+		end
 	end
 
 end
