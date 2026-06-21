@@ -135,6 +135,15 @@ local optionDB = {
 			order = 100,
 			type = "header",
 			name = L["Filter Selection"]
+		},
+		moneyPrettify = {
+			order = 105,
+			name = L["Prettify Money"],
+			desc = L["Display money gains and losses with coin icons (e.g. \"+ 28\"). When off, uses the default Blizzard text format."],
+			width = "full",
+			type = "toggle",
+			set = function(info,value) ns.db.moneyPrettify = value; Options:UpdateReloadStatus() end,
+			get = function(info) return ns.db.moneyPrettify end,
 		}
 	}
 }
@@ -307,6 +316,7 @@ Options.TakeSettingsSnapshot = function(self)
 		channelNumber = ns.db.channelNumber,
 		channelCapitalize = ns.db.channelCapitalize,
 		capitalizeNames = ns.db.capitalizeNames,
+		moneyPrettify = ns.db.moneyPrettify,
 		filters = CopyTable(ns.db.filters)
 	}
 end
@@ -320,6 +330,7 @@ Options.IsDirty = function(self)
 	if (snapshot.channelNumber ~= ns.db.channelNumber) then return true end
 	if (snapshot.channelCapitalize ~= ns.db.channelCapitalize) then return true end
 	if (snapshot.capitalizeNames ~= ns.db.capitalizeNames) then return true end
+	if (snapshot.moneyPrettify ~= ns.db.moneyPrettify) then return true end
 	for key,value in next,snapshot.filters do
 		if (ns.db.filters[key] ~= value) then return true end
 	end

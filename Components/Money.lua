@@ -128,7 +128,8 @@ local formatMoney = function(gold, silver, copper, colorCode)
 	colorCode = colorCode or "|cfff0f0f0"
 	local msg
 	if (gold and gold > 0) then
-		msg = string_format(colorCode.."%s|r%s", prettify(gold), Coin["Gold"])
+		local goldStr = (ns.db == nil or ns.db.moneyPrettify) and prettify(gold) or tostring(gold)
+		msg = string_format(colorCode.."%s|r%s", goldStr, Coin["Gold"])
 	end
 	if (silver and silver > 0) then
 		msg = (msg and msg.." " or "") .. string_format(colorCode.."%d|r%s", silver, Coin["Silver"])
@@ -226,6 +227,9 @@ local parseForMoney = function(message)
 end
 
 Module.OnAddMessage = function(self, chatFrame, msg, r, g, b, chatID, ...)
+	-- If prettify is disabled, let all money messages through unchanged.
+	if (ns.db ~= nil) and (not ns.db.moneyPrettify) then return end
+
 	-- Don't blacklist the clean money line we emit ourselves -- it carries coin
 	-- icons too, so it would otherwise match here and get dropped.
 	if (self.emittingOwnMessage) then return end
@@ -238,6 +242,8 @@ end
 
 Module.OnChatEvent = function(self, chatFrame, event, message, author, ...)
 	if (event == "CHAT_MSG_MONEY") then
+		-- If prettify is disabled, let the default message through.
+		if (ns.db ~= nil) and (not ns.db.moneyPrettify) then return end
 		-- We always hide this when this filter is active,
 		-- so no need for any checks of any sort here.
 		return true
@@ -277,6 +283,12 @@ Module.OnEvent = function(self, event, ...)
 
 	elseif (event == "PLAYER_MONEY") then
 		local currentMoney = GetMoney()
+
+		-- If prettify is disabled, skip our custom output entirely.
+		if (ns.db ~= nil) and (not ns.db.moneyPrettify) then
+			self.playerMoney = currentMoney
+			return
+		end
 
 		-- Money changes are reported immediately as they happen, including while a
 		-- vendor/mail/trainer window is open -- buying and selling each fire

@@ -28,6 +28,9 @@ L["Capitalize the first letter of the channel name or initial. Requires the Chat
 L["Capitalize Player Names"] = true
 L["Capitalize the first letter of player names shown in chat. Requires the Player Names filter."] = true
 
+L["Prettify Money"] = true
+L["Display money gains and losses with coin icons (e.g. \"+ 28\"). When off, uses the default Blizzard text format."] = true
+
 L["Hide Crafting Broadcasts"] = true
 L["Hide the \"<name> created: <item>\" messages shown when other players craft items nearby. Requires the Learning (Crafting) filter."] = true
 
