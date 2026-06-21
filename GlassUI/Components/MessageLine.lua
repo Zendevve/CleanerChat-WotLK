@@ -87,17 +87,21 @@ local function buildDisplayText(text, fs)
 
     local nums = {}
     if params then
-      for token in string.gmatch(params, "[^:]+") do
+      -- Ascension uses "|:" as a separator in some icon strings (e.g. :16|:16|:0:-4).
+      -- Normalize by replacing "|:" with ":" before tokenizing.
+      local normalized = string.gsub(params, "|:", ":")
+      for token in string.gmatch(normalized, "[^:]+") do
         nums[#nums + 1] = tonumber(token)
       end
     end
 
     local h, w = nums[1], nums[2]
+    local offsetX, offsetY = nums[3] or 0, nums[4] or 0
     -- Simple icon = path + up to height:width:offsetX:offsetY (no texcoords).
     if path ~= "" and h and h > 0 and #nums <= 4 then
       w = (w and w > 0) and w or h
       local n = math.max(1, math.floor(w / spaceW + 0.5))
-      icons[#icons + 1] = { path = path, w = w, h = h, before = table.concat(out) }
+      icons[#icons + 1] = { path = path, w = w, h = h, offsetX = offsetX, offsetY = offsetY, before = table.concat(out) }
       out[#out + 1] = string.rep(" ", n)
     else
       -- Keep the original icon embedded (correct art, just won't fade).
@@ -175,20 +179,8 @@ function MessageLineMixin:SetMessageText(processed)
     fs:SetFont(fontPath, fontSize, fontFlags)
   end
 
-  -- Only split icons for single-line messages -- positioning overlays across
-  -- wrapped lines isn't reliable, so wrapped messages keep their embedded icons
-  -- (unchanged behaviour).
-  local leftPadding = Core.db.profile.messageLeftPadding or Constants.TEXT_XPADDING
-  local textWidth = Core.db.profile.frameWidth - leftPadding - Constants.TEXT_XPADDING
-  fs:SetWidth(0)
-  fs:SetText(processed)
-  if (fs:GetStringWidth() or 0) > textWidth then
-    self.displayText = processed
-    self.iconList = nil
-    self.text:SetText(processed)
-    return
-  end
-
+  -- Always split icons so they fade properly. For multi-line messages,
+  -- we'll calculate line positions in UpdateIcons.
   local displayText, icons = buildDisplayText(processed, fs)
   self.displayText = displayText
   self.iconList = (icons and #icons > 0) and icons or nil
@@ -252,7 +244,13 @@ function MessageLineMixin:UpdateIcons()
   if fontPath then
     fs:SetFont(fontPath, fontSize, fontFlags)
   end
+
+  -- Get the wrap width and line height for multi-line positioning.
+  local leftPadding = Core.db.profile.messageLeftPadding or Constants.TEXT_XPADDING
+  local wrapWidth = Core.db.profile.frameWidth - leftPadding - Constants.TEXT_XPADDING
   fs:SetWidth(0)
+  fs:SetText("Ay")
+  local lineHeight = fs:GetStringHeight() or 12
 
   for i = 1, #icons do
     local icon = icons[i]
@@ -262,13 +260,44 @@ function MessageLineMixin:UpdateIcons()
       pool[i] = t
     end
 
-    fs:SetText(icon.before or "")
-    local x = fs:GetStringWidth() or 0
+    local before = icon.before or ""
+
+    -- Measure unwrapped width for x position calculation.
+    fs:SetWidth(0)
+    fs:SetText(before)
+    local unwrappedWidth = fs:GetStringWidth() or 0
+
+    -- Measure wrapped height to determine which visual line the icon is on.
+    fs:SetWidth(wrapWidth)
+    fs:SetText(before)
+    local wrappedHeight = fs:GetStringHeight() or lineHeight
+    local lineCount = math.max(1, math.floor(wrappedHeight / lineHeight + 0.5))
+
+    -- X offset: approximate position on the last line.
+    -- For single-line, this is just the unwrapped width.
+    -- For multi-line, use modulo to estimate position on the last line.
+    local x
+    if lineCount == 1 then
+      x = unwrappedWidth
+    else
+      x = unwrappedWidth % wrapWidth
+      -- If the last line is nearly full, the icon might be at the start of next line.
+      -- Add a small buffer for word-wrap variance.
+      if x < 5 then x = 0 end
+    end
+
+    -- Y offset: position icon center at center of the correct line.
+    -- From TOPLEFT, line N's center is at y = -lineHeight * (N - 0.5).
+    local y = -lineHeight * (lineCount - 0.5)
+
+    -- Apply the icon's own offsets (e.g. :0:-4 for vertical adjustment).
+    local iconOffsetX = icon.offsetX or 0
+    local iconOffsetY = icon.offsetY or 0
 
     t:SetTexture(icon.path)
     t:SetSize(icon.w, icon.h)
     t:ClearAllPoints()
-    t:SetPoint("LEFT", self.text, "LEFT", x, 0)
+    t:SetPoint("LEFT", self.text, "TOPLEFT", x + iconOffsetX, y + iconOffsetY)
     t:Show()
   end
 end
