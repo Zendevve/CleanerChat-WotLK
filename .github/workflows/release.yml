@@ -38,6 +38,14 @@ jobs:
           echo "Updated TOC version to ${{ steps.version.outputs.version }}"
           grep "## Version" CleanerChat.toc
 
+      - name: Update README version badge
+        run: |
+          # Keep the README version badge in sync with the .toc / release.
+          # Matches the shields.io static badge "version-<x.y>-DFBA69".
+          sed -i -E "s|version-[0-9]+(\.[0-9]+)*-DFBA69|version-${{ steps.version.outputs.version }}-DFBA69|" README.md
+          echo "Updated README version badge to ${{ steps.version.outputs.version }}"
+          grep -o "version-[0-9.]*-DFBA69" README.md || true
+
       - name: Generate changelog
         id: changelog
         run: |
@@ -112,6 +120,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CleanerChat.toc
+          git add CleanerChat.toc README.md
           git diff --staged --quiet || git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
           git push
