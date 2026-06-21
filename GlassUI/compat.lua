@@ -161,6 +161,7 @@ end
 -- Provides delayed callback functionality
 if not _G.C_Timer then
   local timerFrame = CreateFrame("Frame")
+  timerFrame:Show()  -- Ensure frame is shown so OnUpdate fires
   local timers = {}
   local timerIndex = 0
   

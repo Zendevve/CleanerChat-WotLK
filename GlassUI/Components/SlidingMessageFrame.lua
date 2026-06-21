@@ -22,6 +22,8 @@ local drop, reduce, take = lodash.drop, lodash.reduce, lodash.take
 local CreateMessageLinePool = Core.Components.CreateMessageLinePool
 local CreateScrollOverlayFrame = Core.Components.CreateScrollOverlayFrame
 
+local EDIT_FOCUS_GAINED = Constants.EVENTS.EDIT_FOCUS_GAINED
+local EDIT_FOCUS_LOST = Constants.EVENTS.EDIT_FOCUS_LOST
 local MOUSE_ENTER = Constants.EVENTS.MOUSE_ENTER
 local MOUSE_LEAVE = Constants.EVENTS.MOUSE_LEAVE
 local UPDATE_CONFIG = Constants.EVENTS.UPDATE_CONFIG
@@ -267,6 +269,14 @@ function SlidingMessageFrameMixin:Init(chatFrame)
             message.hideTimer = nil
           end
         end
+
+        -- If messagesOnHover is enabled, fade in all messages
+        if Core.db.profile.messagesOnHover then
+          local fadeDuration = Core.db.profile.chatFadeInDuration or 0.3
+          for _, message in ipairs(self.state.messages) do
+            message:FadeIn(fadeDuration)
+          end
+        end
       end),
       Core:Subscribe(MOUSE_LEAVE, function ()
         -- Hide chats when mouse leaves
@@ -274,6 +284,35 @@ function SlidingMessageFrameMixin:Init(chatFrame)
 
         self.overlay:HideDelay(Core.db.profile.chatHoldTime)
 
+        -- Always fade out messages when mouse leaves
+        for _, message in ipairs(self.state.messages) do
+          message:HideDelay(Core.db.profile.chatHoldTime)
+        end
+      end),
+      -- Edit focus shows ALL messages regardless of messagesOnHover setting
+      Core:Subscribe(EDIT_FOCUS_GAINED, function ()
+        self.state.mouseOver = true
+        
+        -- Cancel all hide timers
+        for _, message in ipairs(self.state.messages) do
+          if message.hideTimer then
+            message.hideTimer:Cancel()
+            message.hideTimer = nil
+          end
+        end
+        
+        -- Always show ALL messages with animation when edit box is focused
+        local fadeDuration = Core.db.profile.chatFadeInDuration or 0.3
+        for _, message in ipairs(self.state.messages) do
+          message:FadeIn(fadeDuration)
+        end
+      end),
+      Core:Subscribe(EDIT_FOCUS_LOST, function ()
+        self.state.mouseOver = false
+        
+        self.overlay:HideDelay(Core.db.profile.chatHoldTime)
+        
+        -- Start fade out timers for all messages
         for _, message in ipairs(self.state.messages) do
           message:HideDelay(Core.db.profile.chatHoldTime)
         end
@@ -319,6 +358,15 @@ function SlidingMessageFrameMixin:Init(chatFrame)
           if key == "chatBackgroundOpacity" then
             for _, message in ipairs(self.state.messages) do
               message:UpdateTextures()
+            end
+          end
+
+          if key == "messagesOnHover" then
+            -- When toggled, just show current messages if mouse is over and option is now enabled
+            if Core.db.profile.messagesOnHover and self.state.mouseOver then
+              for _, message in ipairs(self.state.messages) do
+                message:Show()
+              end
             end
           end
         end
@@ -462,6 +510,7 @@ function SlidingMessageFrameMixin:Update(incoming)
 
   for _, message in ipairs(newMessages) do
     message:Show()
+    -- Always fade out new messages when mouse is not over
     if not self.state.mouseOver then
       message:HideDelay(Core.db.profile.chatHoldTime)
     end

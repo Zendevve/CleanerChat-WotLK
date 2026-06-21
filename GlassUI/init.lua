@@ -59,6 +59,7 @@ Core.defaults = {
       position = "BELOW",
       yOfs = -5
     },
+    showOnEditFocus = true, -- When ON (default), opening the edit box reveals the chat messages.
 
     -- Messages
     messageFontSize = 12,
@@ -77,10 +78,12 @@ Core.defaults = {
     dockHoldTime = 10,
     dockFadeOutDuration = 0.6,
     dockFadeInDuration = 0.3,
+    tabsOnHover = true, -- When ON (default), tabs fade out and appear on hover. When OFF, tabs are always visible.
 
     indentWordWrap = true,
     mouseOverTooltips = true,
     iconTextureYOffset = 4,
+    messagesOnHover = true, -- When ON (default), hovering reveals faded messages. When OFF, only scrolling reveals them.
   }
 }
 

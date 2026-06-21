@@ -285,6 +285,26 @@ function C:OnEnable()
                   end
                 }
               },
+            },
+            section3 = {
+              name = "Behavior",
+              type = "group",
+              inline = true,
+              order = 3,
+              args = {
+                showOnEditFocus = {
+                  name = "Show chat on focus",
+                  desc = "When enabled, opening the edit box (pressing Enter or clicking) reveals the chat messages.",
+                  type = "toggle",
+                  order = 3.1,
+                  get = function ()
+                    return Core.db.profile.showOnEditFocus
+                  end,
+                  set = function (info, input)
+                    Core.db.profile.showOnEditFocus = input
+                  end,
+                },
+              },
             }
           },
         },
@@ -504,6 +524,19 @@ function C:OnEnable()
                     Core.db.profile.iconTextureYOffset = input
                   end,
                 },
+                messagesOnHover = {
+                  name = "Show messages on hover",
+                  desc = "When enabled, hovering over the chat reveals faded messages. When disabled, only scrolling reveals them.",
+                  type = "toggle",
+                  order = 3.4,
+                  get = function ()
+                    return Core.db.profile.messagesOnHover
+                  end,
+                  set = function (info, input)
+                    Core.db.profile.messagesOnHover = input
+                    Core:Dispatch(UpdateConfig("messagesOnHover"))
+                  end,
+                },
               }
             },
           },
@@ -613,6 +646,19 @@ function C:OnEnable()
                   end,
                   set = function (_, input)
                     Core.db.profile.dockFadeInDuration = input
+                  end,
+                },
+                tabsOnHover = {
+                  name = "Show tabs on hover",
+                  desc = "When enabled, chat tabs fade out when idle and reappear on mouse hover. When disabled, tabs are always visible.",
+                  type = "toggle",
+                  order = 2.4,
+                  get = function ()
+                    return Core.db.profile.tabsOnHover
+                  end,
+                  set = function (info, input)
+                    Core.db.profile.tabsOnHover = input
+                    Core:Dispatch(UpdateConfig("tabsOnHover"))
                   end,
                 },
               },
