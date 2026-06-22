@@ -1,6 +1,7 @@
 local Core, Constants = unpack(select(2, ...))
 
 local SaveFramePosition = Constants.ACTIONS.SaveFramePosition
+local UpdateConfig = Constants.ACTIONS.UpdateConfig
 
 local LOCK_MOVER = Constants.EVENTS.LOCK_MOVER
 local UNLOCK_MOVER = Constants.EVENTS.UNLOCK_MOVER
@@ -12,6 +13,7 @@ local MoverFrameMixin = {}
 local CreateFrame = CreateFrame
 local Mixin = Mixin
 -- luacheck: pop
+local math_floor = math.floor
 
 function MoverFrameMixin:Init()
   local editBoxMargin = 35
@@ -23,6 +25,11 @@ function MoverFrameMixin:Init()
   )
   self:SetWidth(Core.db.profile.frameWidth)
   self:SetHeight(Core.db.profile.frameHeight + editBoxMargin)
+
+  -- Draw the mover above the chat (which sits at MEDIUM) so its move/resize
+  -- card and corner grips stay visible even over a full chat window.
+  self:SetFrameStrata("DIALOG")
+  self:SetToplevel(true)
 
   -- Gold accent used by the rest of the /cc theme (#DFBA69).
   local GOLD = { 223 / 255, 186 / 255, 105 / 255 }
@@ -61,35 +68,122 @@ function MoverFrameMixin:Init()
   self.edgeRight:SetPoint("BOTTOMRIGHT")
   self.edgeRight:SetWidth(thickness)
 
-  -- Centered move affordance: a small dark "card" with a move icon and a clear
-  -- title + hint, so it stays readable over any chat background.
+  -- Centered move affordance: a small dark "card" with a clear title + hint,
+  -- so it stays readable over any chat background.
   self.plate = self:CreateTexture(nil, "ARTWORK")
   self.plate:SetTexture("Interface\\Buttons\\WHITE8X8")
   self.plate:SetVertexColor(0, 0, 0, 0.6)
   self.plate:SetPoint("CENTER")
   self.plate:SetSize(258, 50)
 
-  self.moveIcon = self:CreateTexture(nil, "OVERLAY")
-  self.moveIcon:SetTexture("Interface\\Minimap\\MiniMap-PositionArrows")
-  self.moveIcon:SetSize(26, 26)
-  self.moveIcon:SetPoint("LEFT", self.plate, "LEFT", 14, 0)
-  self.moveIcon:SetVertexColor(GOLD[1], GOLD[2], GOLD[3], 1)
-
   self.title = self:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  self.title:SetPoint("TOPLEFT", self.moveIcon, "TOPRIGHT", 12, 1)
+  self.title:SetPoint("TOPLEFT", self.plate, "TOPLEFT", 16, -10)
   self.title:SetText("Move chat frame")
   self.title:SetTextColor(GOLD[1], GOLD[2], GOLD[3], 1)
 
   self.hint = self:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   self.hint:SetPoint("TOPLEFT", self.title, "BOTTOMLEFT", 0, -4)
-  self.hint:SetText("Drag to reposition · Lock to save")
+  self.hint:SetText("Drag to move · Corners to resize · Lock to save")
   self.hint:SetTextColor(0.8, 0.8, 0.8, 1)
+
+  -- Size the plate to wrap the wider of the two text lines with padding on both
+  -- sides (16 left + text + 16 right = 32 + text).
+  local plateText = math.max(self.title:GetStringWidth(), self.hint:GetStringWidth())
+  self.plate:SetWidth(math.max(32 + plateText, 180))
 
   self:Hide()
 
   self:RegisterForDrag("LeftButton")
   self:SetScript("OnDragStart", self.StartMoving)
   self:SetScript("OnDragStop", self.StopMovingOrSizing)
+
+  -- Corner resize handles: drag any corner to adjust the chat frame's width and
+  -- height. The mover frame itself is the resize target; on release we read its
+  -- new size back into frameWidth/frameHeight and dispatch UPDATE_CONFIG so the
+  -- chat frame and all its parts resize to match. Position is saved on Lock.
+  self:SetResizable(true)
+  if (self.SetMinResize) then self:SetMinResize(100, 80) end
+  if (self.SetMaxResize) then self:SetMaxResize(4000, 3000) end
+
+  if (self.resizeHandles == nil) then
+    -- Push the mover's current size into the config and resize the chat frame
+    -- (and all its parts) to match. Called LIVE during a corner drag (via
+    -- OnSizeChanged) so the chat resizes continuously, not just on release.
+    -- The integer-change guards avoid redundant dispatches.
+    local function syncMoverSize()
+      local newWidth = math_floor(self:GetWidth() + 0.5)
+      local newHeight = math_floor(self:GetHeight() - editBoxMargin + 0.5)
+      if (newWidth < 100) then newWidth = 100 end
+      if (newHeight < 1) then newHeight = 1 end
+      if (Core.db.profile.frameWidth ~= newWidth) then
+        Core.db.profile.frameWidth = newWidth
+        Core:Dispatch(UpdateConfig("frameWidth"))
+      end
+      if (Core.db.profile.frameHeight ~= newHeight) then
+        Core.db.profile.frameHeight = newHeight
+        Core:Dispatch(UpdateConfig("frameHeight"))
+      end
+    end
+
+    -- Resize live while a corner is dragged. self.isSizing gates this so the
+    -- config-driven SetWidth/SetHeight (slider, Init) don't re-trigger it.
+    self:SetScript("OnSizeChanged", function ()
+      if (self.isSizing) then
+        syncMoverSize()
+      end
+    end)
+
+    -- Diagonal resize-grip art (the chat window's size grabber), flipped per
+    -- corner so each points outward toward its corner -- reads as a resize
+    -- arrow instead of a plain square.
+    local gripTexCoords = {
+      TOPLEFT     = { 1, 0, 1, 0 },
+      TOPRIGHT    = { 0, 1, 1, 0 },
+      BOTTOMLEFT  = { 1, 0, 0, 1 },
+      BOTTOMRIGHT = { 0, 1, 0, 1 },
+    }
+
+    local function makeResizeHandle(point)
+      local handle = CreateFrame("Frame", nil, self)
+      handle:SetSize(24, 24)
+      handle:SetPoint(point, self, point, 0, 0)
+      handle:SetFrameLevel(self:GetFrameLevel() + 5)
+      handle:EnableMouse(true)
+
+      local tex = handle:CreateTexture(nil, "OVERLAY")
+      tex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+      local tc = gripTexCoords[point]
+      tex:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
+      -- Bright warm-white at full opacity so the grips read clearly against the
+      -- dark chat background and the gold border (gold-on-gold was too faint).
+      tex:SetVertexColor(1, 0.92, 0.72, 1)
+      tex:SetAllPoints()
+
+      handle:SetScript("OnMouseDown", function ()
+        self.isSizing = true
+        self:StartSizing(point)
+      end)
+      handle:SetScript("OnMouseUp", function ()
+        self:StopMovingOrSizing()
+        self.isSizing = false
+        syncMoverSize()
+      end)
+      handle:SetScript("OnEnter", function ()
+        tex:SetVertexColor(1, 1, 1, 1)
+      end)
+      handle:SetScript("OnLeave", function ()
+        tex:SetVertexColor(1, 0.92, 0.72, 1)
+      end)
+      return handle
+    end
+
+    self.resizeHandles = {
+      makeResizeHandle("TOPLEFT"),
+      makeResizeHandle("TOPRIGHT"),
+      makeResizeHandle("BOTTOMLEFT"),
+      makeResizeHandle("BOTTOMRIGHT"),
+    }
+  end
 
   if self.subscriptions == nil then
     self.subscriptions = {
@@ -114,11 +208,11 @@ function MoverFrameMixin:Init()
       end),
       Core:Subscribe(UPDATE_CONFIG, function (key)
         if (key == "frameWidth") then
-          self:SetWidth(Core.db.profile.frameWidth)
+          if (not self.isSizing) then self:SetWidth(Core.db.profile.frameWidth) end
         end
 
         if (key == "frameHeight") then
-          self:SetHeight(Core.db.profile.frameHeight + editBoxMargin)
+          if (not self.isSizing) then self:SetHeight(Core.db.profile.frameHeight + editBoxMargin) end
         end
 
         if key == "framePosition" then
