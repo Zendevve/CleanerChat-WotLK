@@ -33,19 +33,24 @@ local G = {
 -- Note: In 3.3.5, always use Blizzard coin icons for reliability
 local Coin = setmetatable({}, { __index = function(t,k)
 	local frame = DEFAULT_CHAT_FRAME or ChatFrame1
-	local _,size = frame:GetFont()
+	local _,fontHeight = frame:GetFont()
 
-	size = size or 20
-	size = math_floor(size * 0.8)
+	fontHeight = fontHeight or 14
+	-- Match icon size to font height for proper scaling
+	local size = math_floor(fontHeight)
 	if size < 10 then size = 10 end
 
 	-- Use Blizzard coin textures (always available in 3.3.5)
+	-- Format: |Tpath:height:width:xOffset:yOffset|t
+	-- Y offset centers the icon vertically with the text baseline
+	local yOffset = math_floor(size * 0.125)
+
 	if (k == "Gold") then
-		return string_format([[|TInterface\MoneyFrame\UI-GoldIcon:%d:%d:2:5|t]], size, size)
+		return string_format([[|TInterface\MoneyFrame\UI-GoldIcon:%d:%d:0:%d|t]], size, size, yOffset)
 	elseif (k == "Silver") then
-		return string_format([[|TInterface\MoneyFrame\UI-SilverIcon:%d:%d:2:5|t]], size, size)
+		return string_format([[|TInterface\MoneyFrame\UI-SilverIcon:%d:%d:0:%d|t]], size, size, yOffset)
 	elseif (k == "Copper") then
-		return string_format([[|TInterface\MoneyFrame\UI-CopperIcon:%d:%d:2:5|t]], size, size)
+		return string_format([[|TInterface\MoneyFrame\UI-CopperIcon:%d:%d:0:%d|t]], size, size, yOffset)
 	end
 end })
 
@@ -101,22 +106,22 @@ end
 
 local formatMoney = function(gold, silver, copper, colorCode)
 	colorCode = colorCode or "|cfff0f0f0"
-	local msg
+	local parts = {}
 	if (gold and gold > 0) then
 		local goldStr = (ns.db == nil or ns.db.moneyPrettify) and prettify(gold) or tostring(gold)
-		msg = string_format(colorCode.."%s|r%s", goldStr, Coin["Gold"])
+		parts[#parts + 1] = string_format("%s%s|r %s", colorCode, goldStr, Coin["Gold"])
 	end
 	if (silver and silver > 0) then
-		msg = (msg and msg.." " or "") .. string_format(colorCode.."%d|r%s", silver, Coin["Silver"])
+		parts[#parts + 1] = string_format("%s%d|r %s", colorCode, silver, Coin["Silver"])
 	end
 	if (copper and copper > 0) then
-		msg = (msg and msg.." " or "") .. string_format(colorCode.."%d|r%s", copper, Coin["Copper"])
+		parts[#parts + 1] = string_format("%s%d|r %s", colorCode, copper, Coin["Copper"])
 	end
 	-- Fallback if all values are 0
-	if (not msg or msg == "") then
-		msg = colorCode.."0|r"..Coin["Copper"]
+	if (#parts == 0) then
+		return colorCode.."0|r "..Coin["Copper"]
 	end
-	return msg
+	return table.concat(parts, "  ")
 end
 
 local parseForMoney = function(message)
