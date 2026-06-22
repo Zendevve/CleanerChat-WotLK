@@ -3,7 +3,7 @@ local Addon, ns = ...
 local Module = ns:NewModule("Money", "LibMoreEvents-1.0")
 
 -- GLOBALS: ChatTypeInfo, GetMoney, UnitOnTaxi
--- GLOBALS: AuctionFrame, ClassTrainerFrame, MailFrame, MerchantFrame
+-- GLOBALS: AuctionFrame, ClassTrainerFrame, LootFrame, MailFrame, MerchantFrame
 -- Lua API
 local math_abs = math.abs
 local math_floor = math.floor
@@ -294,12 +294,13 @@ Module.OnEvent = function(self, event, ...)
 
 				if (money > 0) then
 					-- Check if we should buffer for one-line quest rewards.
-					-- Skip buffering when vendor/mail/trainer windows are open -- those
-					-- are transactions, not quest rewards, and should display immediately.
+					-- Skip buffering when vendor/mail/trainer/loot windows are open -- those
+					-- are transactions or mob loot, not quest rewards, and should display immediately.
 					local atVendor = MerchantFrame and MerchantFrame:IsShown()
 					local atMail = MailFrame and MailFrame:IsShown()
 					local atTrainer = ClassTrainerFrame and ClassTrainerFrame:IsShown()
-					if (not atVendor) and (not atMail) and (not atTrainer) and (ns.db and ns.db.oneLineQuestRewards) then
+					local atLoot = LootFrame and LootFrame:IsShown()
+					if (not atVendor) and (not atMail) and (not atTrainer) and (not atLoot) and (ns.db and ns.db.oneLineQuestRewards) then
 						local chatFrame = DEFAULT_CHAT_FRAME or ChatFrame1
 						if (chatFrame) then
 							local moneyText = formatMoney(g,s,c)
