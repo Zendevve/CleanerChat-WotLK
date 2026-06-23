@@ -149,15 +149,15 @@ L["Tab widths refit on /reload."] = "標籤寬度在/reload時重新調整。"
 L["Show timestamps"] = "顯示時間戳記"
 L["Prepend each message with a timestamp in [HH:MM] format."] = "在每條訊息前添加[HH:MM]格式的時間戳記。"
 
--- Channel abbreviations (don't localize - match slash commands)
-L["BGL"] = true
-L["BG"] = true
-L["PL"] = true
-L["P"] = true
-L["RL"] = true
-L["R"] = true
-L["IL"] = true
-L["I"] = true
-L["G"] = true
-L["O"] = true
-L["DG"] = true
+-- Channel abbreviations (match slash commands)
+L["BGL"] = "BGL"
+L["BG"] = "BG"
+L["PL"] = "PL"
+L["P"] = "P"
+L["RL"] = "RL"
+L["R"] = "R"
+L["IL"] = "IL"
+L["I"] = "I"
+L["G"] = "G"
+L["O"] = "O"
+L["DG"] = "DG"

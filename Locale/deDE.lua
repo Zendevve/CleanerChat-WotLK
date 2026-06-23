@@ -151,15 +151,15 @@ L["Tab widths refit on /reload."] = "Tab-Breiten passen sich bei /reload an."
 L["Show timestamps"] = "Zeitstempel anzeigen"
 L["Prepend each message with a timestamp in [HH:MM] format."] = "Stellt jeder Nachricht einen Zeitstempel im Format [HH:MM] voran."
 
--- Channel abbreviations (don't localize - match slash commands)
-L["BGL"] = true
-L["BG"] = true
-L["PL"] = true
-L["P"] = true
-L["RL"] = true
-L["R"] = true
-L["IL"] = true
-L["I"] = true
-L["G"] = true
-L["O"] = true
-L["DG"] = true
+-- Channel abbreviations (match slash commands)
+L["BGL"] = "BGL"
+L["BG"] = "BG"
+L["PL"] = "PL"
+L["P"] = "P"
+L["RL"] = "RL"
+L["R"] = "R"
+L["IL"] = "IL"
+L["I"] = "I"
+L["G"] = "G"
+L["O"] = "O"
+L["DG"] = "DG"
