@@ -19,7 +19,7 @@
 	Toggle with:  /ccdebug
 
 --]]
-local Addon, ns = ...
+local _Addon, ns = ...
 
 local ipairs = ipairs
 local tostring = tostring

@@ -157,13 +157,13 @@ function MessageLineMixin:Init()
     self.subscriptions = {
       Core:Subscribe(UPDATE_CONFIG, function (key)
         if key == "chatFadeInDuration" or key == "messageAnimations" then
-          local animate = Core.db.profile.messageAnimations ~= false
-          self:SetFadeInDuration(animate and Core.db.profile.chatFadeInDuration or 0)
+          local shouldAnimate = Core.db.profile.messageAnimations ~= false
+          self:SetFadeInDuration(shouldAnimate and Core.db.profile.chatFadeInDuration or 0)
         end
 
         if key == "chatFadeOutDuration" or key == "messageAnimations" then
-          local animate = Core.db.profile.messageAnimations ~= false
-          self:SetFadeOutDuration(animate and Core.db.profile.chatFadeOutDuration or 0)
+          local shouldAnimate = Core.db.profile.messageAnimations ~= false
+          self:SetFadeOutDuration(shouldAnimate and Core.db.profile.chatFadeOutDuration or 0)
         end
 
         if key == "messageLeftPadding" then

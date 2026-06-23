@@ -1,9 +1,9 @@
-local Addon, ns = ...
+local _Addon, ns = ...
 
 local Module = ns:NewModule("Tradeskills")
 
 -- Addon Localization
-local L = LibStub("AceLocale-3.0"):GetLocale((...))
+local _L = LibStub("AceLocale-3.0"):GetLocale((...))
 
 -- Lua API
 local ipairs = ipairs
@@ -12,7 +12,7 @@ local rawset = rawset
 local setmetatable = setmetatable
 local string_format = string.format
 local string_match = string.match
-local table_insert = table.insert
+local _table_insert = table.insert
 local tonumber = tonumber
 
 -- WoW API

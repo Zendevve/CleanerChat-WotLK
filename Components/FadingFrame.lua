@@ -1,4 +1,4 @@
-local Core, _, Utils = unpack(select(2, ...))
+local Core, _, _Utils = unpack(select(2, ...))
 
 -- luacheck: push ignore 113
 local C_Timer = C_Timer

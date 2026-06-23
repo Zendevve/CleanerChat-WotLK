@@ -1,4 +1,4 @@
-local Core, Constants, Utils = unpack(select(2, ...))
+local Core, _Constants, Utils = unpack(select(2, ...))
 local UIManager = Core:GetModule("UIManager")
 
 local CreateChatDock = Core.Components.CreateChatDock
@@ -12,8 +12,8 @@ local CreateSlidingMessageFramePool = Core.Components.CreateSlidingMessageFrameP
 -- luacheck: push ignore 113
 local BNToastFrame = BNToastFrame
 local ChatAlertFrame = ChatAlertFrame
-local ChatFrameChannelButton = ChatFrameChannelButton
-local ChatFrameMenuButton = ChatFrameMenuButton
+local _ChatFrameChannelButton = ChatFrameChannelButton
+local _ChatFrameMenuButton = ChatFrameMenuButton
 local CreateFrame = CreateFrame
 local GetCVar = GetCVar
 local NUM_CHAT_WINDOWS = NUM_CHAT_WINDOWS

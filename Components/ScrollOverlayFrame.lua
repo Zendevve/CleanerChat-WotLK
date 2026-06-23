@@ -1,4 +1,4 @@
-local Core, Constants, Utils = unpack(select(2, ...))
+local Core, Constants, _Utils = unpack(select(2, ...))
 
 local Colors = Constants.COLORS
 

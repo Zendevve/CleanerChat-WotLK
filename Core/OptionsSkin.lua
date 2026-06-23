@@ -12,7 +12,7 @@
 	never breaks the actual options. The underlying options table is untouched.
 
 --]]
-local Addon, ns = ...
+local _Addon, ns = ...
 
 -- Palette ------------------------------------------------------------------
 

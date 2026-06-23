@@ -1,15 +1,15 @@
-local Addon, ns = ...
+local _Addon, ns = ...
 
 local Module = ns:NewModule("Quests")
 
 -- Addon Localization
-local L = LibStub("AceLocale-3.0"):GetLocale((...))
+local _L = LibStub("AceLocale-3.0"):GetLocale((...))
 
 -- Lua API
 local rawget = rawget
 local rawset = rawset
 local setmetatable = setmetatable
-local string_find = string.find
+local _string_find = string.find
 local string_format = string.format
 local string_gsub = string.gsub
 local string_match = string.match

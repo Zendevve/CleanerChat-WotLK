@@ -1,9 +1,9 @@
-local Addon, ns = ...
+local _Addon, ns = ...
 
 local Module = ns:NewModule("Loot")
 
 -- Addon Localization
-local L = LibStub("AceLocale-3.0"):GetLocale((...))
+local _L = LibStub("AceLocale-3.0"):GetLocale((...))
 
 -- GLOBALS: UnitClass
 -- GLOBALS: MerchantFrame, ChatTypeInfo, DEFAULT_CHAT_FRAME, ChatFrame1
@@ -111,11 +111,11 @@ Module.OnChatEvent = function(self, chatFrame, event, message, author, ...)
 		return true
 
 	elseif (event == "CHAT_MSG_CURRENCY") then
-		for i,pattern in ipairs(self.patterns) do
+		for _i, pattern in ipairs(self.patterns) do
 
 			-- We use the pattern only as an identifier, not for information.
-			local item, count = string_match(message,pattern)
-			if (item) then
+			local matchedItem, _matchedCount = string_match(message, pattern)
+			if (matchedItem) then
 				-- Note: Currencies don't appear to be the same format as this.
 				-- The patterns above tend to fail on the number,
 				-- so we do this ugly non-localized hack instead.
@@ -157,16 +157,6 @@ Module.OnChatEvent = function(self, chatFrame, event, message, author, ...)
 
 		-- Handle loot roll messages first
 		local item, name, roll
-
-		-- Extract item from message (colored item link)
-		local extractItem = function(msg)
-			local first, last = string_find(msg, "|c%x%x%x%x%x%x%x%x|Hitem.-%]|h|r")
-			if (first and last) then
-				local itemLink = string_sub(msg, first, last)
-				return string_gsub(itemLink, "[%[/%]]", "") -- kill brackets
-			end
-			return nil
-		end
 
 		-- "You won: %s"
 		item = safeMatch(message, P[G.LOOT_ROLL_YOU_WON])
@@ -281,61 +271,61 @@ Module.OnChatEvent = function(self, chatFrame, event, message, author, ...)
 		end
 
 		-- Handle regular loot patterns
-		for i,pattern in ipairs(self.patterns) do
+		for _idx, pattern in ipairs(self.patterns) do
 
 			-- We use the pattern only as an identifier, not for information.
-			local results = { string_match(message,pattern) }
+			local results = { string_match(message, pattern) }
 			if (#results > 0) then
 
-				local item, count, name
-				for i,j in ipairs(results) do
-					local k = tonumber(j)
+				local parsedItem, parsedCount, parsedName
+				for ri, rj in ipairs(results) do
+					local k = tonumber(rj)
 					if (k) then
-						table_remove(results,i)
-						count = k
+						table_remove(results, ri)
+						parsedCount = k
 						break
 					end
 				end
 
 				if (#results == 2) then
-					for i,j in ipairs(results) do
-						if (string_find(j, "|c%x%x%x%x%x%x%x%x|Hitem")) then
-							item = table_remove(results,i)
-							item = string_gsub(item, "[%[/%]]", "") -- kill brackets
+					for ri, rj in ipairs(results) do
+						if (string_find(rj, "|c%x%x%x%x%x%x%x%x|Hitem")) then
+							parsedItem = table_remove(results, ri)
+							parsedItem = string_gsub(parsedItem, "[%[/%]]", "") -- kill brackets
 							break
 						end
 					end
-					name = string_gsub(results[1], "[%[/%]]", "")
+					parsedName = string_gsub(results[1], "[%[/%]]", "")
 
 				elseif (#results == 1) then
-					item = string_gsub(results[1], "[%[/%]]", "") -- kill brackets
+					parsedItem = string_gsub(results[1], "[%[/%]]", "") -- kill brackets
 				end
 
-				if (item) then
+				if (parsedItem) then
 					-- Self-received items (no name) can be buffered for one-line output
-					if (not name) and (ns.db and ns.db.oneLineQuestRewards and chatFrame) then
+					if (not parsedName) and (ns.db and ns.db.oneLineQuestRewards and chatFrame) then
 						local rewardText
-						if (count) and (count > 1) then
-							rewardText = string_format("%s |cff9d9d9d(%d)|r", item, count)
+						if (parsedCount) and (parsedCount > 1) then
+							rewardText = string_format("%s |cff9d9d9d(%d)|r", parsedItem, parsedCount)
 						else
-							rewardText = item
+							rewardText = parsedItem
 						end
 						if (ns:AddQuestReward(chatFrame, "item", rewardText)) then
 							return true -- Suppress, will be output with combined rewards
 						end
 					end
 
-					if (count) and (count > 1) then
-						if (name) then
-							return false, string_format(ns.out.item_multiple_other, name, item, count), author, ...
+					if (parsedCount) and (parsedCount > 1) then
+						if (parsedName) then
+							return false, string_format(ns.out.item_multiple_other, parsedName, parsedItem, parsedCount), author, ...
 						else
-							return false, string_format(ns.out.item_multiple, item, count), author, ...
+							return false, string_format(ns.out.item_multiple, parsedItem, parsedCount), author, ...
 						end
 					else
-						if (name) then
-							return false, string_format(ns.out.item_single_other, name, item), author, ...
+						if (parsedName) then
+							return false, string_format(ns.out.item_single_other, parsedName, parsedItem), author, ...
 						else
-							return false, string_format(ns.out.item_single, item), author, ...
+							return false, string_format(ns.out.item_single, parsedItem), author, ...
 						end
 					end
 				end
@@ -353,13 +343,14 @@ Module.OnChatEvent = function(self, chatFrame, event, message, author, ...)
 		-- which only ever fires CHAT_MSG_LOOT - is unaffected.
 
 		-- "Received 125 of item: [Item Name]"
-		local count, item = safeMatch(message, P[G.QUEST_LOG_RECEIVED_COUNT_OF_ITEM])
-		if (count and item) then
+		local sysCount, item = safeMatch(message, P[G.QUEST_LOG_RECEIVED_COUNT_OF_ITEM])
+		if (sysCount and item) then
 			return true
 		end
 
 		-- "Received item: [Item Name]x5"
-		item, count = safeMatch(message, P[G.QUEST_LOG_RECEIVED_ITEM_MULTIPLE])
+		local _unusedCount
+		item, _unusedCount = safeMatch(message, P[G.QUEST_LOG_RECEIVED_ITEM_MULTIPLE])
 		if (item) then
 			return true
 		end
@@ -598,20 +589,20 @@ Module.OnEnable = function(self)
 
 		-- Hook DELETE_ITEM popup (for normal items)
 		if (StaticPopupDialogs["DELETE_ITEM"]) then
-			StaticPopupDialogs["DELETE_ITEM"].OnAccept = function(self, ...)
+			StaticPopupDialogs["DELETE_ITEM"].OnAccept = function(popup, ...)
 				reportDeletedItem()
 				if (origDeleteItem) then
-					return origDeleteItem(self, ...)
+					return origDeleteItem(popup, ...)
 				end
 			end
 		end
 
 		-- Hook DELETE_GOOD_ITEM popup (for higher quality items requiring "DELETE" to be typed)
 		if (StaticPopupDialogs["DELETE_GOOD_ITEM"]) then
-			StaticPopupDialogs["DELETE_GOOD_ITEM"].OnAccept = function(self, ...)
+			StaticPopupDialogs["DELETE_GOOD_ITEM"].OnAccept = function(popup, ...)
 				reportDeletedItem()
 				if (origDeleteGoodItem) then
-					return origDeleteGoodItem(self, ...)
+					return origDeleteGoodItem(popup, ...)
 				end
 			end
 		end

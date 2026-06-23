@@ -245,7 +245,7 @@ Core.Components.CreateChatTab = function (slidingMessageFrame)
   local object = Mixin(frame, ChatTabMixin)
   AceHook:Embed(object)
   
-  local success, err = pcall(function()
+  local success, _err = pcall(function()
     object:Init(slidingMessageFrame)
   end)
   

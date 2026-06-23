@@ -1,4 +1,4 @@
-local Addon, ns = ...
+local _Addon, ns = ...
 
 local Module = ns:NewModule("Money", "LibMoreEvents-1.0")
 
@@ -8,7 +8,7 @@ local Module = ns:NewModule("Money", "LibMoreEvents-1.0")
 local math_abs = math.abs
 local math_floor = math.floor
 local math_mod = math.fmod
-local pairs = pairs
+local _pairs = pairs
 local rawget = rawget
 local rawset = rawset
 local setmetatable = setmetatable
@@ -77,7 +77,6 @@ end
 -- Add pretty spacing to large numbers
 -- *commas as separators are moronic
 local prettify = function(value)
-	local valueString
 	if (value >= 1e9) then
 		local billions =  math_floor(value / 1e9)
 		local millions =  math_floor((value - billions*1e9) / 1e6)
@@ -214,8 +213,8 @@ Module.OnAddMessage = function(self, chatFrame, msg, r, g, b, chatID, ...)
 	-- icons too, so it would otherwise match here and get dropped.
 	if (self.emittingOwnMessage) then return end
 
-	local g,s,c = parseForMoney(msg)
-	if (g+s+c > 0) then
+	local gold, silver, copper = parseForMoney(msg)
+	if (gold + silver + copper > 0) then
 		return true
 	end
 end

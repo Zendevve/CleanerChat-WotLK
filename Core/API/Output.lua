@@ -15,7 +15,7 @@ local AUCTION_REMOVED = string_gsub(_G.ERR_AUCTION_REMOVED, "%.", "") -- "Auctio
 local AUCTION_BID = string_gsub(_G.ERR_AUCTION_BID_PLACED or "Bid accepted.", "%.", "") -- "Bid accepted"
 local AWAY = _G.FRIENDS_LIST_AWAY -- "Away"
 local BUSY = _G.FRIENDS_LIST_BUSY -- "Busy"
-local COMPLETE = _G.COMPLETE -- "Complete"
+local _COMPLETE = _G.COMPLETE -- "Complete"
 local RESTED = _G.TUTORIAL_TITLE26 -- "Rested"
 
 -- Private API
