@@ -4,6 +4,18 @@ on:
   push:
     branches:
       - main
+    # Don't trigger a release when a commit only touches files that are NOT
+    # bundled with the addon (dev/CI files, docs, API reference, etc.).
+    # A push that also changes any bundled file will still trigger a release.
+    paths-ignore:
+      - '.github/**'
+      - '.gitignore'
+      - '.luacheckrc'
+      - 'APIDocumentation/**'
+      - 'changelog.txt'
+      - '**/*.zip'
+      - 'README.md'
+      - 'LICENSE.txt'
 
 jobs:
   release:
@@ -297,6 +309,8 @@ jobs:
                     --exclude='release' \
                     --exclude='*.zip' \
                     --exclude='changelog.txt' \
+                    --exclude='README.md' \
+                    --exclude='LICENSE.txt' \
                     ./ release/CleanerChat/
           
           # Create the zip file
