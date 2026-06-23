@@ -97,19 +97,32 @@ local function buildDisplayText(text, fs)
 
     local h, w = nums[1], nums[2]
     local offsetX, offsetY = nums[3] or 0, nums[4] or 0
+    -- Parse texcoords if present: texWidth, texHeight, left, right, top, bottom
+    local texWidth, texHeight = nums[5], nums[6]
+    local texLeft, texRight, texTop, texBottom = nums[7], nums[8], nums[9], nums[10]
     -- Simple icon = path + up to height:width:offsetX:offsetY (no texcoords).
     -- h=0 or h=nil means "auto-size to font height" in WoW - treat as valid simple icon.
-    -- Icons with more than 4 numeric params have texcoords and need special handling.
-    if path ~= "" and #nums <= 4 then
+    -- Icons with more than 4 numeric params have texcoords - we now support those too.
+    if path ~= "" then
       -- If h is 0, nil, or not set, use font-based default (roughly 16 for chat).
       local defaultSize = 16
       local actualH = (h and h > 0) and h or defaultSize
       local actualW = (w and w > 0) and w or actualH
       local n = math.max(1, math.floor(actualW / spaceW + 0.5))
-      icons[#icons + 1] = { path = path, w = actualW, h = actualH, offsetX = offsetX, offsetY = offsetY, before = table.concat(out) }
+      -- Store texcoords if present (convert from pixels to normalized 0-1)
+      local texCoords = nil
+      if texWidth and texHeight and texLeft and texRight and texTop and texBottom then
+        texCoords = {
+          left = texLeft / texWidth,
+          right = texRight / texWidth,
+          top = texTop / texHeight,
+          bottom = texBottom / texHeight
+        }
+      end
+      icons[#icons + 1] = { path = path, w = actualW, h = actualH, offsetX = offsetX, offsetY = offsetY, texCoords = texCoords, before = table.concat(out) }
       out[#out + 1] = string.rep(" ", n)
     else
-      -- Keep the original icon embedded (correct art, just won't fade).
+      -- Keep the original icon embedded (empty path).
       out[#out + 1] = string.sub(text, s, e)
     end
     pos = e + 1
@@ -324,6 +337,12 @@ function MessageLineMixin:UpdateIcons()
     local iconOffsetY = wasScaled and 0 or (icon.offsetY or 0)
 
     t:SetTexture(icon.path)
+    -- Apply texcoords if present (for atlas textures like coins.tga)
+    if icon.texCoords then
+      t:SetTexCoord(icon.texCoords.left, icon.texCoords.right, icon.texCoords.top, icon.texCoords.bottom)
+    else
+      t:SetTexCoord(0, 1, 0, 1) -- Reset to full texture
+    end
     t:SetSize(iconW, iconH)
     t:ClearAllPoints()
     t:SetPoint("LEFT", self.text, "TOPLEFT", x + iconOffsetX, y + iconOffsetY)

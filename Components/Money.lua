@@ -29,27 +29,29 @@ local G = {
 }
 
 -- Return a coin texture string.
--- Note: In 3.3.5, always use Blizzard coin icons for reliability
+-- Uses custom coins.tga atlas (64x64 with 4 quadrants: TL=gold, TR=silver, BL=copper, BR=empty)
+local COINS_TEXTURE = [[Interface\AddOns\CleanerChat\Assets\coins]]
 local Coin = setmetatable({}, { __index = function(t,k)
 	local frame = DEFAULT_CHAT_FRAME or ChatFrame1
 	local _,fontHeight = frame:GetFont()
 
 	fontHeight = fontHeight or 14
-	-- Icon matches font height exactly
-	local size = math_floor(fontHeight)
-	if size < 10 then size = 10 end
+	-- Scale icon larger than font (1.6x) for better visibility
+	local size = math_floor(fontHeight * 1.6)
+	if size < 12 then size = 12 end
 
-	-- Use Blizzard coin textures (always available in 3.3.5)
-	-- Format: |Tpath:height:width:xOffset:yOffset|t
-	-- Y offset scales with font size to stay centered (roughly 15% of font height)
-	local yOffset = math_floor(fontHeight * 0.15 + 0.5)
-
+	-- Use custom coins.tga texture atlas (64x64 with 4 quadrants, 32x32 each)
+	-- Format: |Tpath:height:width:xOffset:yOffset:texWidth:texHeight:left:right:top:bottom|t
+	-- Texture coordinates in pixels: left, right, top, bottom
 	if (k == "Gold") then
-		return string_format([[|TInterface\MoneyFrame\UI-GoldIcon:%d:%d:0:%d|t]], size, size, yOffset)
+		-- Top-left quadrant: 0-32, 0-32
+		return string_format([[|T%s:%d:%d:0:0:64:64:0:32:0:32|t]], COINS_TEXTURE, size, size)
 	elseif (k == "Silver") then
-		return string_format([[|TInterface\MoneyFrame\UI-SilverIcon:%d:%d:0:%d|t]], size, size, yOffset)
+		-- Top-right quadrant: 32-64, 0-32
+		return string_format([[|T%s:%d:%d:0:0:64:64:32:64:0:32|t]], COINS_TEXTURE, size, size)
 	elseif (k == "Copper") then
-		return string_format([[|TInterface\MoneyFrame\UI-CopperIcon:%d:%d:0:%d|t]], size, size, yOffset)
+		-- Bottom-left quadrant: 0-32, 32-64
+		return string_format([[|T%s:%d:%d:0:0:64:64:0:32:32:64|t]], COINS_TEXTURE, size, size)
 	end
 end })
 
@@ -107,19 +109,25 @@ local formatMoney = function(gold, silver, copper, colorCode)
 	local parts = {}
 	if (gold and gold > 0) then
 		local goldStr = (ns.db == nil or ns.db.moneyPrettify) and prettify(gold) or tostring(gold)
-		parts[#parts + 1] = string_format("%s%s|r %s  ", colorCode, goldStr, Coin["Gold"])
+		parts[#parts + 1] = string_format("%s%s|r%s", colorCode, goldStr, Coin["Gold"])
 	end
 	if (silver and silver > 0) then
-		parts[#parts + 1] = string_format("%s%d|r %s  ", colorCode, silver, Coin["Silver"])
+		parts[#parts + 1] = string_format("%s%d|r%s", colorCode, silver, Coin["Silver"])
 	end
 	if (copper and copper > 0) then
-		parts[#parts + 1] = string_format("%s%d|r %s", colorCode, copper, Coin["Copper"])
+		parts[#parts + 1] = string_format("%s%d|r%s", colorCode, copper, Coin["Copper"])
 	end
 	-- Fallback if all values are 0
 	if (#parts == 0) then
-		return colorCode.."0|r "..Coin["Copper"]
+		return colorCode.."0|r"..Coin["Copper"]
 	end
-	return table.concat(parts, "  ")
+	-- Add space after each icon except the last one when there are multiple currencies
+	if #parts > 1 then
+		for i = 1, #parts - 1 do
+			parts[i] = parts[i] .. " "
+		end
+	end
+	return table.concat(parts)
 end
 
 local parseForMoney = function(message)
