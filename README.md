@@ -120,6 +120,8 @@ Beyond cleaning messages, CleanerChat **replaces the default chat UI** with an i
 Built for the **3.3.5a** (WotLK, interface `30300`) client.
 
 > **Note:** CleanerChat is primarily developed and tested on **[Ascension WoW](https://ascension.gg/)**. While it should work on native 3.3.5a clients, there may be minor differences in styling or behavior. If you encounter any issues on a non-Ascension client, please [open an issue](https://github.com/migwynkriid/CleanerChat-WotLK/issues) — compatibility patches will be provided as needed.
+>
+> **Other customized servers:** Heavily modified private servers (beyond the standard 3.3.5a experience) may or may not work with CleanerChat. Compatibility is not guaranteed for such environments.
 
 Includes:
 

@@ -7,7 +7,9 @@ if not CallbackHandler then return end -- No upgrade needed
 local meta = {__index = function(tbl, key) tbl[key] = {} return tbl[key] end}
 
 -- Lua APIs
-local securecallfunction, error = securecallfunction, error
+-- securecallfunction doesn't exist in WoW 3.3.5, provide a fallback
+local securecallfunction = securecallfunction or function(func, ...) return func(...) end
+local error = error
 local setmetatable, rawget = setmetatable, rawget
 local next, select, pairs, type, tostring = next, select, pairs, type, tostring
 

@@ -259,7 +259,35 @@ local defaults = {
 	}
 }
 
+-- Expose defaults for external reset functionality
+ns.defaults = defaults
+
 CleanerChat_DB = CopyTable(defaults)
+
+-- Reset CleanerChat settings to defaults and update module states
+ns.ResetCleanerChatSettings = function(self)
+	for key, value in next, defaults do
+		if (type(value) == "table") then
+			CleanerChat_DB[key] = CopyTable(value)
+		else
+			CleanerChat_DB[key] = value
+		end
+	end
+	self.db = CleanerChat_DB
+
+	-- Update module enable/disable states based on new filter values
+	for setting, value in next, self.db.filters do
+		local moduleName = self:GetModuleNameFromFilter(setting)
+		local module = self:GetModule(moduleName, true)
+		if (module) then
+			if (value and not module:IsEnabled()) then
+				module:Enable()
+			elseif (not value and module:IsEnabled()) then
+				module:Disable()
+			end
+		end
+	end
+end
 
 ns.IsProtectedMessage = function(self, msg)
 	if (not msg or msg == "") then return end

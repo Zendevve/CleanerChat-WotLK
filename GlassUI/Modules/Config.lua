@@ -65,17 +65,6 @@ function C:OnEnable()
                   end,
                   order = 2.1,
                 },
-                resetConfig = {
-                  name = L["Reset config"],
-                  desc = L["Reset all Glass settings to their default values."],
-                  type = "execute",
-                  confirm = true,
-                  confirmText = L["Reset all settings to their defaults?"],
-                  func = function()
-                    Core.db:ResetProfile()
-                  end,
-                  order = 2.2,
-                },
               }
             },
             section2 = {
@@ -980,7 +969,7 @@ function C:OnEnable()
 
   Core.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
   Core.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
-  Core.db.RegisterCallback(self, "OnProfileReset", "RefreshConfig")
+  Core.db.RegisterCallback(self, "OnProfileReset", "OnProfileReset")
 
   Core:Subscribe(SAVE_FRAME_POSITION, function (position)
     Core.db.profile.positionAnchor = position
@@ -1024,4 +1013,14 @@ function C:RefreshConfig()
   Core:Dispatch(UpdateConfig("dockBackgroundOpacity"))
   Core:Dispatch(UpdateConfig("dockBackgroundColor"))
   Core:Dispatch(UpdateConfig("tabsOnHover"))
+end
+
+function C:OnProfileReset()
+  -- Also reset CleanerChat filter settings
+  local CleanerChat = LibStub("AceAddon-3.0"):GetAddon("CleanerChat", true)
+  if CleanerChat and CleanerChat.ResetCleanerChatSettings then
+    CleanerChat:ResetCleanerChatSettings()
+  end
+  -- Refresh Glass UI config
+  self:RefreshConfig()
 end

@@ -156,6 +156,78 @@ jobs:
           fi
           echo "✅ Locale fallback check passed"
 
+      - name: Dead locale strings check
+        run: |
+          echo "Checking for unused locale strings..."
+          
+          # Get all keys defined in enUS.lua
+          DEFINED_KEYS=$(grep -oP 'L\["\K[^"]+' Locale/enUS.lua | sort -u)
+          DEFINED_COUNT=$(echo "$DEFINED_KEYS" | wc -l)
+          echo "Found $DEFINED_COUNT locale keys defined in enUS.lua"
+          
+          # Get all keys used in the codebase (excluding Locale folder)
+          # Look for L["..."] patterns in all Lua files except locale files
+          # Use --exclude-dir to properly skip the Locale folder
+          USED_KEYS=$(grep -rohP 'L\["\K[^"]+' --include="*.lua" --exclude-dir=Locale . | sort -u)
+          USED_COUNT=$(echo "$USED_KEYS" | wc -l)
+          echo "Found $USED_COUNT locale keys used in the codebase"
+          
+          # Find keys that are defined but never used
+          UNUSED=$(comm -23 <(echo "$DEFINED_KEYS") <(echo "$USED_KEYS"))
+          UNUSED_COUNT=$(echo "$UNUSED" | grep -c . || true)
+          
+          if [[ $UNUSED_COUNT -gt 0 ]]; then
+            echo ""
+            echo "❌ Found $UNUSED_COUNT unused locale key(s):"
+            echo "$UNUSED" | while read -r key; do
+              echo "  - L[\"$key\"]"
+            done
+            echo ""
+            echo "These keys are defined in enUS.lua but not found in the codebase."
+            echo "Remove them from all locale files before releasing."
+            exit 1
+          else
+            echo "✅ No unused locale strings found"
+          fi
+
+      - name: Orphan translations check
+        run: |
+          echo "Checking for orphan translations (keys in other locales but not in enUS)..."
+          
+          # Get all keys defined in enUS.lua (the source of truth)
+          BASE_KEYS=$(grep -oP 'L\["\K[^"]+' Locale/enUS.lua | sort -u)
+          
+          ERRORS=0
+          for LOCALE_FILE in Locale/*.lua; do
+            [[ "$LOCALE_FILE" == "Locale/enUS.lua" ]] && continue
+            
+            LOCALE_NAME=$(basename "$LOCALE_FILE" .lua)
+            LOCALE_KEYS=$(grep -oP 'L\["\K[^"]+' "$LOCALE_FILE" | sort -u)
+            
+            # Find keys in this locale that don't exist in enUS (orphans)
+            ORPHANS=$(comm -13 <(echo "$BASE_KEYS") <(echo "$LOCALE_KEYS"))
+            ORPHAN_COUNT=$(echo "$ORPHANS" | grep -c . || true)
+            
+            if [[ $ORPHAN_COUNT -gt 0 ]]; then
+              echo "❌ $LOCALE_NAME: found $ORPHAN_COUNT orphan translation(s):"
+              echo "$ORPHANS" | head -10 | while read -r key; do
+                echo "  - L[\"$key\"]"
+              done
+              [[ $ORPHAN_COUNT -gt 10 ]] && echo "  ... and $((ORPHAN_COUNT - 10)) more"
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "✅ $LOCALE_NAME: no orphans"
+            fi
+          done
+          
+          if [[ $ERRORS -gt 0 ]]; then
+            echo ""
+            echo "❌ Orphan check failed: $ERRORS locale file(s) have keys not present in enUS.lua"
+            echo "Remove these orphan translations to keep locale files in sync."
+            exit 1
+          fi
+          echo "✅ Orphan translations check passed"
+
       # ========== BUILD RELEASE ==========
       # Only main branch creates releases (workflow trigger enforces this)
 
