@@ -157,11 +157,9 @@ jobs:
           echo "✅ Locale fallback check passed"
 
       # ========== BUILD RELEASE ==========
-      # Main branch: Tagged release (v2.x) - increments version
-      # Other branches: Tagless prerelease - doesn't affect version numbering
+      # Only main branch creates releases (workflow trigger enforces this)
 
-      - name: Calculate version (main branch)
-        if: github.ref == 'refs/heads/main'
+      - name: Calculate version
         id: version
         run: |
           # Count existing v2.x tags to determine next version
@@ -173,28 +171,14 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Next version: v$VERSION (found $TAG_COUNT existing v2.x tags)"
 
-      - name: Calculate version (non-main branch)
-        if: github.ref != 'refs/heads/main'
-        id: branch_version
-        run: |
-          # Use branch name + short SHA for non-main releases
-          BRANCH="${{ github.ref_name }}"
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          VERSION="${BRANCH}-${SHORT_SHA}"
-          
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Branch release version: $VERSION"
-
-      - name: Update TOC version (main branch only)
-        if: github.ref == 'refs/heads/main'
+      - name: Update TOC version
         run: |
           # Update the version in the TOC file for the release
           sed -i "s/^## Version:.*/## Version: ${{ steps.version.outputs.version }}/" CleanerChat.toc
           echo "Updated TOC version to ${{ steps.version.outputs.version }}"
           grep "## Version" CleanerChat.toc
 
-      - name: Update README version badge (main branch only)
-        if: github.ref == 'refs/heads/main'
+      - name: Update README version badge
         run: |
           # Keep the README version badge in sync with the .toc / release.
           # Matches the shields.io static badge "version-<x.y>-DFBA69".
@@ -251,8 +235,7 @@ jobs:
           echo "Created: CleanerChat.zip"
           ls -la *.zip
 
-      - name: Delete old releases (main branch only)
-        if: github.ref == 'refs/heads/main'
+      - name: Delete old releases
         uses: dev-drprasad/delete-older-releases@v0.3.4
         with:
           keep_latest: 0
@@ -260,18 +243,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Delete old branch prereleases
-        if: github.ref != 'refs/heads/main'
-        uses: dev-drprasad/delete-older-releases@v0.3.4
-        with:
-          keep_latest: 0
-          delete_tag_pattern: ${{ github.ref_name }}
-          delete_tags: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create GitHub Release (main branch - tagged)
-        if: github.ref == 'refs/heads/main'
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.version.outputs.version }}
@@ -296,35 +268,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create GitHub Release (non-main branch - tagless prerelease)
-        if: github.ref != 'refs/heads/main'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref_name }}-latest
-          name: "[${{ github.ref_name }}] CleanerChat Development Build"
-          body: |
-            ## CleanerChat Development Build
-            
-            **Branch:** `${{ github.ref_name }}`
-            **Commit:** `${{ github.sha }}`
-            
-            ⚠️ **This is a development prerelease** - not recommended for general use.
-            
-            ### Changes since last tagged release
-            ${{ steps.changelog.outputs.changelog }}
-            
-            ### Installation
-            1. Download `CleanerChat.zip`
-            2. Extract to `Interface\AddOns\`
-            3. Restart WoW or `/reload`
-          files: CleanerChat.zip
-          draft: false
-          prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Commit updated TOC version (main branch only)
-        if: github.ref == 'refs/heads/main'
+      - name: Commit updated TOC version
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
