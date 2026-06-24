@@ -19,6 +19,24 @@ jobs:
           sudo apt-get install -y lua5.1 luarocks
           sudo luarocks install luacheck
 
+      - name: Lua syntax check
+        run: |
+          echo "Checking Lua syntax with luac..."
+          ERRORS=0
+          
+          while IFS= read -r -d '' FILE; do
+            if ! luac5.1 -p "$FILE" 2>&1; then
+              ERRORS=$((ERRORS + 1))
+            fi
+          done < <(find . -name "*.lua" -print0)
+          
+          if [[ $ERRORS -gt 0 ]]; then
+            echo ""
+            echo "❌ Syntax check failed: $ERRORS file(s) have syntax errors"
+            exit 1
+          fi
+          echo "✅ Lua syntax check passed"
+
       - name: Luacheck - Lint Lua files
         run: |
           echo "Running Luacheck on all Lua files..."
