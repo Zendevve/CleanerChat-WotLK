@@ -260,7 +260,7 @@ end
 -- Update the mover's title to show which window it belongs to.
 -- Called after the window reference is set on the moverFrame.
 function MoverFrameMixin:SetWindowLabel(windowId)
-  local label = "Move chat frame"
+  local label
   if windowId and windowId ~= "Main" then
     -- Convert "Window2" to "Window 2"
     local num = windowId:match("Window(%d+)")

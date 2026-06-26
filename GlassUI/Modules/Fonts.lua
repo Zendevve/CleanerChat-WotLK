@@ -53,7 +53,7 @@ function Fonts:OnEnable()
   self.fonts.GlassEditBoxFont:SetJustifyV("MIDDLE")
   self.fonts.GlassEditBoxFont:SetSpacing(3)
 
-  Core:Subscribe(UPDATE_CONFIG, function (payload)
+  Core:Subscribe(UPDATE_CONFIG, function (_)
     -- Note: All fonts (Message, EditBox, Dock) are now set directly per-window
     -- by their respective components (MessageLine, EditBox, ChatTab).
     -- The global FontObjects are still used as templates for initial creation,
