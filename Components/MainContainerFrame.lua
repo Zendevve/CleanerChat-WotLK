@@ -19,8 +19,8 @@ function MainContainerFrameMixin:Init()
     lastMouseCheck = 0,  -- Debounce timer
   }
 
-  self:SetWidth(Core.db.profile.frameWidth)
-  self:SetHeight(Core.db.profile.frameHeight)
+  self:SetWidth(self.profile.frameWidth)
+  self:SetHeight(self.profile.frameHeight)
 
   --[===[@debug@
   -- Helper to set solid color texture (3.3.5 compatibility)
@@ -39,11 +39,11 @@ function MainContainerFrameMixin:Init()
 
   Core:Subscribe(UPDATE_CONFIG, function (key)
     if key == "frameWidth" then
-      self:SetWidth(Core.db.profile.frameWidth)
+      self:SetWidth(self.profile.frameWidth)
     end
 
     if key == "frameHeight" then
-      self:SetHeight(Core.db.profile.frameHeight)
+      self:SetHeight(self.profile.frameHeight)
     end
   end)
 end
@@ -62,9 +62,10 @@ function MainContainerFrameMixin:OnFrame()
   end
 end
 
-Core.Components.CreateMainContainerFrame = function (name, parent)
+Core.Components.CreateMainContainerFrame = function (name, parent, profile)
   local frame = CreateFrame("Frame", name, parent)
   local object = Mixin(frame, MainContainerFrameMixin)
+  object.profile = profile or Core.db.profile
   object:Init()
   return object
 end

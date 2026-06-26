@@ -41,12 +41,12 @@ local function CreateWindow(opts)
 
   -- Mover handle (drag/resize). Self-positions from the profile.
   window.moverFrame = Core.Components.CreateMoverFrame(
-    opts.moverName or ("GlassMoverFrame" .. id), parent
+    opts.moverName or ("GlassMoverFrame" .. id), parent, window.profile
   )
 
   -- Container that everything in this window is anchored to.
   window.container = Core.Components.CreateMainContainerFrame(
-    opts.containerName or ("GlassFrame" .. id), parent
+    opts.containerName or ("GlassFrame" .. id), parent, window.profile
   )
   window.container:SetPoint("TOPLEFT", window.moverFrame)
 

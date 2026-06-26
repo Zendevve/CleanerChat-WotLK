@@ -32,15 +32,15 @@ function EditBoxMixin:Init(parent)
   -- New styling
   self:ClearAllPoints()
 
-  self:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 8, Core.db.profile.editBoxAnchor.yOfs)
+  self:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 8, self.profile.editBoxAnchor.yOfs)
 
-  if Core.db.profile.editBoxAnchor.position == "ABOVE" then
+  if self.profile.editBoxAnchor.position == "ABOVE" then
     self:ClearAllPoints()
-    self:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 8, Core.db.profile.editBoxAnchor.yOfs)
+    self:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 8, self.profile.editBoxAnchor.yOfs)
   end
 
   self:SetFontObject("GlassEditBoxFont")
-  self:SetWidth(Core.db.profile.frameWidth - 8 * 2)
+  self:SetWidth(self.profile.frameWidth - 8 * 2)
   self.header:SetFontObject("GlassEditBoxFont")
   self.header:SetPoint("LEFT", 8, 0)
 
@@ -56,9 +56,9 @@ function EditBoxMixin:Init(parent)
   end
 
   local bg = self:CreateTexture(nil, "BACKGROUND")
-  local editBoxColor = Core.db.profile.editBoxBackgroundColor or Colors.codGray
+  local editBoxColor = self.profile.editBoxBackgroundColor or Colors.codGray
   SetSolidColor(
-    bg, editBoxColor.r, editBoxColor.g, editBoxColor.b, Core.db.profile.editBoxBackgroundOpacity
+    bg, editBoxColor.r, editBoxColor.g, editBoxColor.b, self.profile.editBoxBackgroundOpacity
   )
   bg:SetAllPoints()
 
@@ -132,7 +132,7 @@ function EditBoxMixin:Init(parent)
   -- chat messages if the option is enabled.
   local oldOnEditFocusGained = self:GetScript("OnEditFocusGained")
   self:SetScript("OnEditFocusGained", function (frame, ...)
-    if Core.db.profile.showOnEditFocus then
+    if self.profile.showOnEditFocus then
       Core:Dispatch(EditFocusGained())
     end
     if oldOnEditFocusGained then
@@ -144,7 +144,7 @@ function EditBoxMixin:Init(parent)
   -- This ensures the mouseOver state is properly reset when typing is done.
   local oldOnEditFocusLost = self:GetScript("OnEditFocusLost")
   self:SetScript("OnEditFocusLost", function (frame, ...)
-    if Core.db.profile.showOnEditFocus then
+    if self.profile.showOnEditFocus then
       Core:Dispatch(EditFocusLost())
     end
     if oldOnEditFocusLost then
@@ -160,31 +160,32 @@ function EditBoxMixin:Init(parent)
     end
 
     if key == "frameWidth" then
-      self:SetWidth(Core.db.profile.frameWidth - 8 * 2)
+      self:SetWidth(self.profile.frameWidth - 8 * 2)
     end
 
     if key == "editBoxBackgroundOpacity" or key == "editBoxBackgroundColor" then
-      local color = Core.db.profile.editBoxBackgroundColor or Colors.codGray
+      local color = self.profile.editBoxBackgroundColor or Colors.codGray
       SetSolidColor(
-        bg, color.r, color.g, color.b, Core.db.profile.editBoxBackgroundOpacity
+        bg, color.r, color.g, color.b, self.profile.editBoxBackgroundOpacity
       )
     end
 
     if key == "editBoxAnchor" then
-      if Core.db.profile.editBoxAnchor.position == "ABOVE" then
+      if self.profile.editBoxAnchor.position == "ABOVE" then
         self:ClearAllPoints()
-        self:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 8, Core.db.profile.editBoxAnchor.yOfs)
+        self:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 8, self.profile.editBoxAnchor.yOfs)
       else
         self:ClearAllPoints()
-        self:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 8, Core.db.profile.editBoxAnchor.yOfs)
+        self:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 8, self.profile.editBoxAnchor.yOfs)
       end
     end
   end)
 end
 
-Core.Components.CreateEditBox = function (parent)
+Core.Components.CreateEditBox = function (parent, profile)
   local object = Mixin(_G.ChatFrame1EditBox, EditBoxMixin)
   AceHook:Embed(object)
+  object.profile = profile or Core.db.profile
   object:Init(parent)
   return object
 end

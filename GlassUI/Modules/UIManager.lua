@@ -237,7 +237,7 @@ function UIManager:OnEnable()
   end
 
   -- Edit box
-  self.editBox = CreateEditBox(self.container)
+  self.editBox = CreateEditBox(self.container, self.mainWindow.profile)
 
   -- Fix Battle.net Toast frame position (if it exists)
   if BNToastFrame and ChatAlertFrame then

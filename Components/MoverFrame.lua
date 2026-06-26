@@ -19,12 +19,12 @@ function MoverFrameMixin:Init()
   local editBoxMargin = 35
   self:ClearAllPoints()
   self:SetPoint(
-    Core.db.profile.positionAnchor.point,
-    Core.db.profile.positionAnchor.xOfs,
-    Core.db.profile.positionAnchor.yOfs
+    self.profile.positionAnchor.point,
+    self.profile.positionAnchor.xOfs,
+    self.profile.positionAnchor.yOfs
   )
-  self:SetWidth(Core.db.profile.frameWidth)
-  self:SetHeight(Core.db.profile.frameHeight + editBoxMargin)
+  self:SetWidth(self.profile.frameWidth)
+  self:SetHeight(self.profile.frameHeight + editBoxMargin)
 
   -- Draw the mover above the chat (which sits at MEDIUM) so its move/resize
   -- card and corner grips stay visible even over a full chat window.
@@ -136,12 +136,12 @@ function MoverFrameMixin:Init()
       if (newHeight < 1) then newHeight = 1 end
 
       local changed = false
-      if (Core.db.profile.frameWidth ~= newWidth) then
-        Core.db.profile.frameWidth = newWidth
+      if (self.profile.frameWidth ~= newWidth) then
+        self.profile.frameWidth = newWidth
         changed = true
       end
-      if (Core.db.profile.frameHeight ~= newHeight) then
-        Core.db.profile.frameHeight = newHeight
+      if (self.profile.frameHeight ~= newHeight) then
+        self.profile.frameHeight = newHeight
         changed = true
       end
 
@@ -235,19 +235,19 @@ function MoverFrameMixin:Init()
       end),
       Core:Subscribe(UPDATE_CONFIG, function (key)
         if (key == "frameWidth") then
-          if (not self.isSizing) then self:SetWidth(Core.db.profile.frameWidth) end
+          if (not self.isSizing) then self:SetWidth(self.profile.frameWidth) end
         end
 
         if (key == "frameHeight") then
-          if (not self.isSizing) then self:SetHeight(Core.db.profile.frameHeight + editBoxMargin) end
+          if (not self.isSizing) then self:SetHeight(self.profile.frameHeight + editBoxMargin) end
         end
 
         if key == "framePosition" then
           self:ClearAllPoints()
           self:SetPoint(
-            Core.db.profile.positionAnchor.point,
-            Core.db.profile.positionAnchor.xOfs,
-            Core.db.profile.positionAnchor.yOfs
+            self.profile.positionAnchor.point,
+            self.profile.positionAnchor.xOfs,
+            self.profile.positionAnchor.yOfs
           )
         end
       end),
@@ -255,9 +255,10 @@ function MoverFrameMixin:Init()
   end
 end
 
-Core.Components.CreateMoverFrame = function (name, parent)
+Core.Components.CreateMoverFrame = function (name, parent, profile)
   local frame = CreateFrame("Frame", name, parent)
   local object = Mixin(frame, MoverFrameMixin)
+  object.profile = profile or Core.db.profile
   object:Init()
   return object
 end
