@@ -327,6 +327,9 @@ function UIManager:OnEnable()
 
   -- Edit box
   self.editBox = CreateEditBox(self.container, self.mainWindow.profile)
+  -- The single edit box follows the active (last-clicked) window. Start on main.
+  self.editBox.window = self.mainWindow
+  self.activeWindow = self.mainWindow
 
   -- Fix Battle.net Toast frame position (if it exists)
   if BNToastFrame and ChatAlertFrame then
@@ -539,6 +542,17 @@ function UIManager:OnEnable()
   end)
 end
 
+-- Make `window` the active window: the single edit box follows it, so pressing
+-- ENTER opens the edit box under that window and focus reveals only its
+-- messages. Called when the user clicks a window's tab.
+function UIManager:SetActiveWindow(window)
+  if not window then return end
+  self.activeWindow = window
+  if self.editBox and self.editBox.AttachToWindow then
+    self.editBox:AttachToWindow(window.container, window.profile, window)
+  end
+end
+
 -- Returns the window that owns a given chat-frame index, based on each
 -- secondary window's saved profile.chatFrames list. Defaults to the main window.
 function UIManager:GetOwnerWindowForIndex(chatFrameIndex)
@@ -662,6 +676,11 @@ function UIManager:DeleteWindow(windowId)
   if window.dock then window.dock:Hide() end
   if window.container then window.container:Hide() end
   if window.moverFrame then window.moverFrame:Hide() end
+
+  -- If this was the active (edit-focus) window, hand focus back to main.
+  if self.activeWindow == window then
+    self:SetActiveWindow(self.mainWindow)
+  end
 
   -- Drop the window from the registry and remove its saved settings. Clearing
   -- its profile (and thus its chatFrames ownership) means the freed chat frames

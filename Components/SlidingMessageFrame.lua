@@ -307,7 +307,9 @@ function SlidingMessageFrameMixin:Init(chatFrame)
         end
       end),
       -- Edit focus shows ALL messages regardless of messagesOnHover setting
-      Core:Subscribe(EDIT_FOCUS_GAINED, function ()
+      Core:Subscribe(EDIT_FOCUS_GAINED, function (window)
+        -- Only react when our own window's edit box is focused (nil = global).
+        if window and window ~= self.window then return end
         self.state.mouseOver = true
         
         -- Cancel all hide timers
@@ -350,7 +352,8 @@ function SlidingMessageFrameMixin:Init(chatFrame)
           )
         end
       end),
-      Core:Subscribe(EDIT_FOCUS_LOST, function ()
+      Core:Subscribe(EDIT_FOCUS_LOST, function (window)
+        if window and window ~= self.window then return end
         self.state.mouseOver = false
         
         self.overlay:HideDelay(self.profile.chatHoldTime)

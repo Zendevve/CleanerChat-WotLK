@@ -13,26 +13,57 @@ local UpdateConfig = Constants.ACTIONS.UpdateConfig
 
 local SAVE_FRAME_POSITION = Constants.EVENTS.SAVE_FRAME_POSITION
 
--- Multi-window: track which window's settings are being edited
+-- Multi-window: each category in /cc shows window tabs (Main, Window 2, ...).
+-- ProfileFor() resolves which window's settings a control edits from the
+-- AceConfig info path (the window-tab key is one of the path segments).
 C.selectedWindowId = "Main"
 
--- Helper to get the profile for the currently selected window in options
-local function GetConfigProfile()
-  return Core:GetWindowProfile(C.selectedWindowId)
+-- True if a window with this id currently exists (Main always does).
+local function WindowExists(windowId)
+  if windowId == "Main" then return true end
+  local UIManager = Core:GetModule("UIManager", true)
+  return (UIManager and UIManager.windows and UIManager.windows[windowId]) ~= nil
 end
 
--- Helper to get window names for the dropdown
-local function GetWindowChoices()
-  local choices = { Main = "Main" }
-  local UIManager = Core:GetModule("UIManager", true)
-  if UIManager and UIManager.windows then
-    for windowId in pairs(UIManager.windows) do
-      if windowId ~= "Main" then
-        choices[windowId] = windowId
+-- Resolve the profile a control should read/write from the AceConfig info path.
+-- The window-tab group key ("Main" / "Window2" / ...) appears in the path, so we
+-- scan for it. Falls back to the selected/Main profile (e.g. for build-time
+-- desc strings where no info is available).
+local function ProfileFor(info)
+  if info then
+    for i = 1, #info do
+      local key = info[i]
+      if key == "Main" then
+        return Core.db.profile
+      elseif type(key) == "string" and key:match("^Window%d+$") then
+        local w = Core.db.profile.windows and Core.db.profile.windows[key]
+        if w then return w end
       end
     end
   end
-  return choices
+  return Core:GetWindowProfile(C.selectedWindowId or "Main")
+end
+
+-- Build one child "tab" group per window for a category. `builder` returns a
+-- fresh copy of the category's controls (their get/set resolve the window from
+-- the info path via ProfileFor, so the same builder works for every window).
+-- Tabs for windows that don't exist yet are hidden until they're created.
+local function buildWindowTabs(builder)
+  local tabs = {
+    Main = { name = "Main", type = "group", order = 1, args = builder() },
+  }
+  local maxWindows = _G.NUM_CHAT_WINDOWS or 10
+  for n = 2, maxWindows do
+    local wid = "Window" .. n
+    tabs[wid] = {
+      name = "Window " .. n,
+      type = "group",
+      order = n,
+      hidden = function() return not WindowExists(wid) end,
+      args = builder(),
+    }
+  end
+  return tabs
 end
 
 local ANCHORS = {
@@ -60,17 +91,9 @@ function C:OnEnable()
         general = {
           name = L["General"],
           type = "group",
+          childGroups = "tab",
           order = 1,
-          args = {
-            windowSelector = {
-              name = "Configure Window",
-              desc = "Select which CleanerChat window to configure",
-              type = "select",
-              order = 1,
-              values = GetWindowChoices,
-              get = function() return C.selectedWindowId end,
-              set = function(_, value) C.selectedWindowId = value end,
-            },
+          args = buildWindowTabs(function() return {
             section1 = {
               name = L["Frame Position"],
               type = "group",
@@ -114,11 +137,11 @@ function C:OnEnable()
                   softMin = -2000,
                   softMax = 2000,
                   step = 1,
-                  get = function ()
-                    return GetConfigProfile().positionAnchor.xOfs
+                  get = function (info)
+                    return ProfileFor(info).positionAnchor.xOfs
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().positionAnchor.xOfs = input
+                  set = function (info, input)
+                    ProfileFor(info).positionAnchor.xOfs = input
                     Core:Dispatch(UpdateConfig("framePosition"))
                   end
                 },
@@ -133,11 +156,11 @@ function C:OnEnable()
                   softMin = 300,
                   softMax = 800,
                   step = 1,
-                  get = function ()
-                    return GetConfigProfile().frameWidth
+                  get = function (info)
+                    return ProfileFor(info).frameWidth
                   end,
                   set = function (info, input)
-                    GetConfigProfile().frameWidth = input
+                    ProfileFor(info).frameWidth = input
                     Core:Dispatch(UpdateConfig("frameWidth"))
                   end
                 },
@@ -151,11 +174,11 @@ function C:OnEnable()
                   softMin = -2000,
                   softMax = 2000,
                   step = 1,
-                  get = function ()
-                    return GetConfigProfile().positionAnchor.yOfs
+                  get = function (info)
+                    return ProfileFor(info).positionAnchor.yOfs
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().positionAnchor.yOfs = input
+                  set = function (info, input)
+                    ProfileFor(info).positionAnchor.yOfs = input
                     Core:Dispatch(UpdateConfig("framePosition"))
                   end
                 },
@@ -169,46 +192,38 @@ function C:OnEnable()
                   softMin = 200,
                   softMax = 800,
                   step = 1,
-                  get = function ()
-                    return GetConfigProfile().frameHeight
+                  get = function (info)
+                    return ProfileFor(info).frameHeight
                   end,
                   set = function (info, input)
-                    GetConfigProfile().frameHeight = input
+                    ProfileFor(info).frameHeight = input
                     Core:Dispatch(UpdateConfig("frameHeight"))
                   end
                 },
                 frameAnchor = {
                   name = L["Anchor"],
-                  desc = "Default: "..GetConfigProfile().positionAnchor.point,
+                  desc = "Default: "..ProfileFor(info).positionAnchor.point,
                   type = "select",
                   order = 4.3,
                   values = ANCHORS,
-                  get = function ()
-                    return GetConfigProfile().positionAnchor.point
+                  get = function (info)
+                    return ProfileFor(info).positionAnchor.point
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().positionAnchor.point = input
+                  set = function (info, input)
+                    ProfileFor(info).positionAnchor.point = input
                     Core:Dispatch(UpdateConfig("framePosition"))
                   end
                 },
               }
             }
-          }
+          } end)
         },
         editBox = {
           name = L["Edit box"],
           type = "group",
+          childGroups = "tab",
           order = 2,
-          args = {
-            windowSelector = {
-              name = "Configure Window",
-              desc = "Select which CleanerChat window these settings apply to",
-              type = "select",
-              order = 0,
-              values = GetWindowChoices,
-              get = function() return C.selectedWindowId end,
-              set = function(_, value) C.selectedWindowId = value end,
-            },
+          args = buildWindowTabs(function() return {
             section1 = {
               name = L["Appearance"],
               type = "group",
@@ -222,11 +237,11 @@ function C:OnEnable()
                   order = 1.0,
                   dialogControl = "LSM30_Font",
                   values = LSM:HashTable("font"),
-                  get = function ()
-                    return GetConfigProfile().editBoxFont
+                  get = function (info)
+                    return ProfileFor(info).editBoxFont
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().editBoxFont = input
+                  set = function (info, input)
+                    ProfileFor(info).editBoxFont = input
                     Core:Dispatch(UpdateConfig("editBoxFont"))
                   end,
                 },
@@ -239,11 +254,11 @@ function C:OnEnable()
                   softMin = 6,
                   softMax = 24,
                   step = 1,
-                  get = function ()
-                    return GetConfigProfile().editBoxFontSize
+                  get = function (info)
+                    return ProfileFor(info).editBoxFontSize
                   end,
                   set = function (info, input)
-                    GetConfigProfile().editBoxFontSize = input
+                    ProfileFor(info).editBoxFontSize = input
                     Core:Dispatch(UpdateConfig("editBoxFontSize"))
                   end,
                   order = 1.1,
@@ -254,11 +269,11 @@ function C:OnEnable()
                   type = "select",
                   order = 1.3,
                   values = FLAGS,
-                  get = function ()
-                    return GetConfigProfile().editBoxFontFlags
+                  get = function (info)
+                    return ProfileFor(info).editBoxFontFlags
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().editBoxFontFlags = input
+                  set = function (info, input)
+                    ProfileFor(info).editBoxFontFlags = input
                     Core:Dispatch(UpdateConfig("editBoxFontFlags"))
                   end,
                 },
@@ -272,11 +287,11 @@ function C:OnEnable()
                   softMin = 0,
                   softMax = 1,
                   step = 0.01,
-                  get = function ()
-                    return GetConfigProfile().editBoxBackgroundOpacity
+                  get = function (info)
+                    return ProfileFor(info).editBoxBackgroundOpacity
                   end,
                   set = function (info, input)
-                    GetConfigProfile().editBoxBackgroundOpacity = input
+                    ProfileFor(info).editBoxBackgroundOpacity = input
                     Core:Dispatch(UpdateConfig("editBoxBackgroundOpacity"))
                   end,
                 },
@@ -286,12 +301,12 @@ function C:OnEnable()
                   type = "color",
                   hasAlpha = false,
                   order = 1.4,
-                  get = function ()
-                    local c = GetConfigProfile().editBoxBackgroundColor
+                  get = function (info)
+                    local c = ProfileFor(info).editBoxBackgroundColor
                     return c.r, c.g, c.b
                   end,
                   set = function (info, r, g, b)
-                    local c = GetConfigProfile().editBoxBackgroundColor
+                    local c = ProfileFor(info).editBoxBackgroundColor
                     c.r, c.g, c.b = r, g, b
                     Core:Dispatch(UpdateConfig("editBoxBackgroundColor"))
                   end,
@@ -313,15 +328,15 @@ function C:OnEnable()
                     ABOVE = L["Above"],
                     BELOW = L["Below"],
                   },
-                  get = function ()
-                    return GetConfigProfile().editBoxAnchor.position
+                  get = function (info)
+                    return ProfileFor(info).editBoxAnchor.position
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().editBoxAnchor.position = input
+                  set = function (info, input)
+                    ProfileFor(info).editBoxAnchor.position = input
                     if input == "ABOVE" then
-                      GetConfigProfile().editBoxAnchor.yOfs = 5
+                      ProfileFor(info).editBoxAnchor.yOfs = 5
                     else
-                      GetConfigProfile().editBoxAnchor.yOfs = -5
+                      ProfileFor(info).editBoxAnchor.yOfs = -5
                     end
                     Core:Dispatch(UpdateConfig("editBoxAnchor"))
                   end
@@ -336,11 +351,11 @@ function C:OnEnable()
                   softMin = -10,
                   softMax = 10,
                   step = 1,
-                  get = function ()
-                    return GetConfigProfile().editBoxAnchor.yOfs
+                  get = function (info)
+                    return ProfileFor(info).editBoxAnchor.yOfs
                   end,
                   set = function (info, input)
-                    GetConfigProfile().editBoxAnchor.yOfs = input
+                    ProfileFor(info).editBoxAnchor.yOfs = input
                     Core:Dispatch(UpdateConfig("editBoxAnchor"))
                   end
                 }
@@ -357,31 +372,23 @@ function C:OnEnable()
                   desc = L["When enabled, opening the edit box (pressing Enter or clicking) reveals the chat messages."],
                   type = "toggle",
                   order = 3.1,
-                  get = function ()
-                    return GetConfigProfile().showOnEditFocus
+                  get = function (info)
+                    return ProfileFor(info).showOnEditFocus
                   end,
                   set = function (info, input)
-                    GetConfigProfile().showOnEditFocus = input
+                    ProfileFor(info).showOnEditFocus = input
                   end,
                 },
               },
             }
-          },
+          } end),
         },
         messages = {
           name = L["Messages"],
           type = "group",
+          childGroups = "tab",
           order = 3,
-          args = {
-            windowSelector = {
-              name = "Configure Window",
-              desc = "Select which CleanerChat window these settings apply to",
-              type = "select",
-              order = 0,
-              values = GetWindowChoices,
-              get = function() return C.selectedWindowId end,
-              set = function(_, value) C.selectedWindowId = value end,
-            },
+          args = buildWindowTabs(function() return {
             section1 = {
               name = L["Appearance"],
               type = "group",
@@ -395,11 +402,11 @@ function C:OnEnable()
                   order = 1.0,
                   dialogControl = "LSM30_Font",
                   values = LSM:HashTable("font"),
-                  get = function ()
-                    return GetConfigProfile().messageFont
+                  get = function (info)
+                    return ProfileFor(info).messageFont
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().messageFont = input
+                  set = function (info, input)
+                    ProfileFor(info).messageFont = input
                     Core:Dispatch(UpdateConfig("messageFont"))
                   end,
                 },
@@ -412,11 +419,11 @@ function C:OnEnable()
                   softMin = 6,
                   softMax = 24,
                   step = 1,
-                  get = function ()
-                    return GetConfigProfile().messageFontSize
+                  get = function (info)
+                    return ProfileFor(info).messageFontSize
                   end,
                   set = function (info, input)
-                    GetConfigProfile().messageFontSize = input
+                    ProfileFor(info).messageFontSize = input
                     Core:Dispatch(UpdateConfig("messageFontSize"))
                   end,
                   order = 1.2,
@@ -427,11 +434,11 @@ function C:OnEnable()
                   type = "select",
                   order = 1.6,
                   values = FLAGS,
-                  get = function ()
-                    return GetConfigProfile().messageFontFlags
+                  get = function (info)
+                    return ProfileFor(info).messageFontFlags
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().messageFontFlags = input
+                  set = function (info, input)
+                    ProfileFor(info).messageFontFlags = input
                     Core:Dispatch(UpdateConfig("messageFontFlags"))
                   end,
                 },
@@ -445,11 +452,11 @@ function C:OnEnable()
                   softMin = 0,
                   softMax = 1,
                   step = 0.01,
-                  get = function ()
-                    return GetConfigProfile().chatBackgroundOpacity
+                  get = function (info)
+                    return ProfileFor(info).chatBackgroundOpacity
                   end,
                   set = function (info, input)
-                    GetConfigProfile().chatBackgroundOpacity = input
+                    ProfileFor(info).chatBackgroundOpacity = input
                     Core:Dispatch(UpdateConfig("chatBackgroundOpacity"))
                   end,
                 },
@@ -459,12 +466,12 @@ function C:OnEnable()
                   type = "color",
                   hasAlpha = false,
                   order = 1.7,
-                  get = function ()
-                    local c = GetConfigProfile().chatBackgroundColor
+                  get = function (info)
+                    local c = ProfileFor(info).chatBackgroundColor
                     return c.r, c.g, c.b
                   end,
                   set = function (info, r, g, b)
-                    local c = GetConfigProfile().chatBackgroundColor
+                    local c = ProfileFor(info).chatBackgroundColor
                     c.r, c.g, c.b = r, g, b
                     Core:Dispatch(UpdateConfig("chatBackgroundColor"))
                   end,
@@ -478,11 +485,11 @@ function C:OnEnable()
                   softMin = 0,
                   softMax = 5,
                   step = 1,
-                  get = function ()
-                    return GetConfigProfile().messageLeading
+                  get = function (info)
+                    return ProfileFor(info).messageLeading
                   end,
                   set = function (info, input)
-                    GetConfigProfile().messageLeading = input
+                    ProfileFor(info).messageLeading = input
                     Core:Dispatch(UpdateConfig("messageLeading"))
                   end,
                   order = 1.3,
@@ -496,11 +503,11 @@ function C:OnEnable()
                   softMin = 0,
                   softMax = 1,
                   step = 0.05,
-                  get = function ()
-                    return GetConfigProfile().messageLinePadding
+                  get = function (info)
+                    return ProfileFor(info).messageLinePadding
                   end,
                   set = function (info, input)
-                    GetConfigProfile().messageLinePadding = input
+                    ProfileFor(info).messageLinePadding = input
                     Core:Dispatch(UpdateConfig("messageLinePadding"))
                   end,
                   order = 1.4,
@@ -514,11 +521,11 @@ function C:OnEnable()
                   softMin = 0,
                   softMax = 30,
                   step = 1,
-                  get = function ()
-                    return GetConfigProfile().messageLeftPadding
+                  get = function (info)
+                    return ProfileFor(info).messageLeftPadding
                   end,
                   set = function (info, input)
-                    GetConfigProfile().messageLeftPadding = input
+                    ProfileFor(info).messageLeftPadding = input
                     Core:Dispatch(UpdateConfig("messageLeftPadding"))
                   end,
                   order = 1.5,
@@ -532,11 +539,11 @@ function C:OnEnable()
                   softMin = 128,
                   softMax = 1024,
                   step = 64,
-                  get = function ()
-                    return GetConfigProfile().messageHistoryLimit
+                  get = function (info)
+                    return ProfileFor(info).messageHistoryLimit
                   end,
                   set = function (info, input)
-                    GetConfigProfile().messageHistoryLimit = input
+                    ProfileFor(info).messageHistoryLimit = input
                   end,
                   order = 1.6,
                 },
@@ -553,11 +560,11 @@ function C:OnEnable()
                   desc = L["Show messages instantly with no slide or fade -- the chat becomes static. The timing sliders below have no effect while this is on."],
                   type = "toggle",
                   order = 2.0,
-                  get = function ()
-                    return GetConfigProfile().messageAnimations == false
+                  get = function (info)
+                    return ProfileFor(info).messageAnimations == false
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().messageAnimations = not input
+                  set = function (info, input)
+                    ProfileFor(info).messageAnimations = not input
                     Core:Dispatch(UpdateConfig("messageAnimations"))
                   end,
                 },
@@ -566,11 +573,11 @@ function C:OnEnable()
                   desc = L["Messages never fade out -- they stay on screen permanently. Overrides the fade out delay and duration below."],
                   type = "toggle",
                   order = 2.01,
-                  get = function ()
-                    return GetConfigProfile().messagesAlwaysVisible
+                  get = function (info)
+                    return ProfileFor(info).messagesAlwaysVisible
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().messagesAlwaysVisible = input
+                  set = function (info, input)
+                    ProfileFor(info).messagesAlwaysVisible = input
                     Core:Dispatch(UpdateConfig("messagesAlwaysVisible"))
                   end,
                 },
@@ -591,11 +598,11 @@ function C:OnEnable()
                   softMin = 1,
                   softMax = 20,
                   step = 1,
-                  get = function ()
-                    return GetConfigProfile().chatHoldTime
+                  get = function (info)
+                    return ProfileFor(info).chatHoldTime
                   end,
                   set = function (info, input)
-                    GetConfigProfile().chatHoldTime = input
+                    ProfileFor(info).chatHoldTime = input
                   end,
                 },
                 fadeInDuration = {
@@ -609,11 +616,11 @@ function C:OnEnable()
                   softMin = 0,
                   softMax = 10,
                   step = 0.05,
-                  get = function ()
-                    return GetConfigProfile().chatFadeInDuration
+                  get = function (info)
+                    return ProfileFor(info).chatFadeInDuration
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().chatFadeInDuration = input
+                  set = function (info, input)
+                    ProfileFor(info).chatFadeInDuration = input
                     Core:Dispatch(UpdateConfig("chatFadeInDuration"))
                   end
                 },
@@ -628,11 +635,11 @@ function C:OnEnable()
                   softMin = 0,
                   softMax = 10,
                   step = 0.05,
-                  get = function ()
-                    return GetConfigProfile().chatFadeOutDuration
+                  get = function (info)
+                    return ProfileFor(info).chatFadeOutDuration
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().chatFadeOutDuration = input
+                  set = function (info, input)
+                    ProfileFor(info).chatFadeOutDuration = input
                     Core:Dispatch(UpdateConfig("chatFadeOutDuration"))
                   end
                 },
@@ -646,11 +653,11 @@ function C:OnEnable()
                   softMin = 0,
                   softMax = 5,
                   step = 0.05,
-                  get = function ()
-                    return GetConfigProfile().chatSlideInDuration
+                  get = function (info)
+                    return ProfileFor(info).chatSlideInDuration
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().chatSlideInDuration = input
+                  set = function (info, input)
+                    ProfileFor(info).chatSlideInDuration = input
                   end
                 }
               }
@@ -666,11 +673,11 @@ function C:OnEnable()
                   desc = L["Adds an indent when a message wraps beyond a single line."],
                   type = "toggle",
                   order = 3.1,
-                  get = function ()
-                    return GetConfigProfile().indentWordWrap
+                  get = function (info)
+                    return ProfileFor(info).indentWordWrap
                   end,
                   set = function (info, input)
-                    GetConfigProfile().indentWordWrap = input
+                    ProfileFor(info).indentWordWrap = input
                     Core:Dispatch(UpdateConfig("indentWordWrap"))
                   end,
                 },
@@ -679,11 +686,11 @@ function C:OnEnable()
                   desc = L["Should tooltips appear when hovering over chat links."],
                   type = "toggle",
                   order = 3.2,
-                  get = function ()
-                    return GetConfigProfile().mouseOverTooltips
+                  get = function (info)
+                    return ProfileFor(info).mouseOverTooltips
                   end,
                   set = function (info, input)
-                    GetConfigProfile().mouseOverTooltips = input
+                    ProfileFor(info).mouseOverTooltips = input
                   end,
                 },
                 iconTextureYOffset = {
@@ -697,12 +704,12 @@ function C:OnEnable()
                   softMin = 0,
                   softMax = 12,
                   step = 3.1,
-                  get = function ()
-                    return GetConfigProfile().iconTextureYOffset
+                  get = function (info)
+                    return ProfileFor(info).iconTextureYOffset
                   end,
                   set = function (info, input)
                     -- TODO: Update messages dynamically
-                    GetConfigProfile().iconTextureYOffset = input
+                    ProfileFor(info).iconTextureYOffset = input
                   end,
                 },
                 messagesOnHover = {
@@ -710,11 +717,11 @@ function C:OnEnable()
                   desc = L["When enabled, hovering over the chat reveals faded messages. When disabled, only scrolling reveals them."],
                   type = "toggle",
                   order = 3.3,
-                  get = function ()
-                    return GetConfigProfile().messagesOnHover
+                  get = function (info)
+                    return ProfileFor(info).messagesOnHover
                   end,
                   set = function (info, input)
-                    GetConfigProfile().messagesOnHover = input
+                    ProfileFor(info).messagesOnHover = input
                     Core:Dispatch(UpdateConfig("messagesOnHover"))
                   end,
                 },
@@ -723,11 +730,11 @@ function C:OnEnable()
                   desc = L["Prepend each message with a timestamp in [HH:MM] format."],
                   type = "toggle",
                   order = 3.35,
-                  get = function ()
-                    return GetConfigProfile().showTimestamps
+                  get = function (info)
+                    return ProfileFor(info).showTimestamps
                   end,
                   set = function (info, input)
-                    GetConfigProfile().showTimestamps = input
+                    ProfileFor(info).showTimestamps = input
                   end,
                 },
                 scrollIndicatorHeader = {
@@ -741,11 +748,11 @@ function C:OnEnable()
                   type = "toggle",
                   width = "full",
                   order = 3.55,
-                  get = function ()
-                    return GetConfigProfile().hideScrollIndicator
+                  get = function (info)
+                    return ProfileFor(info).hideScrollIndicator
                   end,
                   set = function (info, input)
-                    GetConfigProfile().hideScrollIndicator = input
+                    ProfileFor(info).hideScrollIndicator = input
                     Core:Dispatch(UpdateConfig("hideScrollIndicator"))
                   end,
                 },
@@ -756,13 +763,13 @@ function C:OnEnable()
                   hasAlpha = false,
                   width = 1,
                   order = 3.6,
-                  disabled = function () return GetConfigProfile().hideScrollIndicator end,
-                  get = function ()
-                    local c = GetConfigProfile().scrollIndicatorColor
+                  disabled = function (info) return ProfileFor(info).hideScrollIndicator end,
+                  get = function (info)
+                    local c = ProfileFor(info).scrollIndicatorColor
                     return c.r, c.g, c.b
                   end,
                   set = function (info, r, g, b)
-                    local c = GetConfigProfile().scrollIndicatorColor
+                    local c = ProfileFor(info).scrollIndicatorColor
                     c.r, c.g, c.b = r, g, b
                     Core:Dispatch(UpdateConfig("scrollIndicatorColor"))
                   end,
@@ -773,15 +780,15 @@ function C:OnEnable()
                   type = "range",
                   width = 1.5,
                   order = 3.65,
-                  disabled = function () return GetConfigProfile().hideScrollIndicator end,
+                  disabled = function (info) return ProfileFor(info).hideScrollIndicator end,
                   min = 0,
                   max = 1,
                   step = 0.05,
-                  get = function ()
-                    return GetConfigProfile().scrollIndicatorOpacity
+                  get = function (info)
+                    return ProfileFor(info).scrollIndicatorOpacity
                   end,
                   set = function (info, input)
-                    GetConfigProfile().scrollIndicatorOpacity = input
+                    ProfileFor(info).scrollIndicatorOpacity = input
                     Core:Dispatch(UpdateConfig("scrollIndicatorOpacity"))
                   end,
                 },
@@ -792,13 +799,13 @@ function C:OnEnable()
                   hasAlpha = false,
                   width = 1,
                   order = 3.7,
-                  disabled = function () return GetConfigProfile().hideScrollIndicator end,
-                  get = function ()
-                    local c = GetConfigProfile().scrollIndicatorBgColor
+                  disabled = function (info) return ProfileFor(info).hideScrollIndicator end,
+                  get = function (info)
+                    local c = ProfileFor(info).scrollIndicatorBgColor
                     return c.r, c.g, c.b
                   end,
                   set = function (info, r, g, b)
-                    local c = GetConfigProfile().scrollIndicatorBgColor
+                    local c = ProfileFor(info).scrollIndicatorBgColor
                     c.r, c.g, c.b = r, g, b
                     Core:Dispatch(UpdateConfig("scrollIndicatorBgColor"))
                   end,
@@ -809,36 +816,28 @@ function C:OnEnable()
                   type = "range",
                   width = 1.5,
                   order = 3.75,
-                  disabled = function () return GetConfigProfile().hideScrollIndicator end,
+                  disabled = function (info) return ProfileFor(info).hideScrollIndicator end,
                   min = 0,
                   max = 1,
                   step = 0.05,
-                  get = function ()
-                    return GetConfigProfile().scrollIndicatorBgOpacity
+                  get = function (info)
+                    return ProfileFor(info).scrollIndicatorBgOpacity
                   end,
                   set = function (info, input)
-                    GetConfigProfile().scrollIndicatorBgOpacity = input
+                    ProfileFor(info).scrollIndicatorBgOpacity = input
                     Core:Dispatch(UpdateConfig("scrollIndicatorBgOpacity"))
                   end,
                 },
               }
             },
-          },
+          } end),
         },
         topBar = {
           name = L["Top bar"],
           type = "group",
+          childGroups = "tab",
           order = 4,
-          args = {
-            windowSelector = {
-              name = "Configure Window",
-              desc = "Select which CleanerChat window these settings apply to",
-              type = "select",
-              order = 0,
-              values = GetWindowChoices,
-              get = function() return C.selectedWindowId end,
-              set = function(_, value) C.selectedWindowId = value end,
-            },
+          args = buildWindowTabs(function() return {
             section1 = {
               name = L["Appearance"],
               type = "group",
@@ -852,11 +851,11 @@ function C:OnEnable()
                   order = 1.0,
                   dialogControl = "LSM30_Font",
                   values = LSM:HashTable("font"),
-                  get = function ()
-                    return GetConfigProfile().dockFont
+                  get = function (info)
+                    return ProfileFor(info).dockFont
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().dockFont = input
+                  set = function (info, input)
+                    ProfileFor(info).dockFont = input
                     Core:Dispatch(UpdateConfig("dockFont"))
                   end,
                 },
@@ -871,11 +870,11 @@ function C:OnEnable()
                   softMin = 6,
                   softMax = 24,
                   step = 1,
-                  get = function ()
-                    return GetConfigProfile().dockFontSize
+                  get = function (info)
+                    return ProfileFor(info).dockFontSize
                   end,
                   set = function (info, input)
-                    GetConfigProfile().dockFontSize = input
+                    ProfileFor(info).dockFontSize = input
                     Core:Dispatch(UpdateConfig("dockFontSize"))
                   end,
                 },
@@ -885,11 +884,11 @@ function C:OnEnable()
                   type = "select",
                   order = 1.15,
                   values = FLAGS,
-                  get = function ()
-                    return GetConfigProfile().dockFontFlags
+                  get = function (info)
+                    return ProfileFor(info).dockFontFlags
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().dockFontFlags = input
+                  set = function (info, input)
+                    ProfileFor(info).dockFontFlags = input
                     Core:Dispatch(UpdateConfig("dockFontFlags"))
                   end,
                 },
@@ -903,11 +902,11 @@ function C:OnEnable()
                   softMin = 0,
                   softMax = 1,
                   step = 0.01,
-                  get = function ()
-                    return GetConfigProfile().dockBackgroundOpacity
+                  get = function (info)
+                    return ProfileFor(info).dockBackgroundOpacity
                   end,
                   set = function (info, input)
-                    GetConfigProfile().dockBackgroundOpacity = input
+                    ProfileFor(info).dockBackgroundOpacity = input
                     Core:Dispatch(UpdateConfig("dockBackgroundOpacity"))
                   end,
                 },
@@ -917,12 +916,12 @@ function C:OnEnable()
                   type = "color",
                   hasAlpha = false,
                   order = 1.3,
-                  get = function ()
-                    local c = GetConfigProfile().dockBackgroundColor
+                  get = function (info)
+                    local c = ProfileFor(info).dockBackgroundColor
                     return c.r, c.g, c.b
                   end,
                   set = function (info, r, g, b)
-                    local c = GetConfigProfile().dockBackgroundColor
+                    local c = ProfileFor(info).dockBackgroundColor
                     c.r, c.g, c.b = r, g, b
                     Core:Dispatch(UpdateConfig("dockBackgroundColor"))
                   end,
@@ -940,11 +939,11 @@ function C:OnEnable()
                   desc = L["Show and hide the top bar instantly with no fade -- the tabs become static. The timing sliders below have no effect while this is on."],
                   type = "toggle",
                   order = 2.0,
-                  get = function ()
-                    return GetConfigProfile().dockAnimations == false
+                  get = function (info)
+                    return ProfileFor(info).dockAnimations == false
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().dockAnimations = not input
+                  set = function (info, input)
+                    ProfileFor(info).dockAnimations = not input
                     Core:Dispatch(UpdateConfig("dockAnimations"))
                   end,
                 },
@@ -953,11 +952,11 @@ function C:OnEnable()
                   desc = L["Chat tabs never fade out -- they stay on screen permanently. Overrides the fade out delay and duration below."],
                   type = "toggle",
                   order = 2.01,
-                  get = function ()
-                    return GetConfigProfile().tabsAlwaysVisible
+                  get = function (info)
+                    return ProfileFor(info).tabsAlwaysVisible
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().tabsAlwaysVisible = input
+                  set = function (info, input)
+                    ProfileFor(info).tabsAlwaysVisible = input
                     Core:Dispatch(UpdateConfig("tabsAlwaysVisible"))
                   end,
                 },
@@ -977,11 +976,11 @@ function C:OnEnable()
                   softMin = 1,
                   softMax = 20,
                   step = 1,
-                  get = function ()
-                    return GetConfigProfile().dockHoldTime
+                  get = function (info)
+                    return ProfileFor(info).dockHoldTime
                   end,
                   set = function (info, input)
-                    GetConfigProfile().dockHoldTime = input
+                    ProfileFor(info).dockHoldTime = input
                   end,
                 },
                 dockFadeOutDuration = {
@@ -994,11 +993,11 @@ function C:OnEnable()
                   softMin = 0,
                   softMax = 10,
                   step = 0.05,
-                  get = function ()
-                    return GetConfigProfile().dockFadeOutDuration
+                  get = function (info)
+                    return ProfileFor(info).dockFadeOutDuration
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().dockFadeOutDuration = input
+                  set = function (info, input)
+                    ProfileFor(info).dockFadeOutDuration = input
                   end,
                 },
                 dockFadeInDuration = {
@@ -1011,11 +1010,11 @@ function C:OnEnable()
                   softMin = 0,
                   softMax = 5,
                   step = 0.05,
-                  get = function ()
-                    return GetConfigProfile().dockFadeInDuration
+                  get = function (info)
+                    return ProfileFor(info).dockFadeInDuration
                   end,
-                  set = function (_, input)
-                    GetConfigProfile().dockFadeInDuration = input
+                  set = function (info, input)
+                    ProfileFor(info).dockFadeInDuration = input
                   end,
                 },
                 tabsOnHover = {
@@ -1023,17 +1022,17 @@ function C:OnEnable()
                   desc = L["When enabled, chat tabs fade out when idle and reappear on mouse hover. When disabled, tabs are always visible."],
                   type = "toggle",
                   order = 2.02,
-                  get = function ()
-                    return GetConfigProfile().tabsOnHover
+                  get = function (info)
+                    return ProfileFor(info).tabsOnHover
                   end,
                   set = function (info, input)
-                    GetConfigProfile().tabsOnHover = input
+                    ProfileFor(info).tabsOnHover = input
                     Core:Dispatch(UpdateConfig("tabsOnHover"))
                   end,
                 },
               },
             },
-          },
+          } end),
         },
         profile = AceDBOptions:GetOptionsTable(Core.db)
       }
@@ -1052,7 +1051,7 @@ function C:OnEnable()
   Core.db.RegisterCallback(self, "OnProfileReset", "OnProfileReset")
 
   Core:Subscribe(SAVE_FRAME_POSITION, function (position)
-    GetConfigProfile().positionAnchor = position
+    ProfileFor(info).positionAnchor = position
   end)
 end
 

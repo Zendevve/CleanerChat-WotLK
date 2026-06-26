@@ -4,8 +4,8 @@ local AceHook = Core.Libs.AceHook
 
 local Colors = Constants.COLORS
 
-local EditFocusGained = Constants.ACTIONS.EditFocusGained
-local EditFocusLost = Constants.ACTIONS.EditFocusLost
+local EDIT_FOCUS_GAINED = Constants.EVENTS.EDIT_FOCUS_GAINED
+local EDIT_FOCUS_LOST = Constants.EVENTS.EDIT_FOCUS_LOST
 local UPDATE_CONFIG = Constants.EVENTS.UPDATE_CONFIG
 
 -- luacheck: push ignore 113
@@ -129,11 +129,12 @@ function EditBoxMixin:Init(parent)
   end)
 
   -- When the edit box gains focus (user presses Enter or clicks), reveal the
-  -- chat messages if the option is enabled.
+  -- chat messages if the option is enabled. Scope the reveal to the window the
+  -- edit box is currently attached to (set via AttachToWindow).
   local oldOnEditFocusGained = self:GetScript("OnEditFocusGained")
   self:SetScript("OnEditFocusGained", function (frame, ...)
     if self.profile.showOnEditFocus then
-      Core:Dispatch(EditFocusGained())
+      Core:Dispatch(EDIT_FOCUS_GAINED, self.window)
     end
     if oldOnEditFocusGained then
       oldOnEditFocusGained(frame, ...)
@@ -145,7 +146,7 @@ function EditBoxMixin:Init(parent)
   local oldOnEditFocusLost = self:GetScript("OnEditFocusLost")
   self:SetScript("OnEditFocusLost", function (frame, ...)
     if self.profile.showOnEditFocus then
-      Core:Dispatch(EditFocusLost())
+      Core:Dispatch(EDIT_FOCUS_LOST, self.window)
     end
     if oldOnEditFocusLost then
       oldOnEditFocusLost(frame, ...)
@@ -171,15 +172,35 @@ function EditBoxMixin:Init(parent)
     end
 
     if key == "editBoxAnchor" then
+      -- Anchor relative to whichever window container the box is currently
+      -- attached to (it follows the active window), not the original parent.
+      local anchorParent = self:GetParent() or parent
       if self.profile.editBoxAnchor.position == "ABOVE" then
         self:ClearAllPoints()
-        self:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 8, self.profile.editBoxAnchor.yOfs)
+        self:SetPoint("BOTTOMLEFT", anchorParent, "TOPLEFT", 8, self.profile.editBoxAnchor.yOfs)
       else
         self:ClearAllPoints()
-        self:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 8, self.profile.editBoxAnchor.yOfs)
+        self:SetPoint("TOPLEFT", anchorParent, "BOTTOMLEFT", 8, self.profile.editBoxAnchor.yOfs)
       end
     end
   end)
+end
+
+-- Re-attach the edit box to a different window's container (multi-window). The
+-- single edit box "follows" the active window: clicking a window makes ENTER
+-- open the box under that window and target that window for focus reveals.
+function EditBoxMixin:AttachToWindow(parent, profile, window)
+  self.profile = profile or self.profile
+  self.window = window
+
+  self:SetParent(parent)
+  self:ClearAllPoints()
+  if self.profile.editBoxAnchor.position == "ABOVE" then
+    self:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 8, self.profile.editBoxAnchor.yOfs)
+  else
+    self:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 8, self.profile.editBoxAnchor.yOfs)
+  end
+  self:SetWidth(self.profile.frameWidth - 8 * 2)
 end
 
 Core.Components.CreateEditBox = function (parent, profile)

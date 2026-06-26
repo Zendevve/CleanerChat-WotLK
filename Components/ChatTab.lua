@@ -125,8 +125,9 @@ function ChatTabMixin:Init(slidingMessageFrame)
       FCF_StopAlertFlash(self.chatFrame)
     end
     
-    -- Switch to this SlidingMessageFrame (our custom handler)
-    Core.Components.SelectChatTab(self)
+    -- Switch to this SlidingMessageFrame (our custom handler). The `true` flag
+    -- marks this as a real user click so it also makes this window active.
+    Core.Components.SelectChatTab(self, true)
     
     -- For Combat Log, skip the original Blizzard handler since we manage it ourselves
     -- Otherwise Blizzard's handler interferes with our show/hide logic
@@ -334,8 +335,10 @@ end
 -- Track currently selected tab
 Core.Components.selectedTab = nil
 
--- Select a chat tab and show its SlidingMessageFrame
-Core.Components.SelectChatTab = function(selectedTab)
+-- Select a chat tab and show its SlidingMessageFrame. `isUserClick` is true when
+-- the user actually clicked the tab (vs. programmatic selection during setup);
+-- only real clicks change which window is active for the edit box / ENTER.
+Core.Components.SelectChatTab = function(selectedTab, isUserClick)
   local UIManager = Core:GetModule("UIManager")
   if not UIManager or not UIManager.state then 
     return 
@@ -350,6 +353,11 @@ Core.Components.SelectChatTab = function(selectedTab)
   -- Store selected tab (per-window, plus a global "last selected" for sync).
   if window then
     window.selectedTab = selectedTab
+    -- A real click makes this window active: the edit box follows it, so ENTER
+    -- opens under this window until another window is clicked.
+    if isUserClick and UIManager.SetActiveWindow then
+      UIManager:SetActiveWindow(window)
+    end
   end
   Core.Components.selectedTab = selectedTab
   
