@@ -220,13 +220,12 @@ function MoverFrameMixin:Init()
         self:SetMovable(false)
 
         local point, _, _, xOfs, yOfs = self:GetPoint(1)
-        local position = {
+        -- Save position to this window's profile (multi-window aware)
+        self.profile.positionAnchor = {
           point = point,
           xOfs = xOfs,
           yOfs = yOfs
         }
-
-        Core:Dispatch(SaveFramePosition(position))
       end),
       Core:Subscribe(UNLOCK_MOVER, function ()
         self:Show()

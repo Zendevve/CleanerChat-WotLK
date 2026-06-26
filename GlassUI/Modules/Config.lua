@@ -13,6 +13,28 @@ local UpdateConfig = Constants.ACTIONS.UpdateConfig
 
 local SAVE_FRAME_POSITION = Constants.EVENTS.SAVE_FRAME_POSITION
 
+-- Multi-window: track which window's settings are being edited
+C.selectedWindowId = "Main"
+
+-- Helper to get the profile for the currently selected window in options
+local function GetConfigProfile()
+  return Core:GetWindowProfile(C.selectedWindowId)
+end
+
+-- Helper to get window names for the dropdown
+local function GetWindowChoices()
+  local choices = { Main = "Main" }
+  local UIManager = Core:GetModule("UIManager", true)
+  if UIManager and UIManager.windows then
+    for windowId in pairs(UIManager.windows) do
+      if windowId ~= "Main" then
+        choices[windowId] = windowId
+      end
+    end
+  end
+  return choices
+end
+
 local ANCHORS = {
   ["TOPLEFT"] = L["Top left"],
   ["TOPRIGHT"] = L["Top right"],
@@ -40,6 +62,15 @@ function C:OnEnable()
           type = "group",
           order = 1,
           args = {
+            windowSelector = {
+              name = "Configure Window",
+              desc = "Select which CleanerChat window to configure",
+              type = "select",
+              order = 1,
+              values = GetWindowChoices,
+              get = function() return C.selectedWindowId end,
+              set = function(_, value) C.selectedWindowId = value end,
+            },
             section1 = {
               name = L["Frame Position"],
               type = "group",
@@ -84,10 +115,10 @@ function C:OnEnable()
                   softMax = 2000,
                   step = 1,
                   get = function ()
-                    return Core.db.profile.positionAnchor.xOfs
+                    return GetConfigProfile().positionAnchor.xOfs
                   end,
                   set = function (_, input)
-                    Core.db.profile.positionAnchor.xOfs = input
+                    GetConfigProfile().positionAnchor.xOfs = input
                     Core:Dispatch(UpdateConfig("framePosition"))
                   end
                 },
@@ -103,10 +134,10 @@ function C:OnEnable()
                   softMax = 800,
                   step = 1,
                   get = function ()
-                    return Core.db.profile.frameWidth
+                    return GetConfigProfile().frameWidth
                   end,
                   set = function (info, input)
-                    Core.db.profile.frameWidth = input
+                    GetConfigProfile().frameWidth = input
                     Core:Dispatch(UpdateConfig("frameWidth"))
                   end
                 },
@@ -121,10 +152,10 @@ function C:OnEnable()
                   softMax = 2000,
                   step = 1,
                   get = function ()
-                    return Core.db.profile.positionAnchor.yOfs
+                    return GetConfigProfile().positionAnchor.yOfs
                   end,
                   set = function (_, input)
-                    Core.db.profile.positionAnchor.yOfs = input
+                    GetConfigProfile().positionAnchor.yOfs = input
                     Core:Dispatch(UpdateConfig("framePosition"))
                   end
                 },
@@ -139,24 +170,24 @@ function C:OnEnable()
                   softMax = 800,
                   step = 1,
                   get = function ()
-                    return Core.db.profile.frameHeight
+                    return GetConfigProfile().frameHeight
                   end,
                   set = function (info, input)
-                    Core.db.profile.frameHeight = input
+                    GetConfigProfile().frameHeight = input
                     Core:Dispatch(UpdateConfig("frameHeight"))
                   end
                 },
                 frameAnchor = {
                   name = L["Anchor"],
-                  desc = "Default: "..Core.db.profile.positionAnchor.point,
+                  desc = "Default: "..GetConfigProfile().positionAnchor.point,
                   type = "select",
                   order = 4.3,
                   values = ANCHORS,
                   get = function ()
-                    return Core.db.profile.positionAnchor.point
+                    return GetConfigProfile().positionAnchor.point
                   end,
                   set = function (_, input)
-                    Core.db.profile.positionAnchor.point = input
+                    GetConfigProfile().positionAnchor.point = input
                     Core:Dispatch(UpdateConfig("framePosition"))
                   end
                 },
@@ -183,10 +214,10 @@ function C:OnEnable()
                   dialogControl = "LSM30_Font",
                   values = LSM:HashTable("font"),
                   get = function ()
-                    return Core.db.profile.editBoxFont
+                    return GetConfigProfile().editBoxFont
                   end,
                   set = function (_, input)
-                    Core.db.profile.editBoxFont = input
+                    GetConfigProfile().editBoxFont = input
                     Core:Dispatch(UpdateConfig("editBoxFont"))
                   end,
                 },
@@ -200,10 +231,10 @@ function C:OnEnable()
                   softMax = 24,
                   step = 1,
                   get = function ()
-                    return Core.db.profile.editBoxFontSize
+                    return GetConfigProfile().editBoxFontSize
                   end,
                   set = function (info, input)
-                    Core.db.profile.editBoxFontSize = input
+                    GetConfigProfile().editBoxFontSize = input
                     Core:Dispatch(UpdateConfig("editBoxFontSize"))
                   end,
                   order = 1.1,
@@ -215,10 +246,10 @@ function C:OnEnable()
                   order = 1.3,
                   values = FLAGS,
                   get = function ()
-                    return Core.db.profile.editBoxFontFlags
+                    return GetConfigProfile().editBoxFontFlags
                   end,
                   set = function (_, input)
-                    Core.db.profile.editBoxFontFlags = input
+                    GetConfigProfile().editBoxFontFlags = input
                     Core:Dispatch(UpdateConfig("editBoxFontFlags"))
                   end,
                 },
@@ -233,10 +264,10 @@ function C:OnEnable()
                   softMax = 1,
                   step = 0.01,
                   get = function ()
-                    return Core.db.profile.editBoxBackgroundOpacity
+                    return GetConfigProfile().editBoxBackgroundOpacity
                   end,
                   set = function (info, input)
-                    Core.db.profile.editBoxBackgroundOpacity = input
+                    GetConfigProfile().editBoxBackgroundOpacity = input
                     Core:Dispatch(UpdateConfig("editBoxBackgroundOpacity"))
                   end,
                 },
@@ -247,11 +278,11 @@ function C:OnEnable()
                   hasAlpha = false,
                   order = 1.4,
                   get = function ()
-                    local c = Core.db.profile.editBoxBackgroundColor
+                    local c = GetConfigProfile().editBoxBackgroundColor
                     return c.r, c.g, c.b
                   end,
                   set = function (info, r, g, b)
-                    local c = Core.db.profile.editBoxBackgroundColor
+                    local c = GetConfigProfile().editBoxBackgroundColor
                     c.r, c.g, c.b = r, g, b
                     Core:Dispatch(UpdateConfig("editBoxBackgroundColor"))
                   end,
@@ -274,14 +305,14 @@ function C:OnEnable()
                     BELOW = L["Below"],
                   },
                   get = function ()
-                    return Core.db.profile.editBoxAnchor.position
+                    return GetConfigProfile().editBoxAnchor.position
                   end,
                   set = function (_, input)
-                    Core.db.profile.editBoxAnchor.position = input
+                    GetConfigProfile().editBoxAnchor.position = input
                     if input == "ABOVE" then
-                      Core.db.profile.editBoxAnchor.yOfs = 5
+                      GetConfigProfile().editBoxAnchor.yOfs = 5
                     else
-                      Core.db.profile.editBoxAnchor.yOfs = -5
+                      GetConfigProfile().editBoxAnchor.yOfs = -5
                     end
                     Core:Dispatch(UpdateConfig("editBoxAnchor"))
                   end
@@ -297,10 +328,10 @@ function C:OnEnable()
                   softMax = 10,
                   step = 1,
                   get = function ()
-                    return Core.db.profile.editBoxAnchor.yOfs
+                    return GetConfigProfile().editBoxAnchor.yOfs
                   end,
                   set = function (info, input)
-                    Core.db.profile.editBoxAnchor.yOfs = input
+                    GetConfigProfile().editBoxAnchor.yOfs = input
                     Core:Dispatch(UpdateConfig("editBoxAnchor"))
                   end
                 }
@@ -318,10 +349,10 @@ function C:OnEnable()
                   type = "toggle",
                   order = 3.1,
                   get = function ()
-                    return Core.db.profile.showOnEditFocus
+                    return GetConfigProfile().showOnEditFocus
                   end,
                   set = function (info, input)
-                    Core.db.profile.showOnEditFocus = input
+                    GetConfigProfile().showOnEditFocus = input
                   end,
                 },
               },
@@ -347,10 +378,10 @@ function C:OnEnable()
                   dialogControl = "LSM30_Font",
                   values = LSM:HashTable("font"),
                   get = function ()
-                    return Core.db.profile.messageFont
+                    return GetConfigProfile().messageFont
                   end,
                   set = function (_, input)
-                    Core.db.profile.messageFont = input
+                    GetConfigProfile().messageFont = input
                     Core:Dispatch(UpdateConfig("messageFont"))
                   end,
                 },
@@ -364,10 +395,10 @@ function C:OnEnable()
                   softMax = 24,
                   step = 1,
                   get = function ()
-                    return Core.db.profile.messageFontSize
+                    return GetConfigProfile().messageFontSize
                   end,
                   set = function (info, input)
-                    Core.db.profile.messageFontSize = input
+                    GetConfigProfile().messageFontSize = input
                     Core:Dispatch(UpdateConfig("messageFontSize"))
                   end,
                   order = 1.2,
@@ -379,10 +410,10 @@ function C:OnEnable()
                   order = 1.6,
                   values = FLAGS,
                   get = function ()
-                    return Core.db.profile.messageFontFlags
+                    return GetConfigProfile().messageFontFlags
                   end,
                   set = function (_, input)
-                    Core.db.profile.messageFontFlags = input
+                    GetConfigProfile().messageFontFlags = input
                     Core:Dispatch(UpdateConfig("messageFontFlags"))
                   end,
                 },
@@ -397,10 +428,10 @@ function C:OnEnable()
                   softMax = 1,
                   step = 0.01,
                   get = function ()
-                    return Core.db.profile.chatBackgroundOpacity
+                    return GetConfigProfile().chatBackgroundOpacity
                   end,
                   set = function (info, input)
-                    Core.db.profile.chatBackgroundOpacity = input
+                    GetConfigProfile().chatBackgroundOpacity = input
                     Core:Dispatch(UpdateConfig("chatBackgroundOpacity"))
                   end,
                 },
@@ -411,11 +442,11 @@ function C:OnEnable()
                   hasAlpha = false,
                   order = 1.7,
                   get = function ()
-                    local c = Core.db.profile.chatBackgroundColor
+                    local c = GetConfigProfile().chatBackgroundColor
                     return c.r, c.g, c.b
                   end,
                   set = function (info, r, g, b)
-                    local c = Core.db.profile.chatBackgroundColor
+                    local c = GetConfigProfile().chatBackgroundColor
                     c.r, c.g, c.b = r, g, b
                     Core:Dispatch(UpdateConfig("chatBackgroundColor"))
                   end,
@@ -430,10 +461,10 @@ function C:OnEnable()
                   softMax = 5,
                   step = 1,
                   get = function ()
-                    return Core.db.profile.messageLeading
+                    return GetConfigProfile().messageLeading
                   end,
                   set = function (info, input)
-                    Core.db.profile.messageLeading = input
+                    GetConfigProfile().messageLeading = input
                     Core:Dispatch(UpdateConfig("messageLeading"))
                   end,
                   order = 1.3,
@@ -448,10 +479,10 @@ function C:OnEnable()
                   softMax = 1,
                   step = 0.05,
                   get = function ()
-                    return Core.db.profile.messageLinePadding
+                    return GetConfigProfile().messageLinePadding
                   end,
                   set = function (info, input)
-                    Core.db.profile.messageLinePadding = input
+                    GetConfigProfile().messageLinePadding = input
                     Core:Dispatch(UpdateConfig("messageLinePadding"))
                   end,
                   order = 1.4,
@@ -466,10 +497,10 @@ function C:OnEnable()
                   softMax = 30,
                   step = 1,
                   get = function ()
-                    return Core.db.profile.messageLeftPadding
+                    return GetConfigProfile().messageLeftPadding
                   end,
                   set = function (info, input)
-                    Core.db.profile.messageLeftPadding = input
+                    GetConfigProfile().messageLeftPadding = input
                     Core:Dispatch(UpdateConfig("messageLeftPadding"))
                   end,
                   order = 1.5,
@@ -484,10 +515,10 @@ function C:OnEnable()
                   softMax = 1024,
                   step = 64,
                   get = function ()
-                    return Core.db.profile.messageHistoryLimit
+                    return GetConfigProfile().messageHistoryLimit
                   end,
                   set = function (info, input)
-                    Core.db.profile.messageHistoryLimit = input
+                    GetConfigProfile().messageHistoryLimit = input
                   end,
                   order = 1.6,
                 },
@@ -505,10 +536,10 @@ function C:OnEnable()
                   type = "toggle",
                   order = 2.0,
                   get = function ()
-                    return Core.db.profile.messageAnimations == false
+                    return GetConfigProfile().messageAnimations == false
                   end,
                   set = function (_, input)
-                    Core.db.profile.messageAnimations = not input
+                    GetConfigProfile().messageAnimations = not input
                     Core:Dispatch(UpdateConfig("messageAnimations"))
                   end,
                 },
@@ -518,10 +549,10 @@ function C:OnEnable()
                   type = "toggle",
                   order = 2.01,
                   get = function ()
-                    return Core.db.profile.messagesAlwaysVisible
+                    return GetConfigProfile().messagesAlwaysVisible
                   end,
                   set = function (_, input)
-                    Core.db.profile.messagesAlwaysVisible = input
+                    GetConfigProfile().messagesAlwaysVisible = input
                     Core:Dispatch(UpdateConfig("messagesAlwaysVisible"))
                   end,
                 },
@@ -543,10 +574,10 @@ function C:OnEnable()
                   softMax = 20,
                   step = 1,
                   get = function ()
-                    return Core.db.profile.chatHoldTime
+                    return GetConfigProfile().chatHoldTime
                   end,
                   set = function (info, input)
-                    Core.db.profile.chatHoldTime = input
+                    GetConfigProfile().chatHoldTime = input
                   end,
                 },
                 fadeInDuration = {
@@ -561,10 +592,10 @@ function C:OnEnable()
                   softMax = 10,
                   step = 0.05,
                   get = function ()
-                    return Core.db.profile.chatFadeInDuration
+                    return GetConfigProfile().chatFadeInDuration
                   end,
                   set = function (_, input)
-                    Core.db.profile.chatFadeInDuration = input
+                    GetConfigProfile().chatFadeInDuration = input
                     Core:Dispatch(UpdateConfig("chatFadeInDuration"))
                   end
                 },
@@ -580,10 +611,10 @@ function C:OnEnable()
                   softMax = 10,
                   step = 0.05,
                   get = function ()
-                    return Core.db.profile.chatFadeOutDuration
+                    return GetConfigProfile().chatFadeOutDuration
                   end,
                   set = function (_, input)
-                    Core.db.profile.chatFadeOutDuration = input
+                    GetConfigProfile().chatFadeOutDuration = input
                     Core:Dispatch(UpdateConfig("chatFadeOutDuration"))
                   end
                 },
@@ -598,10 +629,10 @@ function C:OnEnable()
                   softMax = 5,
                   step = 0.05,
                   get = function ()
-                    return Core.db.profile.chatSlideInDuration
+                    return GetConfigProfile().chatSlideInDuration
                   end,
                   set = function (_, input)
-                    Core.db.profile.chatSlideInDuration = input
+                    GetConfigProfile().chatSlideInDuration = input
                   end
                 }
               }
@@ -618,10 +649,10 @@ function C:OnEnable()
                   type = "toggle",
                   order = 3.1,
                   get = function ()
-                    return Core.db.profile.indentWordWrap
+                    return GetConfigProfile().indentWordWrap
                   end,
                   set = function (info, input)
-                    Core.db.profile.indentWordWrap = input
+                    GetConfigProfile().indentWordWrap = input
                     Core:Dispatch(UpdateConfig("indentWordWrap"))
                   end,
                 },
@@ -631,10 +662,10 @@ function C:OnEnable()
                   type = "toggle",
                   order = 3.2,
                   get = function ()
-                    return Core.db.profile.mouseOverTooltips
+                    return GetConfigProfile().mouseOverTooltips
                   end,
                   set = function (info, input)
-                    Core.db.profile.mouseOverTooltips = input
+                    GetConfigProfile().mouseOverTooltips = input
                   end,
                 },
                 iconTextureYOffset = {
@@ -649,11 +680,11 @@ function C:OnEnable()
                   softMax = 12,
                   step = 3.1,
                   get = function ()
-                    return Core.db.profile.iconTextureYOffset
+                    return GetConfigProfile().iconTextureYOffset
                   end,
                   set = function (info, input)
                     -- TODO: Update messages dynamically
-                    Core.db.profile.iconTextureYOffset = input
+                    GetConfigProfile().iconTextureYOffset = input
                   end,
                 },
                 messagesOnHover = {
@@ -662,10 +693,10 @@ function C:OnEnable()
                   type = "toggle",
                   order = 3.3,
                   get = function ()
-                    return Core.db.profile.messagesOnHover
+                    return GetConfigProfile().messagesOnHover
                   end,
                   set = function (info, input)
-                    Core.db.profile.messagesOnHover = input
+                    GetConfigProfile().messagesOnHover = input
                     Core:Dispatch(UpdateConfig("messagesOnHover"))
                   end,
                 },
@@ -675,10 +706,10 @@ function C:OnEnable()
                   type = "toggle",
                   order = 3.35,
                   get = function ()
-                    return Core.db.profile.showTimestamps
+                    return GetConfigProfile().showTimestamps
                   end,
                   set = function (info, input)
-                    Core.db.profile.showTimestamps = input
+                    GetConfigProfile().showTimestamps = input
                   end,
                 },
                 scrollIndicatorHeader = {
@@ -693,10 +724,10 @@ function C:OnEnable()
                   width = "full",
                   order = 3.55,
                   get = function ()
-                    return Core.db.profile.hideScrollIndicator
+                    return GetConfigProfile().hideScrollIndicator
                   end,
                   set = function (info, input)
-                    Core.db.profile.hideScrollIndicator = input
+                    GetConfigProfile().hideScrollIndicator = input
                     Core:Dispatch(UpdateConfig("hideScrollIndicator"))
                   end,
                 },
@@ -707,13 +738,13 @@ function C:OnEnable()
                   hasAlpha = false,
                   width = 1,
                   order = 3.6,
-                  disabled = function () return Core.db.profile.hideScrollIndicator end,
+                  disabled = function () return GetConfigProfile().hideScrollIndicator end,
                   get = function ()
-                    local c = Core.db.profile.scrollIndicatorColor
+                    local c = GetConfigProfile().scrollIndicatorColor
                     return c.r, c.g, c.b
                   end,
                   set = function (info, r, g, b)
-                    local c = Core.db.profile.scrollIndicatorColor
+                    local c = GetConfigProfile().scrollIndicatorColor
                     c.r, c.g, c.b = r, g, b
                     Core:Dispatch(UpdateConfig("scrollIndicatorColor"))
                   end,
@@ -724,15 +755,15 @@ function C:OnEnable()
                   type = "range",
                   width = 1.5,
                   order = 3.65,
-                  disabled = function () return Core.db.profile.hideScrollIndicator end,
+                  disabled = function () return GetConfigProfile().hideScrollIndicator end,
                   min = 0,
                   max = 1,
                   step = 0.05,
                   get = function ()
-                    return Core.db.profile.scrollIndicatorOpacity
+                    return GetConfigProfile().scrollIndicatorOpacity
                   end,
                   set = function (info, input)
-                    Core.db.profile.scrollIndicatorOpacity = input
+                    GetConfigProfile().scrollIndicatorOpacity = input
                     Core:Dispatch(UpdateConfig("scrollIndicatorOpacity"))
                   end,
                 },
@@ -743,13 +774,13 @@ function C:OnEnable()
                   hasAlpha = false,
                   width = 1,
                   order = 3.7,
-                  disabled = function () return Core.db.profile.hideScrollIndicator end,
+                  disabled = function () return GetConfigProfile().hideScrollIndicator end,
                   get = function ()
-                    local c = Core.db.profile.scrollIndicatorBgColor
+                    local c = GetConfigProfile().scrollIndicatorBgColor
                     return c.r, c.g, c.b
                   end,
                   set = function (info, r, g, b)
-                    local c = Core.db.profile.scrollIndicatorBgColor
+                    local c = GetConfigProfile().scrollIndicatorBgColor
                     c.r, c.g, c.b = r, g, b
                     Core:Dispatch(UpdateConfig("scrollIndicatorBgColor"))
                   end,
@@ -760,15 +791,15 @@ function C:OnEnable()
                   type = "range",
                   width = 1.5,
                   order = 3.75,
-                  disabled = function () return Core.db.profile.hideScrollIndicator end,
+                  disabled = function () return GetConfigProfile().hideScrollIndicator end,
                   min = 0,
                   max = 1,
                   step = 0.05,
                   get = function ()
-                    return Core.db.profile.scrollIndicatorBgOpacity
+                    return GetConfigProfile().scrollIndicatorBgOpacity
                   end,
                   set = function (info, input)
-                    Core.db.profile.scrollIndicatorBgOpacity = input
+                    GetConfigProfile().scrollIndicatorBgOpacity = input
                     Core:Dispatch(UpdateConfig("scrollIndicatorBgOpacity"))
                   end,
                 },
@@ -795,10 +826,10 @@ function C:OnEnable()
                   dialogControl = "LSM30_Font",
                   values = LSM:HashTable("font"),
                   get = function ()
-                    return Core.db.profile.dockFont
+                    return GetConfigProfile().dockFont
                   end,
                   set = function (_, input)
-                    Core.db.profile.dockFont = input
+                    GetConfigProfile().dockFont = input
                     Core:Dispatch(UpdateConfig("dockFont"))
                   end,
                 },
@@ -814,10 +845,10 @@ function C:OnEnable()
                   softMax = 24,
                   step = 1,
                   get = function ()
-                    return Core.db.profile.dockFontSize
+                    return GetConfigProfile().dockFontSize
                   end,
                   set = function (info, input)
-                    Core.db.profile.dockFontSize = input
+                    GetConfigProfile().dockFontSize = input
                     Core:Dispatch(UpdateConfig("dockFontSize"))
                   end,
                 },
@@ -828,10 +859,10 @@ function C:OnEnable()
                   order = 1.15,
                   values = FLAGS,
                   get = function ()
-                    return Core.db.profile.dockFontFlags
+                    return GetConfigProfile().dockFontFlags
                   end,
                   set = function (_, input)
-                    Core.db.profile.dockFontFlags = input
+                    GetConfigProfile().dockFontFlags = input
                     Core:Dispatch(UpdateConfig("dockFontFlags"))
                   end,
                 },
@@ -846,10 +877,10 @@ function C:OnEnable()
                   softMax = 1,
                   step = 0.01,
                   get = function ()
-                    return Core.db.profile.dockBackgroundOpacity
+                    return GetConfigProfile().dockBackgroundOpacity
                   end,
                   set = function (info, input)
-                    Core.db.profile.dockBackgroundOpacity = input
+                    GetConfigProfile().dockBackgroundOpacity = input
                     Core:Dispatch(UpdateConfig("dockBackgroundOpacity"))
                   end,
                 },
@@ -860,11 +891,11 @@ function C:OnEnable()
                   hasAlpha = false,
                   order = 1.3,
                   get = function ()
-                    local c = Core.db.profile.dockBackgroundColor
+                    local c = GetConfigProfile().dockBackgroundColor
                     return c.r, c.g, c.b
                   end,
                   set = function (info, r, g, b)
-                    local c = Core.db.profile.dockBackgroundColor
+                    local c = GetConfigProfile().dockBackgroundColor
                     c.r, c.g, c.b = r, g, b
                     Core:Dispatch(UpdateConfig("dockBackgroundColor"))
                   end,
@@ -883,10 +914,10 @@ function C:OnEnable()
                   type = "toggle",
                   order = 2.0,
                   get = function ()
-                    return Core.db.profile.dockAnimations == false
+                    return GetConfigProfile().dockAnimations == false
                   end,
                   set = function (_, input)
-                    Core.db.profile.dockAnimations = not input
+                    GetConfigProfile().dockAnimations = not input
                     Core:Dispatch(UpdateConfig("dockAnimations"))
                   end,
                 },
@@ -896,10 +927,10 @@ function C:OnEnable()
                   type = "toggle",
                   order = 2.01,
                   get = function ()
-                    return Core.db.profile.tabsAlwaysVisible
+                    return GetConfigProfile().tabsAlwaysVisible
                   end,
                   set = function (_, input)
-                    Core.db.profile.tabsAlwaysVisible = input
+                    GetConfigProfile().tabsAlwaysVisible = input
                     Core:Dispatch(UpdateConfig("tabsAlwaysVisible"))
                   end,
                 },
@@ -920,10 +951,10 @@ function C:OnEnable()
                   softMax = 20,
                   step = 1,
                   get = function ()
-                    return Core.db.profile.dockHoldTime
+                    return GetConfigProfile().dockHoldTime
                   end,
                   set = function (info, input)
-                    Core.db.profile.dockHoldTime = input
+                    GetConfigProfile().dockHoldTime = input
                   end,
                 },
                 dockFadeOutDuration = {
@@ -937,10 +968,10 @@ function C:OnEnable()
                   softMax = 10,
                   step = 0.05,
                   get = function ()
-                    return Core.db.profile.dockFadeOutDuration
+                    return GetConfigProfile().dockFadeOutDuration
                   end,
                   set = function (_, input)
-                    Core.db.profile.dockFadeOutDuration = input
+                    GetConfigProfile().dockFadeOutDuration = input
                   end,
                 },
                 dockFadeInDuration = {
@@ -954,10 +985,10 @@ function C:OnEnable()
                   softMax = 5,
                   step = 0.05,
                   get = function ()
-                    return Core.db.profile.dockFadeInDuration
+                    return GetConfigProfile().dockFadeInDuration
                   end,
                   set = function (_, input)
-                    Core.db.profile.dockFadeInDuration = input
+                    GetConfigProfile().dockFadeInDuration = input
                   end,
                 },
                 tabsOnHover = {
@@ -966,10 +997,10 @@ function C:OnEnable()
                   type = "toggle",
                   order = 2.02,
                   get = function ()
-                    return Core.db.profile.tabsOnHover
+                    return GetConfigProfile().tabsOnHover
                   end,
                   set = function (info, input)
-                    Core.db.profile.tabsOnHover = input
+                    GetConfigProfile().tabsOnHover = input
                     Core:Dispatch(UpdateConfig("tabsOnHover"))
                   end,
                 },
@@ -994,7 +1025,7 @@ function C:OnEnable()
   Core.db.RegisterCallback(self, "OnProfileReset", "OnProfileReset")
 
   Core:Subscribe(SAVE_FRAME_POSITION, function (position)
-    Core.db.profile.positionAnchor = position
+    GetConfigProfile().positionAnchor = position
   end)
 end
 

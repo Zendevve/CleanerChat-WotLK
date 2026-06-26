@@ -75,6 +75,41 @@ function UIManager:OnEnable()
   })
   self.windows["Main"] = self.mainWindow
 
+  -- Restore additional windows from saved profile (multi-window persistence)
+  if Core.db.profile.windows then
+    local nextNum = 2
+    for windowId, windowProfile in pairs(Core.db.profile.windows) do
+      if windowId ~= "Main" and type(windowProfile) == "table" then
+        -- Determine the numeric suffix for frame names
+        local num = tonumber(windowId:match("%d+")) or nextNum
+        nextNum = math.max(nextNum, num + 1)
+
+        local window = CreateWindow({
+          id = windowId,
+          parent = UIParent,
+          moverName = "GlassMoverFrame" .. num,
+          containerName = "GlassFrame" .. num,
+          dockName = "GlassChatDock" .. num,
+          primaryChatFrame = nil, -- Will be assigned by SetupTabs
+        })
+        if window then
+          self.windows[windowId] = window
+          -- Apply saved position
+          if windowProfile.positionAnchor then
+            window.moverFrame:ClearAllPoints()
+            window.moverFrame:SetPoint(
+              windowProfile.positionAnchor.point or "BOTTOMLEFT",
+              UIParent,
+              windowProfile.positionAnchor.point or "BOTTOMLEFT",
+              windowProfile.positionAnchor.xOfs or 50,
+              windowProfile.positionAnchor.yOfs or 200
+            )
+          end
+        end
+      end
+    end
+  end
+
   -- Backwards-compatible aliases so the rest of UIManager and the components keep
   -- working unchanged while the per-window migration proceeds.
   self.moverFrame = self.mainWindow.moverFrame
@@ -206,9 +241,36 @@ function UIManager:OnEnable()
   -- Glass dock and shows them; it is idempotent (frames and tabs are reused).
   SetupTabs(true)
 
+  -- Move chat frames to their saved windows (multi-window persistence)
+  local function MoveChatFramesToWindows()
+    if not Core.db.profile.windows then return end
+    for windowId, windowProfile in pairs(Core.db.profile.windows) do
+      local window = self.windows[windowId]
+      if window and windowProfile.chatFrames then
+        for _, chatFrameIndex in ipairs(windowProfile.chatFrames) do
+          local smf = self.state.frames[chatFrameIndex]
+          if smf then
+            -- Move SMF to this window
+            smf.window = window
+            smf.profile = window.profile
+            if smf.tab then
+              smf.tab.glassDock = window.dock
+            end
+            -- Transfer from main frames to this window's frames
+            self.state.frames[chatFrameIndex] = nil
+            window.frames[chatFrameIndex] = smf
+          end
+        end
+      end
+    end
+  end
+
   if (C_Timer and C_Timer.After) then
     C_Timer.After(0.5, function () SetupTabs(true) end)
-    C_Timer.After(2, function () SetupTabs(true) end)
+    C_Timer.After(2, function ()
+      SetupTabs(true)
+      MoveChatFramesToWindows()
+    end)
   end
 
   -- Keep the tabs in the Glass dock whenever Blizzard re-lays out its chat dock.
