@@ -217,9 +217,19 @@ function SlidingMessageFrameMixin:Init(chatFrame)
     end
   end)
 
-  -- Mouse clickthrough but allow scrolling
-  self:EnableMouse(false)
-  self:EnableMouseWheel(true)  -- Enable mouse wheel separately for scrolling
+  -- Mouse clickthrough but allow scrolling. We enable mouse so we can capture
+  -- clicks for window focus, but hyperlinks handle their own clicks via the
+  -- message lines' own scripts.
+  self:EnableMouse(true)
+  self:EnableMouseWheel(true)
+  self:SetScript("OnMouseDown", function(frame, button)
+    if button == "LeftButton" then
+      local UIManager = Core:GetModule("UIManager", true)
+      if UIManager and UIManager.SetActiveWindow and frame.window then
+        UIManager:SetActiveWindow(frame.window)
+      end
+    end
+  end)
 
   -- ScrollChild
   if self.slider == nil then

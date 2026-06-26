@@ -22,6 +22,17 @@ function MainContainerFrameMixin:Init()
   self:SetWidth(self.profile.frameWidth)
   self:SetHeight(self.profile.frameHeight)
 
+  -- Enable mouse so clicking on the chat area sets focus to this window.
+  self:EnableMouse(true)
+  self:SetScript("OnMouseDown", function(frame, button)
+    if button == "LeftButton" then
+      local UIManager = Core:GetModule("UIManager", true)
+      if UIManager and UIManager.SetActiveWindow and frame.window then
+        UIManager:SetActiveWindow(frame.window)
+      end
+    end
+  end)
+
   --[===[@debug@
   -- Helper to set solid color texture (3.3.5 compatibility)
   local function SetSolidColor(texture, r, g, b, a)
