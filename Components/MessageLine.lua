@@ -133,6 +133,8 @@ end
 
 local MessageLineMixin = {}
 
+local LSM = Core.Libs.LSM
+
 function MessageLineMixin:Init()
   self:SetWidth(self.profile.frameWidth)
   local animate = self.profile.messageAnimations ~= false
@@ -145,6 +147,8 @@ function MessageLineMixin:Init()
   if self.text == nil then
     self.text = self:CreateFontString(nil, "ARTWORK", "GlassMessageFont")
   end
+  -- Apply font settings from window's profile directly (not global FontObject)
+  self:UpdateFontFromProfile()
   local leftPadding = self.profile.messageLeftPadding or Constants.TEXT_XPADDING
   self.text:SetPoint("LEFT", leftPadding, 0)
   self.text:SetWidth(self.profile.frameWidth - leftPadding - Constants.TEXT_XPADDING)
@@ -168,7 +172,16 @@ function MessageLineMixin:Init()
 
   if self.subscriptions == nil then
     self.subscriptions = {
-      Core:Subscribe(UPDATE_CONFIG, function (key)
+      Core:Subscribe(UPDATE_CONFIG, function (payload)
+        local key = type(payload) == "table" and payload.key or payload
+        local targetWindowId = type(payload) == "table" and payload.windowId or nil
+        
+        -- If a specific window was targeted, only update if we match
+        local myWindowId = (self.smf and self.smf.window and self.smf.window.id) or "Main"
+        if targetWindowId and targetWindowId ~= myWindowId then
+          return
+        end
+        
         if key == "chatFadeInDuration" or key == "messageAnimations" then
           local shouldAnimate = self.profile.messageAnimations ~= false
           self:SetFadeInDuration(shouldAnimate and self.profile.chatFadeInDuration or 0)
@@ -182,8 +195,28 @@ function MessageLineMixin:Init()
         if key == "messageLeftPadding" then
           self:UpdateFrame()
         end
+        
+        -- Update font when font settings change for this window
+        if key == "messageFont" or key == "messageFontSize" or key == "messageFontFlags" or key == "messageLeading" then
+          self:UpdateFontFromProfile()
+        end
       end)
     }
+  end
+end
+
+---
+-- Apply font settings from the window's profile directly to the FontString.
+-- This allows each window to have independent font settings.
+function MessageLineMixin:UpdateFontFromProfile()
+  local fontPath = LSM:Fetch(LSM.MediaType.FONT, self.profile.messageFont)
+  local fontSize = self.profile.messageFontSize
+  local fontFlags = self.profile.messageFontFlags
+  local leading = self.profile.messageLeading
+  
+  if fontPath and fontSize then
+    self.text:SetFont(fontPath, fontSize, fontFlags or "")
+    self.text:SetSpacing(leading or 0)
   end
 end
 

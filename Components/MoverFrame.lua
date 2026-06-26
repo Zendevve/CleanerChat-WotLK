@@ -95,11 +95,6 @@ function MoverFrameMixin:Init()
   self.hint:SetText("Drag to move · Corners to resize · Lock to save")
   self.hint:SetTextColor(0.8, 0.8, 0.8, 1)
 
-  -- Size the plate to wrap the wider of the two text lines with padding on both
-  -- sides (16 left + text + 16 right = 32 + text).
-  local plateText = math.max(self.title:GetStringWidth(), self.hint:GetStringWidth())
-  self.plate:SetWidth(math.max(32 + plateText, 180))
-
   self:Hide()
 
   self:RegisterForDrag("LeftButton")
@@ -231,7 +226,16 @@ function MoverFrameMixin:Init()
         self:EnableMouse(true)
         self:SetMovable(true)
       end),
-      Core:Subscribe(UPDATE_CONFIG, function (key)
+      Core:Subscribe(UPDATE_CONFIG, function (payload)
+        local key = type(payload) == "table" and payload.key or payload
+        local targetWindowId = type(payload) == "table" and payload.windowId or nil
+        
+        -- If a specific window was targeted, only update if we match
+        local myWindowId = self.window and self.window.id or "Main"
+        if targetWindowId and targetWindowId ~= myWindowId then
+          return
+        end
+        
         if (key == "frameWidth") then
           if (not self.isSizing) then self:SetWidth(self.profile.frameWidth) end
         end
@@ -251,6 +255,28 @@ function MoverFrameMixin:Init()
       end),
     }
   end
+end
+
+-- Update the mover's title to show which window it belongs to.
+-- Called after the window reference is set on the moverFrame.
+function MoverFrameMixin:SetWindowLabel(windowId)
+  local label = "Move chat frame"
+  if windowId and windowId ~= "Main" then
+    -- Convert "Window2" to "Window 2"
+    local num = windowId:match("Window(%d+)")
+    if num then
+      label = "Move chat frame - Window " .. num
+    else
+      label = "Move chat frame - " .. windowId
+    end
+  else
+    label = "Move chat frame - Main"
+  end
+  self.title:SetText(label)
+  
+  -- Resize the plate to fit the new title
+  local plateText = math.max(self.title:GetStringWidth(), self.hint:GetStringWidth())
+  self.plate:SetWidth(math.max(32 + plateText, 180))
 end
 
 -- Clean up subscriptions and hide the frame. Called when the owning window is deleted.

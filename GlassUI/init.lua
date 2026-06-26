@@ -139,6 +139,7 @@ end
 
 -- Returns the settings table a window should read from. A nil/"Main" id returns
 -- the shared main profile (unchanged behaviour for the default window).
+-- For other windows, creates a profile copy on-demand if it doesn't exist.
 function Core:GetWindowProfile(windowId)
   if not windowId or windowId == "Main" then
     return self.db.profile
@@ -146,7 +147,12 @@ function Core:GetWindowProfile(windowId)
 
   local windows = self.db.profile.windows
   local w = windows and windows[windowId]
-  return w or self.db.profile
+  if w then
+    return w
+  end
+  
+  -- Window profile doesn't exist - create it on-demand with a copy of main profile
+  return self:CreateWindowProfile(windowId, "Main")
 end
 
 -- Creates settings for a new window by copying the source window's resolved

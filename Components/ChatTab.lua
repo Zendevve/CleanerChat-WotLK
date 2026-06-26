@@ -1,6 +1,7 @@
 local Core, Constants = unpack(select(2, ...))
 
 local AceHook = Core.Libs.AceHook
+local LSM = Core.Libs.LSM
 
 local UnlockMover = Constants.ACTIONS.UnlockMover
 
@@ -66,6 +67,9 @@ function ChatTabMixin:Init(slidingMessageFrame)
   -- In WotLK 3.3.5, the text element may be accessed differently
   local tabText = self.Text or _G[self:GetName().."Text"] or self:GetFontString()
   self.Text = tabText  -- Store reference for later use
+  
+  -- Apply per-window font settings
+  self:UpdateFontFromProfile()
   
   if tabText then
     tabText:ClearAllPoints()
@@ -252,12 +256,42 @@ function ChatTabMixin:Init(slidingMessageFrame)
   -- Listeners
   if self.subscriptions == nil then
     self.subscriptions = {
-      Core:Subscribe(UPDATE_CONFIG, function (key)
+      Core:Subscribe(UPDATE_CONFIG, function (payload)
+        local key = type(payload) == "table" and payload.key or payload
+        local targetWindowId = type(payload) == "table" and payload.windowId or nil
+        
+        -- If a specific window was targeted, only update if we match
+        local myWindowId = (self.slidingMessageFrame and self.slidingMessageFrame.window and self.slidingMessageFrame.window.id) or "Main"
+        if targetWindowId and targetWindowId ~= myWindowId then
+          return
+        end
+        
         if key == "frameWidth" or key == "frameHeight" or key == "dockFont" or key == "messageFontSize" then
           self:SetWidth()
         end
+        
+        -- Update font when dock font settings change for this window
+        if key == "dockFont" or key == "dockFontSize" or key == "dockFontFlags" then
+          self:UpdateFontFromProfile()
+        end
       end)
     }
+  end
+end
+
+---
+-- Apply font settings from the window's profile directly to the tab's FontString.
+-- This allows each window to have independent tab font settings.
+function ChatTabMixin:UpdateFontFromProfile()
+  local profile = self.slidingMessageFrame and self.slidingMessageFrame.window and self.slidingMessageFrame.window.profile
+  profile = profile or Core.db.profile
+  
+  local fontPath = LSM:Fetch(LSM.MediaType.FONT, profile.dockFont)
+  local fontSize = profile.dockFontSize
+  local fontFlags = profile.dockFontFlags
+  
+  if fontPath and fontSize and self.Text then
+    self.Text:SetFont(fontPath, fontSize, fontFlags or "")
   end
 end
 

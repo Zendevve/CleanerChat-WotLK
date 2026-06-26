@@ -35,7 +35,7 @@ function ChatDockMixin:Init(parent)
     mouseOver = false
   }
 
-  self:SetWidth(Core.db.profile.frameWidth)
+  self:SetWidth(self.profile.frameWidth)
   self:SetHeight(Constants.DOCK_HEIGHT)
   self:ClearAllPoints()
   self:SetPoint("TOPLEFT", parent, "TOPLEFT")
@@ -48,7 +48,7 @@ function ChatDockMixin:Init(parent)
   -- We create our own dock frame instead
 
   -- Gradient background. Opacity is user-configurable via the Top Bar settings.
-  self:SetGradientBackground(50, 250, Core.db.profile.dockBackgroundColor or Colors.black, Core.db.profile.dockBackgroundOpacity or 0.4)
+  self:SetGradientBackground(50, 250, self.profile.dockBackgroundColor or Colors.black, self.profile.dockBackgroundOpacity or 0.4)
 
   -- Override drag behaviour
   -- Disable undocking frames (if GENERAL_CHAT_DOCK exists)
@@ -69,7 +69,7 @@ function ChatDockMixin:Init(parent)
   -- (only if tabsOnHover is enabled).
   self:Show()
   self:SetAlpha(1)
-  if Core.db.profile.tabsOnHover then
+  if self.profile.tabsOnHover then
     self:FadeOutTabs()
   end
 
@@ -88,21 +88,32 @@ function ChatDockMixin:Init(parent)
         if window and window ~= self.window then return end
         -- Fade the tabs out after the configured delay
         self.state.mouseOver = false
-        if Core.db.profile.tabsOnHover then
+        if self.profile.tabsOnHover then
           self:FadeOutTabs()
         end
       end),
-      Core:Subscribe(UPDATE_CONFIG, function (key)
+      Core:Subscribe(UPDATE_CONFIG, function (payload)
+        local key = type(payload) == "table" and payload.key or payload
+        local targetWindowId = type(payload) == "table" and payload.windowId or nil
+        
+        -- If a specific window was targeted, only update if we match
+        local myWindowId = self.window and self.window.id or "Main"
+        if targetWindowId and targetWindowId ~= myWindowId then
+          return
+        end
+        
+        local profile = self.profile or Core.db.profile
+        
         if key == "frameWidth" then
-          self:SetWidth(Core.db.profile.frameWidth)
+          self:SetWidth(profile.frameWidth)
         end
 
         if key == "frameWidth" or key == "dockBackgroundOpacity" or key == "dockBackgroundColor" then
-          self:SetGradientBackground(50, 250, Core.db.profile.dockBackgroundColor or Colors.black, Core.db.profile.dockBackgroundOpacity or 0.4)
+          self:SetGradientBackground(50, 250, profile.dockBackgroundColor or Colors.black, profile.dockBackgroundOpacity or 0.4)
         end
 
         if key == "tabsOnHover" then
-          if Core.db.profile.tabsOnHover then
+          if profile.tabsOnHover then
             -- Tabs on hover enabled - start fade out timer
             self:FadeOutTabs()
           else
@@ -112,10 +123,10 @@ function ChatDockMixin:Init(parent)
         end
 
         if key == "tabsAlwaysVisible" then
-          if Core.db.profile.tabsAlwaysVisible then
+          if profile.tabsAlwaysVisible then
             -- Pin the tabs on screen.
             self:ShowTabs()
-          elseif Core.db.profile.tabsOnHover then
+          elseif profile.tabsOnHover then
             -- Resume the normal fade-out behaviour.
             self:FadeOutTabs()
           end

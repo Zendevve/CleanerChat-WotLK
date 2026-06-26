@@ -48,7 +48,16 @@ function MainContainerFrameMixin:Init()
   self.bg:SetAllPoints()
   --@end-debug@]===]
 
-  Core:Subscribe(UPDATE_CONFIG, function (key)
+  Core:Subscribe(UPDATE_CONFIG, function (payload)
+    local key = type(payload) == "table" and payload.key or payload
+    local targetWindowId = type(payload) == "table" and payload.windowId or nil
+    
+    -- If a specific window was targeted, only update if we match
+    local myWindowId = self.window and self.window.id or "Main"
+    if targetWindowId and targetWindowId ~= myWindowId then
+      return
+    end
+    
     if key == "frameWidth" then
       self:SetWidth(self.profile.frameWidth)
     end

@@ -43,6 +43,10 @@ local function CreateWindow(opts)
   window.moverFrame = Core.Components.CreateMoverFrame(
     opts.moverName or ("GlassMoverFrame" .. id), parent, window.profile
   )
+  -- Back-reference so the mover can identify its window for config updates.
+  window.moverFrame.window = window
+  -- Update the mover's title to show which window it belongs to.
+  window.moverFrame:SetWindowLabel(id)
 
   -- Container that everything in this window is anchored to.
   window.container = Core.Components.CreateMainContainerFrame(

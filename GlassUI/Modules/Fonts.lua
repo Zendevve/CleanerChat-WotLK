@@ -53,33 +53,10 @@ function Fonts:OnEnable()
   self.fonts.GlassEditBoxFont:SetJustifyV("MIDDLE")
   self.fonts.GlassEditBoxFont:SetSpacing(3)
 
-  Core:Subscribe(UPDATE_CONFIG, function (key)
-    if key == "messageFont" or key == "messageFontSize" or key == "messageFontFlags" then
-      self.fonts.GlassMessageFont:SetFont(
-        LSM:Fetch(LSM.MediaType.FONT, Core.db.profile.messageFont),
-        Core.db.profile.messageFontSize,
-        Core.db.profile.messageFontFlags
-      )
-    end
-
-    if key == "messageLeading" then
-      self.fonts.GlassMessageFont:SetSpacing(Core.db.profile.messageLeading)
-    end
-
-    if key == "dockFont" or key == "dockFontSize" or key == "dockFontFlags" then
-      self.fonts.GlassChatDockFont:SetFont(
-        LSM:Fetch(LSM.MediaType.FONT, Core.db.profile.dockFont),
-        Core.db.profile.dockFontSize,
-        Core.db.profile.dockFontFlags
-      )
-    end
-
-    if key == "editBoxFont" or key == "editBoxFontSize" or key == "editBoxFontFlags" then
-      self.fonts.GlassEditBoxFont:SetFont(
-        LSM:Fetch(LSM.MediaType.FONT, Core.db.profile.editBoxFont),
-        Core.db.profile.editBoxFontSize,
-        Core.db.profile.editBoxFontFlags
-      )
-    end
+  Core:Subscribe(UPDATE_CONFIG, function (payload)
+    -- Note: All fonts (Message, EditBox, Dock) are now set directly per-window
+    -- by their respective components (MessageLine, EditBox, ChatTab).
+    -- The global FontObjects are still used as templates for initial creation,
+    -- but we don't update them here to avoid affecting all windows at once.
   end)
 end

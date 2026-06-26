@@ -1,6 +1,7 @@
 local Core, Constants = unpack(select(2, ...))
 
 local AceHook = Core.Libs.AceHook
+local LSM = Core.Libs.LSM
 
 local Colors = Constants.COLORS
 
@@ -43,6 +44,9 @@ function EditBoxMixin:Init(parent)
   self:SetWidth(self.profile.frameWidth - 8 * 2)
   self.header:SetFontObject("GlassEditBoxFont")
   self.header:SetPoint("LEFT", 8, 0)
+  
+  -- Apply per-window font settings directly
+  self:UpdateFontFromProfile()
 
   -- Helper to set solid color texture (3.3.5 compatibility)
   local function SetSolidColor(texture, r, g, b, a)
@@ -55,12 +59,12 @@ function EditBoxMixin:Init(parent)
     end
   end
 
-  local bg = self:CreateTexture(nil, "BACKGROUND")
+  self.bg = self:CreateTexture(nil, "BACKGROUND")
   local editBoxColor = self.profile.editBoxBackgroundColor or Colors.codGray
   SetSolidColor(
-    bg, editBoxColor.r, editBoxColor.g, editBoxColor.b, self.profile.editBoxBackgroundOpacity
+    self.bg, editBoxColor.r, editBoxColor.g, editBoxColor.b, self.profile.editBoxBackgroundOpacity
   )
-  bg:SetAllPoints()
+  self.bg:SetAllPoints()
 
   -- Strip the native edit box skin. The original backport only hid the
   -- Left/Mid/Right background slices and assumed focus textures don't exist on
@@ -71,7 +75,7 @@ function EditBoxMixin:Init(parent)
   -- texture region except our own bg and pin them hidden, so our bg is the
   -- only skin and its opacity is actually visible.
   for _, region in ipairs({ self:GetRegions() }) do
-    if region ~= bg and region.GetObjectType and region:GetObjectType() == "Texture" then
+    if region ~= self.bg and region.GetObjectType and region:GetObjectType() == "Texture" then
       region:Hide()
       self:RawHook(region, "Show", function () end, true)
     end
@@ -153,8 +157,19 @@ function EditBoxMixin:Init(parent)
     end
   end)
 
-  Core:Subscribe(UPDATE_CONFIG, function (key)
-    if key == "editBoxFont" or key == "editBoxFontSize" then
+  Core:Subscribe(UPDATE_CONFIG, function (payload)
+    local key = type(payload) == "table" and payload.key or payload
+    local targetWindowId = type(payload) == "table" and payload.windowId or nil
+    
+    -- If a specific window was targeted, only update if we match the currently
+    -- attached window (edit box follows the active window)
+    local myWindowId = self.window and self.window.id or "Main"
+    if targetWindowId and targetWindowId ~= myWindowId then
+      return
+    end
+    
+    if key == "editBoxFont" or key == "editBoxFontSize" or key == "editBoxFontFlags" then
+      self:UpdateFontFromProfile()
       Ypadding = GetFontHeight(self.header) * 0.66
       self:SetHeight(GetFontHeight(self.header) + Ypadding * 2)
       self:SetTextInsets()
@@ -165,10 +180,7 @@ function EditBoxMixin:Init(parent)
     end
 
     if key == "editBoxBackgroundOpacity" or key == "editBoxBackgroundColor" then
-      local color = self.profile.editBoxBackgroundColor or Colors.codGray
-      SetSolidColor(
-        bg, color.r, color.g, color.b, self.profile.editBoxBackgroundOpacity
-      )
+      self:UpdateBackgroundFromProfile()
     end
 
     if key == "editBoxAnchor" then
@@ -201,6 +213,41 @@ function EditBoxMixin:AttachToWindow(parent, profile, window)
     self:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 8, self.profile.editBoxAnchor.yOfs)
   end
   self:SetWidth(self.profile.frameWidth - 8 * 2)
+  
+  -- Apply the new window's visual settings
+  self:UpdateFontFromProfile()
+  self:UpdateBackgroundFromProfile()
+end
+
+---
+-- Apply font settings from the current window's profile directly.
+-- This allows the edit box to use the active window's font settings.
+function EditBoxMixin:UpdateFontFromProfile()
+  local fontPath = LSM:Fetch(LSM.MediaType.FONT, self.profile.editBoxFont)
+  local fontSize = self.profile.editBoxFontSize
+  local fontFlags = self.profile.editBoxFontFlags
+  
+  if fontPath and fontSize then
+    self:SetFont(fontPath, fontSize, fontFlags or "")
+    if self.header then
+      self.header:SetFont(fontPath, fontSize, fontFlags or "")
+    end
+  end
+end
+
+---
+-- Apply background settings from the current window's profile.
+-- This allows the edit box background to change when switching windows.
+function EditBoxMixin:UpdateBackgroundFromProfile()
+  if not self.bg then return end
+  local color = self.profile.editBoxBackgroundColor or Colors.codGray
+  local opacity = self.profile.editBoxBackgroundOpacity or 0.6
+  if self.bg.SetColorTexture then
+    self.bg:SetColorTexture(color.r, color.g, color.b, opacity)
+  else
+    self.bg:SetTexture("Interface\\Buttons\\WHITE8x8")
+    self.bg:SetVertexColor(color.r, color.g, color.b, opacity)
+  end
 end
 
 Core.Components.CreateEditBox = function (parent, profile)

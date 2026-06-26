@@ -8,7 +8,7 @@ local strsplit = strsplit
 
 ---
 --Takes a texture escape string and adjusts its yOffset
-local function adjustTextureYOffset(texture)
+local function adjustTextureYOffset(texture, yOffset)
   -- Texture has 14 parts
   -- path, height, width, offsetX, offsetY,
   -- texWidth, texHeight
@@ -18,7 +18,6 @@ local function adjustTextureYOffset(texture)
   -- Strip escape characters
   -- Split into parts
   local parts = {strsplit(':', strsub(texture, 3, -3))}
-  local yOffset = Core.db.profile.iconTextureYOffset
 
   if #parts < 5 then
     -- Pad out ommitted attributes
@@ -44,9 +43,11 @@ end
 
 ---
 -- Gets all inline textures found in the string and adjusts their yOffset
-local function textureProcessor(text)
+local function textureProcessor(text, profile)
   local cursor = 1
   local origLen = strlen(text)
+  local p = profile or Core.db.profile
+  local yOffset = p.iconTextureYOffset
 
   local parts = {}
 
@@ -55,7 +56,7 @@ local function textureProcessor(text)
 
     if mStart then
       table.insert(parts, strsub(text, cursor, mStart - 1))
-      table.insert(parts, adjustTextureYOffset(strsub(text, mStart, mEnd)))
+      table.insert(parts, adjustTextureYOffset(strsub(text, mStart, mEnd), yOffset))
       -- Add a space after icon if next char is alphanumeric (prevents icon overlapping into words)
       local nextChar = strsub(text, mEnd + 1, mEnd + 1)
       if nextChar ~= "" and nextChar ~= " " and nextChar ~= "|" and nextChar ~= "." and nextChar ~= "," then
@@ -79,9 +80,11 @@ local function pratTimestampProcessor(text)
 end
 
 ---
--- Adds timestamps in [HH:MM] format if enabled in settings
-local function timestampProcessor(text)
-  if not Core.db.profile.showTimestamps then
+-- Adds timestamps in [HH:MM] format if enabled in settings.
+-- Uses the provided profile's showTimestamps setting.
+local function timestampProcessor(text, profile)
+  local p = profile or Core.db.profile
+  if not p.showTimestamps then
     return text
   end
   local timestamp = date("[%H:%M] ")
@@ -175,17 +178,31 @@ end
 
 ---
 -- Text processing pipeline
-local TEXT_PROCESSORS = {
-  timestampProcessor,
+-- Processors that don't need profile context
+local SIMPLE_PROCESSORS = {
   urlProcessor,
-  textureProcessor,
   pratTimestampProcessor
 }
 
-function TP:ProcessText(text)
-  local result = text
+-- Processors that need profile context for per-window settings
+local PROFILE_PROCESSORS = {
+  timestampProcessor,
+  textureProcessor,
+}
 
-  for _, processor in ipairs(TEXT_PROCESSORS) do
+function TP:ProcessText(text, profile)
+  local result = text
+  
+  -- First apply profile-aware processors (timestamps, textures)
+  for _, processor in ipairs(PROFILE_PROCESSORS) do
+    local retOk, retVal = pcall(processor, result, profile)
+    if retOk then
+      result = retVal
+    end
+  end
+
+  -- Then apply simple processors that don't need profile
+  for _, processor in ipairs(SIMPLE_PROCESSORS) do
     -- Prevent failing processors from bringing down the whole pipeline
     local retOk, retVal = pcall(processor, result)
 

@@ -375,7 +375,17 @@ function SlidingMessageFrameMixin:Init(chatFrame)
           end
         end
       end),
-      Core:Subscribe(UPDATE_CONFIG, function (key)
+      Core:Subscribe(UPDATE_CONFIG, function (payload)
+        -- Payload is now { key = "...", windowId = "..." }
+        local key = type(payload) == "table" and payload.key or payload
+        local targetWindowId = type(payload) == "table" and payload.windowId or nil
+        
+        -- If a specific window was targeted, only update if we match
+        local myWindowId = self.window and self.window.id or "Main"
+        if targetWindowId and targetWindowId ~= myWindowId then
+          return
+        end
+        
         if self.state.isCombatLog == false then
           if (
             key == "messageFont" or
@@ -483,9 +493,12 @@ function SlidingMessageFrameMixin:CreateMessageFrame(frame, text, red, green, bl
   blue = blue or 1
 
   local message = self.messageFramePool:Acquire()
+  
+  -- Set back-reference to this SMF so the message can find its window
+  message.smf = self
 
   message.text:SetTextColor(red, green, blue, 1)
-  local processed = TP:ProcessText(text)
+  local processed = TP:ProcessText(text, self.profile)
   message:SetMessageText(processed)
 
   -- Adjust height to contain text

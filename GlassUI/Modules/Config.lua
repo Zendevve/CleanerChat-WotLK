@@ -34,12 +34,27 @@ local function ProfileFor(info)
       if key == "Main" then
         return Core.db.profile
       elseif type(key) == "string" and key:match("^Window%d+$") then
-        local w = Core.db.profile.windows and Core.db.profile.windows[key]
-        if w then return w end
+        -- GetWindowProfile now creates the profile on-demand if needed
+        return Core:GetWindowProfile(key)
       end
     end
   end
   return Core:GetWindowProfile(C.selectedWindowId or "Main")
+end
+
+-- Extract the window ID from the AceConfig info path.
+local function WindowIdFor(info)
+  if info then
+    for i = 1, #info do
+      local key = info[i]
+      if key == "Main" then
+        return "Main"
+      elseif type(key) == "string" and key:match("^Window%d+$") then
+        return key
+      end
+    end
+  end
+  return C.selectedWindowId or "Main"
 end
 
 -- Build one child "tab" group per window for a category. `builder` returns a
@@ -140,7 +155,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).positionAnchor.xOfs = input
-                    Core:Dispatch(UpdateConfig("framePosition"))
+                    Core:Dispatch(UpdateConfig("framePosition", WindowIdFor(info)))
                   end
                 },
                 frameWidth = {
@@ -159,7 +174,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).frameWidth = input
-                    Core:Dispatch(UpdateConfig("frameWidth"))
+                    Core:Dispatch(UpdateConfig("frameWidth", WindowIdFor(info)))
                   end
                 },
                 frameYOfs = {
@@ -177,7 +192,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).positionAnchor.yOfs = input
-                    Core:Dispatch(UpdateConfig("framePosition"))
+                    Core:Dispatch(UpdateConfig("framePosition", WindowIdFor(info)))
                   end
                 },
                 frameHeight = {
@@ -195,7 +210,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).frameHeight = input
-                    Core:Dispatch(UpdateConfig("frameHeight"))
+                    Core:Dispatch(UpdateConfig("frameHeight", WindowIdFor(info)))
                   end
                 },
                 frameAnchor = {
@@ -209,7 +224,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).positionAnchor.point = input
-                    Core:Dispatch(UpdateConfig("framePosition"))
+                    Core:Dispatch(UpdateConfig("framePosition", WindowIdFor(info)))
                   end
                 },
               }
@@ -240,7 +255,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).editBoxFont = input
-                    Core:Dispatch(UpdateConfig("editBoxFont"))
+                    Core:Dispatch(UpdateConfig("editBoxFont", WindowIdFor(info)))
                   end,
                 },
                 editBoxFontSize = {
@@ -257,7 +272,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).editBoxFontSize = input
-                    Core:Dispatch(UpdateConfig("editBoxFontSize"))
+                    Core:Dispatch(UpdateConfig("editBoxFontSize", WindowIdFor(info)))
                   end,
                   order = 1.1,
                 },
@@ -272,7 +287,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).editBoxFontFlags = input
-                    Core:Dispatch(UpdateConfig("editBoxFontFlags"))
+                    Core:Dispatch(UpdateConfig("editBoxFontFlags", WindowIdFor(info)))
                   end,
                 },
                 editBoxBackgroundOpacity = {
@@ -290,7 +305,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).editBoxBackgroundOpacity = input
-                    Core:Dispatch(UpdateConfig("editBoxBackgroundOpacity"))
+                    Core:Dispatch(UpdateConfig("editBoxBackgroundOpacity", WindowIdFor(info)))
                   end,
                 },
                 editBoxBackgroundColor = {
@@ -306,7 +321,7 @@ function C:OnEnable()
                   set = function (info, r, g, b)
                     local c = ProfileFor(info).editBoxBackgroundColor
                     c.r, c.g, c.b = r, g, b
-                    Core:Dispatch(UpdateConfig("editBoxBackgroundColor"))
+                    Core:Dispatch(UpdateConfig("editBoxBackgroundColor", WindowIdFor(info)))
                   end,
                 },
               }
@@ -336,7 +351,7 @@ function C:OnEnable()
                     else
                       ProfileFor(info).editBoxAnchor.yOfs = -5
                     end
-                    Core:Dispatch(UpdateConfig("editBoxAnchor"))
+                    Core:Dispatch(UpdateConfig("editBoxAnchor", WindowIdFor(info)))
                   end
                 },
                 editBoxAnchorYOfs = {
@@ -354,7 +369,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).editBoxAnchor.yOfs = input
-                    Core:Dispatch(UpdateConfig("editBoxAnchor"))
+                    Core:Dispatch(UpdateConfig("editBoxAnchor", WindowIdFor(info)))
                   end
                 }
               },
@@ -405,7 +420,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).messageFont = input
-                    Core:Dispatch(UpdateConfig("messageFont"))
+                    Core:Dispatch(UpdateConfig("messageFont", WindowIdFor(info)))
                   end,
                 },
                 messageFontSize = {
@@ -422,7 +437,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).messageFontSize = input
-                    Core:Dispatch(UpdateConfig("messageFontSize"))
+                    Core:Dispatch(UpdateConfig("messageFontSize", WindowIdFor(info)))
                   end,
                   order = 1.2,
                 },
@@ -437,7 +452,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).messageFontFlags = input
-                    Core:Dispatch(UpdateConfig("messageFontFlags"))
+                    Core:Dispatch(UpdateConfig("messageFontFlags", WindowIdFor(info)))
                   end,
                 },
                 chatBackgroundOpacity = {
@@ -455,7 +470,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).chatBackgroundOpacity = input
-                    Core:Dispatch(UpdateConfig("chatBackgroundOpacity"))
+                    Core:Dispatch(UpdateConfig("chatBackgroundOpacity", WindowIdFor(info)))
                   end,
                 },
                 chatBackgroundColor = {
@@ -471,7 +486,7 @@ function C:OnEnable()
                   set = function (info, r, g, b)
                     local c = ProfileFor(info).chatBackgroundColor
                     c.r, c.g, c.b = r, g, b
-                    Core:Dispatch(UpdateConfig("chatBackgroundColor"))
+                    Core:Dispatch(UpdateConfig("chatBackgroundColor", WindowIdFor(info)))
                   end,
                 },
                 messageLeading = {
@@ -488,7 +503,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).messageLeading = input
-                    Core:Dispatch(UpdateConfig("messageLeading"))
+                    Core:Dispatch(UpdateConfig("messageLeading", WindowIdFor(info)))
                   end,
                   order = 1.3,
                 },
@@ -506,7 +521,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).messageLinePadding = input
-                    Core:Dispatch(UpdateConfig("messageLinePadding"))
+                    Core:Dispatch(UpdateConfig("messageLinePadding", WindowIdFor(info)))
                   end,
                   order = 1.4,
                 },
@@ -524,7 +539,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).messageLeftPadding = input
-                    Core:Dispatch(UpdateConfig("messageLeftPadding"))
+                    Core:Dispatch(UpdateConfig("messageLeftPadding", WindowIdFor(info)))
                   end,
                   order = 1.5,
                 },
@@ -563,7 +578,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).messageAnimations = not input
-                    Core:Dispatch(UpdateConfig("messageAnimations"))
+                    Core:Dispatch(UpdateConfig("messageAnimations", WindowIdFor(info)))
                   end,
                 },
                 messagesAlwaysVisible = {
@@ -576,7 +591,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).messagesAlwaysVisible = input
-                    Core:Dispatch(UpdateConfig("messagesAlwaysVisible"))
+                    Core:Dispatch(UpdateConfig("messagesAlwaysVisible", WindowIdFor(info)))
                   end,
                 },
                 animationsSpacer = {
@@ -619,7 +634,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).chatFadeInDuration = input
-                    Core:Dispatch(UpdateConfig("chatFadeInDuration"))
+                    Core:Dispatch(UpdateConfig("chatFadeInDuration", WindowIdFor(info)))
                   end
                 },
                 fadeOutDuration = {
@@ -638,7 +653,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).chatFadeOutDuration = input
-                    Core:Dispatch(UpdateConfig("chatFadeOutDuration"))
+                    Core:Dispatch(UpdateConfig("chatFadeOutDuration", WindowIdFor(info)))
                   end
                 },
                 slideInDuration = {
@@ -676,7 +691,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).indentWordWrap = input
-                    Core:Dispatch(UpdateConfig("indentWordWrap"))
+                    Core:Dispatch(UpdateConfig("indentWordWrap", WindowIdFor(info)))
                   end,
                 },
                 mouseOverTooltips = {
@@ -720,7 +735,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).messagesOnHover = input
-                    Core:Dispatch(UpdateConfig("messagesOnHover"))
+                    Core:Dispatch(UpdateConfig("messagesOnHover", WindowIdFor(info)))
                   end,
                 },
                 showTimestamps = {
@@ -751,7 +766,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).hideScrollIndicator = input
-                    Core:Dispatch(UpdateConfig("hideScrollIndicator"))
+                    Core:Dispatch(UpdateConfig("hideScrollIndicator", WindowIdFor(info)))
                   end,
                 },
                 scrollIndicatorColor = {
@@ -769,7 +784,7 @@ function C:OnEnable()
                   set = function (info, r, g, b)
                     local c = ProfileFor(info).scrollIndicatorColor
                     c.r, c.g, c.b = r, g, b
-                    Core:Dispatch(UpdateConfig("scrollIndicatorColor"))
+                    Core:Dispatch(UpdateConfig("scrollIndicatorColor", WindowIdFor(info)))
                   end,
                 },
                 scrollIndicatorOpacity = {
@@ -787,7 +802,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).scrollIndicatorOpacity = input
-                    Core:Dispatch(UpdateConfig("scrollIndicatorOpacity"))
+                    Core:Dispatch(UpdateConfig("scrollIndicatorOpacity", WindowIdFor(info)))
                   end,
                 },
                 scrollIndicatorBgColor = {
@@ -805,7 +820,7 @@ function C:OnEnable()
                   set = function (info, r, g, b)
                     local c = ProfileFor(info).scrollIndicatorBgColor
                     c.r, c.g, c.b = r, g, b
-                    Core:Dispatch(UpdateConfig("scrollIndicatorBgColor"))
+                    Core:Dispatch(UpdateConfig("scrollIndicatorBgColor", WindowIdFor(info)))
                   end,
                 },
                 scrollIndicatorBgOpacity = {
@@ -823,7 +838,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).scrollIndicatorBgOpacity = input
-                    Core:Dispatch(UpdateConfig("scrollIndicatorBgOpacity"))
+                    Core:Dispatch(UpdateConfig("scrollIndicatorBgOpacity", WindowIdFor(info)))
                   end,
                 },
               }
@@ -854,7 +869,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).dockFont = input
-                    Core:Dispatch(UpdateConfig("dockFont"))
+                    Core:Dispatch(UpdateConfig("dockFont", WindowIdFor(info)))
                   end,
                 },
                 dockFontSize = {
@@ -873,7 +888,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).dockFontSize = input
-                    Core:Dispatch(UpdateConfig("dockFontSize"))
+                    Core:Dispatch(UpdateConfig("dockFontSize", WindowIdFor(info)))
                   end,
                 },
                 dockFontFlags = {
@@ -887,7 +902,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).dockFontFlags = input
-                    Core:Dispatch(UpdateConfig("dockFontFlags"))
+                    Core:Dispatch(UpdateConfig("dockFontFlags", WindowIdFor(info)))
                   end,
                 },
                 dockBackgroundOpacity = {
@@ -905,7 +920,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).dockBackgroundOpacity = input
-                    Core:Dispatch(UpdateConfig("dockBackgroundOpacity"))
+                    Core:Dispatch(UpdateConfig("dockBackgroundOpacity", WindowIdFor(info)))
                   end,
                 },
                 dockBackgroundColor = {
@@ -921,7 +936,7 @@ function C:OnEnable()
                   set = function (info, r, g, b)
                     local c = ProfileFor(info).dockBackgroundColor
                     c.r, c.g, c.b = r, g, b
-                    Core:Dispatch(UpdateConfig("dockBackgroundColor"))
+                    Core:Dispatch(UpdateConfig("dockBackgroundColor", WindowIdFor(info)))
                   end,
                 },
               },
@@ -942,7 +957,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).dockAnimations = not input
-                    Core:Dispatch(UpdateConfig("dockAnimations"))
+                    Core:Dispatch(UpdateConfig("dockAnimations", WindowIdFor(info)))
                   end,
                 },
                 tabsAlwaysVisible = {
@@ -955,7 +970,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).tabsAlwaysVisible = input
-                    Core:Dispatch(UpdateConfig("tabsAlwaysVisible"))
+                    Core:Dispatch(UpdateConfig("tabsAlwaysVisible", WindowIdFor(info)))
                   end,
                 },
                 topBarAnimationsSpacer = {
@@ -1025,7 +1040,7 @@ function C:OnEnable()
                   end,
                   set = function (info, input)
                     ProfileFor(info).tabsOnHover = input
-                    Core:Dispatch(UpdateConfig("tabsOnHover"))
+                    Core:Dispatch(UpdateConfig("tabsOnHover", WindowIdFor(info)))
                   end,
                 },
               },
@@ -1051,43 +1066,43 @@ end
 
 function C:RefreshConfig()
   -- General
-  Core:Dispatch(UpdateConfig("frameHeight"))
-  Core:Dispatch(UpdateConfig("frameWidth"))
-  Core:Dispatch(UpdateConfig("framePosition"))
+  Core:Dispatch(UpdateConfig("frameHeight", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("frameWidth", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("framePosition", WindowIdFor(info)))
 
   -- Edit box
-  Core:Dispatch(UpdateConfig("editBoxFont"))
-  Core:Dispatch(UpdateConfig("editBoxFontSize"))
-  Core:Dispatch(UpdateConfig("editBoxFontFlags"))
-  Core:Dispatch(UpdateConfig("editBoxBackgroundOpacity"))
-  Core:Dispatch(UpdateConfig("editBoxBackgroundColor"))
-  Core:Dispatch(UpdateConfig("editBoxAnchor"))
+  Core:Dispatch(UpdateConfig("editBoxFont", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("editBoxFontSize", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("editBoxFontFlags", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("editBoxBackgroundOpacity", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("editBoxBackgroundColor", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("editBoxAnchor", WindowIdFor(info)))
 
   -- Messages
-  Core:Dispatch(UpdateConfig("messageFont"))
-  Core:Dispatch(UpdateConfig("messageFontSize"))
-  Core:Dispatch(UpdateConfig("messageFontFlags"))
-  Core:Dispatch(UpdateConfig("messageAnimations"))
-  Core:Dispatch(UpdateConfig("messagesAlwaysVisible"))
-  Core:Dispatch(UpdateConfig("chatBackgroundOpacity"))
-  Core:Dispatch(UpdateConfig("chatBackgroundColor"))
-  Core:Dispatch(UpdateConfig("chatFadeInDuration"))
-  Core:Dispatch(UpdateConfig("chatFadeOutDuration"))
-  Core:Dispatch(UpdateConfig("scrollIndicatorColor"))
-  Core:Dispatch(UpdateConfig("scrollIndicatorOpacity"))
-  Core:Dispatch(UpdateConfig("scrollIndicatorBgColor"))
-  Core:Dispatch(UpdateConfig("scrollIndicatorBgOpacity"))
-  Core:Dispatch(UpdateConfig("hideScrollIndicator"))
+  Core:Dispatch(UpdateConfig("messageFont", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("messageFontSize", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("messageFontFlags", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("messageAnimations", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("messagesAlwaysVisible", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("chatBackgroundOpacity", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("chatBackgroundColor", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("chatFadeInDuration", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("chatFadeOutDuration", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("scrollIndicatorColor", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("scrollIndicatorOpacity", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("scrollIndicatorBgColor", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("scrollIndicatorBgOpacity", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("hideScrollIndicator", WindowIdFor(info)))
 
   -- Top bar (dock)
-  Core:Dispatch(UpdateConfig("dockFont"))
-  Core:Dispatch(UpdateConfig("dockFontSize"))
-  Core:Dispatch(UpdateConfig("dockFontFlags"))
-  Core:Dispatch(UpdateConfig("dockAnimations"))
-  Core:Dispatch(UpdateConfig("tabsAlwaysVisible"))
-  Core:Dispatch(UpdateConfig("dockBackgroundOpacity"))
-  Core:Dispatch(UpdateConfig("dockBackgroundColor"))
-  Core:Dispatch(UpdateConfig("tabsOnHover"))
+  Core:Dispatch(UpdateConfig("dockFont", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("dockFontSize", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("dockFontFlags", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("dockAnimations", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("tabsAlwaysVisible", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("dockBackgroundOpacity", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("dockBackgroundColor", WindowIdFor(info)))
+  Core:Dispatch(UpdateConfig("tabsOnHover", WindowIdFor(info)))
 end
 
 function C:OnProfileReset()
