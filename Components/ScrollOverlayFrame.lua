@@ -25,14 +25,14 @@ function ScrollOverlayFrame:Init()
 
     -- Position indicator at the edit box location (outside the chat frame)
     local mainContainer = self:GetParent():GetParent() -- SlidingMessageFrame's parent is MainContainerFrame
-    if Core.db.profile.editBoxAnchor.position == "ABOVE" then
+    if self.profile.editBoxAnchor.position == "ABOVE" then
       -- Edit box is above the chat, so indicator is above the main container
-      self:SetPoint("BOTTOMLEFT", mainContainer, "TOPLEFT", 0, Core.db.profile.editBoxAnchor.yOfs or 5)
-      self:SetPoint("BOTTOMRIGHT", mainContainer, "TOPRIGHT", 0, Core.db.profile.editBoxAnchor.yOfs or 5)
+      self:SetPoint("BOTTOMLEFT", mainContainer, "TOPLEFT", 0, self.profile.editBoxAnchor.yOfs or 5)
+      self:SetPoint("BOTTOMRIGHT", mainContainer, "TOPRIGHT", 0, self.profile.editBoxAnchor.yOfs or 5)
     else
       -- Edit box is below the chat (default), so indicator is below the main container
-      self:SetPoint("TOPLEFT", mainContainer, "BOTTOMLEFT", 0, Core.db.profile.editBoxAnchor.yOfs or -5)
-      self:SetPoint("TOPRIGHT", mainContainer, "BOTTOMRIGHT", 0, Core.db.profile.editBoxAnchor.yOfs or -5)
+      self:SetPoint("TOPLEFT", mainContainer, "BOTTOMLEFT", 0, self.profile.editBoxAnchor.yOfs or -5)
+      self:SetPoint("TOPRIGHT", mainContainer, "BOTTOMRIGHT", 0, self.profile.editBoxAnchor.yOfs or -5)
     end
 
     self:SetFadeInDuration(0.3)
@@ -42,8 +42,8 @@ function ScrollOverlayFrame:Init()
     -- We skip the mask functionality for this version
 
     -- Use customizable background color and opacity (defaults to codGray, fully solid)
-    local bgColor = Core.db.profile.scrollIndicatorBgColor or Colors.codGray
-    local bgOpacity = Core.db.profile.scrollIndicatorBgOpacity or 1
+    local bgColor = self.profile.scrollIndicatorBgColor or Colors.codGray
+    local bgOpacity = self.profile.scrollIndicatorBgOpacity or 1
     self:SetGradientBackground(15, 15, bgColor, bgOpacity)
 
     -- Note: AddMaskTexture not available in WotLK 3.3.5
@@ -72,7 +72,7 @@ function ScrollOverlayFrame:Init()
     self.snapToBottomFrame:EnableMouse(true)
 
     if self.newMessageAlertFrame == nil then
-      self.newMessageAlertFrame = CreateNewMessageAlertFrame(self)
+      self.newMessageAlertFrame = CreateNewMessageAlertFrame(self, self.profile)
     end
 
     self.newMessageAlertFrame:QuickHide()
@@ -86,8 +86,8 @@ function ScrollOverlayFrame:Init()
     end
     self.snapToPresentText:ClearAllPoints()
     -- Use customizable color and opacity (defaults to apache gold, fully solid).
-    local indicatorColor = Core.db.profile.scrollIndicatorColor or Colors.apache
-    local indicatorOpacity = Core.db.profile.scrollIndicatorOpacity or 1
+    local indicatorColor = self.profile.scrollIndicatorColor or Colors.apache
+    local indicatorOpacity = self.profile.scrollIndicatorOpacity or 1
     self.snapToPresentText:SetTextColor(indicatorColor.r, indicatorColor.g, indicatorColor.b, indicatorOpacity)
     self.snapToPresentText:SetPoint("BOTTOMLEFT", 30, 10)
     self.snapToPresentText:SetText("Bring me to the present")
@@ -98,26 +98,26 @@ function ScrollOverlayFrame:UpdatePosition()
   self:ClearAllPoints()
 
   local mainContainer = self:GetParent():GetParent()
-  if Core.db.profile.editBoxAnchor.position == "ABOVE" then
+  if self.profile.editBoxAnchor.position == "ABOVE" then
     -- Edit box is above the chat, so indicator is above the main container
-    self:SetPoint("BOTTOMLEFT", mainContainer, "TOPLEFT", 0, Core.db.profile.editBoxAnchor.yOfs or 5)
-    self:SetPoint("BOTTOMRIGHT", mainContainer, "TOPRIGHT", 0, Core.db.profile.editBoxAnchor.yOfs or 5)
+    self:SetPoint("BOTTOMLEFT", mainContainer, "TOPLEFT", 0, self.profile.editBoxAnchor.yOfs or 5)
+    self:SetPoint("BOTTOMRIGHT", mainContainer, "TOPRIGHT", 0, self.profile.editBoxAnchor.yOfs or 5)
   else
     -- Edit box is below the chat (default), so indicator is below the main container
-    self:SetPoint("TOPLEFT", mainContainer, "BOTTOMLEFT", 0, Core.db.profile.editBoxAnchor.yOfs or -5)
-    self:SetPoint("TOPRIGHT", mainContainer, "BOTTOMRIGHT", 0, Core.db.profile.editBoxAnchor.yOfs or -5)
+    self:SetPoint("TOPLEFT", mainContainer, "BOTTOMLEFT", 0, self.profile.editBoxAnchor.yOfs or -5)
+    self:SetPoint("TOPRIGHT", mainContainer, "BOTTOMRIGHT", 0, self.profile.editBoxAnchor.yOfs or -5)
   end
 end
 
 function ScrollOverlayFrame:UpdateIndicatorStyle()
-  local indicatorColor = Core.db.profile.scrollIndicatorColor or Colors.apache
-  local indicatorOpacity = Core.db.profile.scrollIndicatorOpacity or 1
+  local indicatorColor = self.profile.scrollIndicatorColor or Colors.apache
+  local indicatorOpacity = self.profile.scrollIndicatorOpacity or 1
   if self.snapToPresentText then
     self.snapToPresentText:SetTextColor(indicatorColor.r, indicatorColor.g, indicatorColor.b, indicatorOpacity)
   end
   -- Update background
-  local bgColor = Core.db.profile.scrollIndicatorBgColor or Colors.codGray
-  local bgOpacity = Core.db.profile.scrollIndicatorBgOpacity or 1
+  local bgColor = self.profile.scrollIndicatorBgColor or Colors.codGray
+  local bgOpacity = self.profile.scrollIndicatorBgOpacity or 1
   self:SetGradientBackground(15, 15, bgColor, bgOpacity)
   -- Update child alert frame
   if self.newMessageAlertFrame and self.newMessageAlertFrame.UpdateIndicatorStyle then
@@ -153,7 +153,7 @@ end
 
 -- Override Show to respect hideScrollIndicator setting
 function ScrollOverlayFrame:Show()
-  if Core.db.profile.hideScrollIndicator then
+  if self.profile.hideScrollIndicator then
     return -- Don't show if indicator is disabled
   end
   -- Call the FadingFrameMixin's Show implementation directly
@@ -161,13 +161,14 @@ function ScrollOverlayFrame:Show()
   FadingFrameMixin.Show(self)
 end
 
-local function CreateScrollOverlayFrame(parent)
+local function CreateScrollOverlayFrame(parent, profile)
   local FadingFrameMixin = Core.Components.FadingFrameMixin
   local GradientBackgroundMixin = Core.Components.GradientBackgroundMixin
 
   local frame = CreateFrame("Frame", nil, parent)
   local object = Mixin(frame, FadingFrameMixin, GradientBackgroundMixin, ScrollOverlayFrame)
 
+  object.profile = profile or Core.db.profile
   FadingFrameMixin.Init(object)
   GradientBackgroundMixin.Init(object)
   ScrollOverlayFrame.Init(object)

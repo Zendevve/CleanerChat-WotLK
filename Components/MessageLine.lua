@@ -134,21 +134,21 @@ end
 local MessageLineMixin = {}
 
 function MessageLineMixin:Init()
-  self:SetWidth(Core.db.profile.frameWidth)
-  local animate = Core.db.profile.messageAnimations ~= false
-  self:SetFadeInDuration(animate and Core.db.profile.chatFadeInDuration or 0)
-  self:SetFadeOutDuration(animate and Core.db.profile.chatFadeOutDuration or 0)
+  self:SetWidth(self.profile.frameWidth)
+  local animate = self.profile.messageAnimations ~= false
+  self:SetFadeInDuration(animate and self.profile.chatFadeInDuration or 0)
+  self:SetFadeOutDuration(animate and self.profile.chatFadeOutDuration or 0)
 
-  local rightBgWidth = math.min(250, Core.db.profile.frameWidth - 50)
-  self:SetGradientBackground(50, rightBgWidth, Core.db.profile.chatBackgroundColor or Colors.codGray, Core.db.profile.chatBackgroundOpacity)
+  local rightBgWidth = math.min(250, self.profile.frameWidth - 50)
+  self:SetGradientBackground(50, rightBgWidth, self.profile.chatBackgroundColor or Colors.codGray, self.profile.chatBackgroundOpacity)
 
   if self.text == nil then
     self.text = self:CreateFontString(nil, "ARTWORK", "GlassMessageFont")
   end
-  local leftPadding = Core.db.profile.messageLeftPadding or Constants.TEXT_XPADDING
+  local leftPadding = self.profile.messageLeftPadding or Constants.TEXT_XPADDING
   self.text:SetPoint("LEFT", leftPadding, 0)
-  self.text:SetWidth(Core.db.profile.frameWidth - leftPadding - Constants.TEXT_XPADDING)
-  self.text:SetIndentedWordWrap(Core.db.profile.indentWordWrap)
+  self.text:SetWidth(self.profile.frameWidth - leftPadding - Constants.TEXT_XPADDING)
+  self.text:SetIndentedWordWrap(self.profile.indentWordWrap)
   -- Allow a single very long run of non-space characters (e.g. spammed
   -- "AAAA...") to break across lines at the frame width. Without this WoW
   -- leaves the whole "word" on one overflowing line and reserves empty space.
@@ -170,13 +170,13 @@ function MessageLineMixin:Init()
     self.subscriptions = {
       Core:Subscribe(UPDATE_CONFIG, function (key)
         if key == "chatFadeInDuration" or key == "messageAnimations" then
-          local shouldAnimate = Core.db.profile.messageAnimations ~= false
-          self:SetFadeInDuration(shouldAnimate and Core.db.profile.chatFadeInDuration or 0)
+          local shouldAnimate = self.profile.messageAnimations ~= false
+          self:SetFadeInDuration(shouldAnimate and self.profile.chatFadeInDuration or 0)
         end
 
         if key == "chatFadeOutDuration" or key == "messageAnimations" then
-          local shouldAnimate = Core.db.profile.messageAnimations ~= false
-          self:SetFadeOutDuration(shouldAnimate and Core.db.profile.chatFadeOutDuration or 0)
+          local shouldAnimate = self.profile.messageAnimations ~= false
+          self:SetFadeOutDuration(shouldAnimate and self.profile.chatFadeOutDuration or 0)
         end
 
         if key == "messageLeftPadding" then
@@ -218,12 +218,12 @@ end
 -- Update height based on text height
 function MessageLineMixin:UpdateFrame()
   -- Set the widths first so wrapped text reports its real (multi-line) height.
-  local leftPadding = Core.db.profile.messageLeftPadding or Constants.TEXT_XPADDING
-  self:SetWidth(Core.db.profile.frameWidth)
+  local leftPadding = self.profile.messageLeftPadding or Constants.TEXT_XPADDING
+  self:SetWidth(self.profile.frameWidth)
   self.text:ClearAllPoints()
   self.text:SetPoint("LEFT", leftPadding, 0)
-  self.text:SetWidth(Core.db.profile.frameWidth - leftPadding - Constants.TEXT_XPADDING)
-  self.text:SetIndentedWordWrap(Core.db.profile.indentWordWrap)
+  self.text:SetWidth(self.profile.frameWidth - leftPadding - Constants.TEXT_XPADDING)
+  self.text:SetIndentedWordWrap(self.profile.indentWordWrap)
 
   -- WotLK quirk: GetStringHeight() can return 0 / a too-small value (especially
   -- right after SetText), which collapses the frame and makes messages overlap.
@@ -234,11 +234,11 @@ function MessageLineMixin:UpdateFrame()
     stringHeight = lineHeight
   end
 
-  local Ypadding = lineHeight * Core.db.profile.messageLinePadding
+  local Ypadding = lineHeight * self.profile.messageLinePadding
   self:SetHeight(stringHeight + Ypadding * 2)
 
-  local rightBgWidth = math.min(250, Core.db.profile.frameWidth - 50)
-  self:SetGradientBackground(50, rightBgWidth, Core.db.profile.chatBackgroundColor or Colors.codGray, Core.db.profile.chatBackgroundOpacity)
+  local rightBgWidth = math.min(250, self.profile.frameWidth - 50)
+  self:SetGradientBackground(50, rightBgWidth, self.profile.chatBackgroundColor or Colors.codGray, self.profile.chatBackgroundOpacity)
 
   -- Reposition the faded icon overlays, then the clickable hyperlink overlays.
   self:UpdateIcons()
@@ -273,8 +273,8 @@ function MessageLineMixin:UpdateIcons()
   end
 
   -- Get the wrap width and line height for multi-line positioning.
-  local leftPadding = Core.db.profile.messageLeftPadding or Constants.TEXT_XPADDING
-  local wrapWidth = Core.db.profile.frameWidth - leftPadding - Constants.TEXT_XPADDING
+  local leftPadding = self.profile.messageLeftPadding or Constants.TEXT_XPADDING
+  local wrapWidth = self.profile.frameWidth - leftPadding - Constants.TEXT_XPADDING
   fs:SetWidth(0)
   fs:SetText("Ay")
   local lineHeight = fs:GetStringHeight() or 12
@@ -386,8 +386,8 @@ function MessageLineMixin:UpdateHyperlinks()
     return
   end
 
-  local textXPad = Core.db.profile.messageLeftPadding or Constants.TEXT_XPADDING
-  local textWidth = Core.db.profile.frameWidth - textXPad - Constants.TEXT_XPADDING
+  local textXPad = self.profile.messageLeftPadding or Constants.TEXT_XPADDING
+  local textWidth = self.profile.frameWidth - textXPad - Constants.TEXT_XPADDING
 
   local fs = getMeasureFontString()
   local fontPath, fontSize, fontFlags = self.text:GetFont()
@@ -419,7 +419,7 @@ function MessageLineMixin:UpdateHyperlinks()
         if b._link then Core:Dispatch(HyperlinkClick({b._link, b._text, mouseButton})) end
       end)
       btn:SetScript("OnEnter", function (b)
-        if b._link and Core.db.profile.mouseOverTooltips then
+        if b._link and self.profile.mouseOverTooltips then
           Core:Dispatch(HyperlinkEnter({b._link, b._text}))
         end
       end)
@@ -500,17 +500,18 @@ end
 ---
 -- Update texture color based on setting
 function MessageLineMixin:UpdateTextures()
-  local rightBgWidth = math.min(250, Core.db.profile.frameWidth - 50)
-  self:SetGradientBackground(50, rightBgWidth, Core.db.profile.chatBackgroundColor or Colors.codGray, Core.db.profile.chatBackgroundOpacity)
+  local rightBgWidth = math.min(250, self.profile.frameWidth - 50)
+  self:SetGradientBackground(50, rightBgWidth, self.profile.chatBackgroundColor or Colors.codGray, self.profile.chatBackgroundOpacity)
 end
 
-local function CreateMessageLine(parent)
+local function CreateMessageLine(parent, profile)
   local FadingFrameMixin = Core.Components.FadingFrameMixin
   local GradientBackgroundMixin = Core.Components.GradientBackgroundMixin
 
   local frame = CreateFrame("Frame", nil, parent)
   local object = Mixin(frame, FadingFrameMixin, GradientBackgroundMixin, MessageLineMixin)
 
+  object.profile = profile or Core.db.profile
   FadingFrameMixin.Init(object)
   GradientBackgroundMixin.Init(object)
   MessageLineMixin.Init(object)
@@ -518,9 +519,9 @@ local function CreateMessageLine(parent)
   return object
 end
 
-local function CreateMessageLinePool(parent)
+local function CreateMessageLinePool(parent, profile)
   return CreateObjectPool(
-    function () return CreateMessageLine(parent) end,
+    function () return CreateMessageLine(parent, profile) end,
     function (_, message)
       -- Reset all animations and timers
       message:QuickHide()

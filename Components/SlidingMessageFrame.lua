@@ -51,9 +51,12 @@ local Mixin = Mixin
 local SlidingMessageFrameMixin = {}
 
 function SlidingMessageFrameMixin:Init(chatFrame)
+  -- Per-window profile: use the window's profile if attached, else global.
+  self.profile = self.window and self.window.profile or Core.db.profile
+
   self.config = {
-    height = Core.db.profile.frameHeight - Constants.DOCK_HEIGHT - 5,
-    width = Core.db.profile.frameWidth,
+    height = self.profile.frameHeight - Constants.DOCK_HEIGHT - 5,
+    width = self.profile.frameWidth,
     overflowHeight = 60,
   }
   self.state = {
@@ -141,7 +144,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
 
   -- Overlay
   if self.overlay == nil then
-    self.overlay = CreateScrollOverlayFrame(self)
+    self.overlay = CreateScrollOverlayFrame(self, self.profile)
     self.overlay:QuickHide()
 
     -- Snap to bottom on click
@@ -234,7 +237,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
 
   -- Pool for the message frames
   if self.messageFramePool == nil then
-    self.messageFramePool = CreateMessageLinePool(self.slider)
+    self.messageFramePool = CreateMessageLinePool(self.slider, self.profile)
   end
 
   -- Hook AddMessage to capture messages for our display
@@ -280,8 +283,8 @@ function SlidingMessageFrameMixin:Init(chatFrame)
         end
 
         -- If messagesOnHover is enabled, fade in all messages
-        if Core.db.profile.messagesOnHover then
-          local fadeDuration = (Core.db.profile.messageAnimations ~= false) and (Core.db.profile.chatFadeInDuration or 0.3) or 0
+        if self.profile.messagesOnHover then
+          local fadeDuration = (self.profile.messageAnimations ~= false) and (self.profile.chatFadeInDuration or 0.3) or 0
           for _, message in ipairs(self.state.messages) do
             message:FadeIn(fadeDuration)
           end
@@ -291,12 +294,12 @@ function SlidingMessageFrameMixin:Init(chatFrame)
         -- Hide chats when mouse leaves
         self.state.mouseOver = false
 
-        self.overlay:HideDelay(Core.db.profile.chatHoldTime)
+        self.overlay:HideDelay(self.profile.chatHoldTime)
 
         -- Fade out messages when mouse leaves, unless messages are pinned.
-        if not Core.db.profile.messagesAlwaysVisible then
+        if not self.profile.messagesAlwaysVisible then
           for _, message in ipairs(self.state.messages) do
-            message:HideDelay(Core.db.profile.chatHoldTime)
+            message:HideDelay(self.profile.chatHoldTime)
           end
         end
       end),
@@ -313,7 +316,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
         end
         
         -- Always show ALL messages with animation when edit box is focused
-        local fadeDuration = (Core.db.profile.messageAnimations ~= false) and (Core.db.profile.chatFadeInDuration or 0.3) or 0
+        local fadeDuration = (self.profile.messageAnimations ~= false) and (self.profile.chatFadeInDuration or 0.3) or 0
         for _, message in ipairs(self.state.messages) do
           message:FadeIn(fadeDuration)
         end
@@ -347,12 +350,12 @@ function SlidingMessageFrameMixin:Init(chatFrame)
       Core:Subscribe(EDIT_FOCUS_LOST, function ()
         self.state.mouseOver = false
         
-        self.overlay:HideDelay(Core.db.profile.chatHoldTime)
+        self.overlay:HideDelay(self.profile.chatHoldTime)
         
         -- Start fade out timers for all messages, unless messages are pinned.
-        if not Core.db.profile.messagesAlwaysVisible then
+        if not self.profile.messagesAlwaysVisible then
           for _, message in ipairs(self.state.messages) do
-            message:HideDelay(Core.db.profile.chatHoldTime)
+            message:HideDelay(self.profile.chatHoldTime)
           end
         end
       end),
@@ -368,8 +371,8 @@ function SlidingMessageFrameMixin:Init(chatFrame)
             key == "indentWordWrap"
           ) then
             -- Adjust frame dimensions first
-            self.config.height = Core.db.profile.frameHeight - Constants.DOCK_HEIGHT - 5
-            self.config.width = Core.db.profile.frameWidth
+            self.config.height = self.profile.frameHeight - Constants.DOCK_HEIGHT - 5
+            self.config.width = self.profile.frameWidth
 
             self:SetHeight(self.config.height + self.config.overflowHeight)
             self:SetWidth(self.config.width)
@@ -407,7 +410,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
 
           if key == "messagesOnHover" then
             -- When toggled, just show current messages if mouse is over and option is now enabled
-            if Core.db.profile.messagesOnHover and self.state.mouseOver then
+            if self.profile.messagesOnHover and self.state.mouseOver then
               for _, message in ipairs(self.state.messages) do
                 message:Show()
               end
@@ -415,7 +418,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
           end
 
           if key == "messagesAlwaysVisible" then
-            if Core.db.profile.messagesAlwaysVisible then
+            if self.profile.messagesAlwaysVisible then
               -- Pin every message on screen and cancel any pending fade-out.
               for _, message in ipairs(self.state.messages) do
                 if message.hideTimer then
@@ -427,7 +430,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
             elseif not self.state.mouseOver then
               -- Resume the normal fade-out behaviour.
               for _, message in ipairs(self.state.messages) do
-                message:HideDelay(Core.db.profile.chatHoldTime)
+                message:HideDelay(self.profile.chatHoldTime)
               end
             end
           end
@@ -446,7 +449,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
 
           if key == "hideScrollIndicator" then
             if self.overlay then
-              if Core.db.profile.hideScrollIndicator then
+              if self.profile.hideScrollIndicator then
                 self.overlay:QuickHide()
               end
               -- If turned back on, it will show naturally when scrolling up
@@ -594,12 +597,12 @@ function SlidingMessageFrameMixin:Update(incoming)
     local startOffset = self:GetVerticalScroll()
     local endOffset = newHeight - self:GetHeight() + self.config.overflowHeight
 
-    if (Core.db.profile.messageAnimations ~= false) and Core.db.profile.chatSlideInDuration > 0 then
+    if (self.profile.messageAnimations ~= false) and self.profile.chatSlideInDuration > 0 then
       self.state.prevEasingHandle = LibEasing:Ease(
         function (n) self:SetVerticalScroll(n) end,
         startOffset,
         endOffset,
-        Core.db.profile.chatSlideInDuration,
+        self.profile.chatSlideInDuration,
         LibEasing.OutCubic
       )
     else
@@ -611,15 +614,15 @@ function SlidingMessageFrameMixin:Update(incoming)
     self.overlay:Show()
     self.overlay:ShowNewMessageAlert()
     if not self.state.mouseOver then
-      self.overlay:HideDelay(Core.db.profile.chatHoldTime)
+      self.overlay:HideDelay(self.profile.chatHoldTime)
     end
   end
 
   for _, message in ipairs(newMessages) do
     message:Show()
     -- Fade out new messages when mouse is not over, unless messages are pinned.
-    if not self.state.mouseOver and not Core.db.profile.messagesAlwaysVisible then
-      message:HideDelay(Core.db.profile.chatHoldTime)
+    if not self.state.mouseOver and not self.profile.messagesAlwaysVisible then
+      message:HideDelay(self.profile.chatHoldTime)
     end
     table.insert(self.state.messages, message)
 
@@ -630,7 +633,7 @@ function SlidingMessageFrameMixin:Update(incoming)
   end
 
   -- Release old messages
-  local historyLimit = Core.db.profile.messageHistoryLimit or 128
+  local historyLimit = self.profile.messageHistoryLimit or 128
   if #self.state.messages > historyLimit then
     local overflow = #self.state.messages - historyLimit
     local oldMessages = take(self.state.messages, overflow)

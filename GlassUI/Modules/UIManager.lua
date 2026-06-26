@@ -25,6 +25,9 @@ function UIManager:OnInitialize()
     temporaryFrames = {},
     temporaryTabs = {}
   }
+  -- Registry of all Glass windows. Each window is keyed by its id (e.g. "Main").
+  -- Multi-window support: other parts of the addon can iterate self.windows.
+  self.windows = {}
 end
 
 function UIManager:OnEnable()
@@ -70,6 +73,7 @@ function UIManager:OnEnable()
     dockName = "GlassChatDock",
     primaryChatFrame = _G.ChatFrame1,
   })
+  self.windows["Main"] = self.mainWindow
 
   -- Backwards-compatible aliases so the rest of UIManager and the components keep
   -- working unchanged while the per-window migration proceeds.
@@ -442,4 +446,148 @@ function UIManager:OnEnable()
       end
     end
   end)
+end
+
+-- Create a new CleanerChat window and move a chat frame's tab to it.
+-- Returns the new window object, or nil if creation failed.
+function UIManager:CreateNewWindow(chatFrameIndex)
+  if not chatFrameIndex then return nil end
+
+  -- Generate a unique window id
+  local nextId = 2
+  while self.windows["Window" .. nextId] do
+    nextId = nextId + 1
+  end
+  local windowId = "Window" .. nextId
+
+  -- Create profile for the new window (copy from main)
+  local profile = Core:CreateWindowProfile(windowId, "Main")
+  if not profile then return nil end
+
+  -- Create the window frames
+  local CreateWindow = Core.Components.CreateWindow
+  local newWindow = CreateWindow({
+    id = windowId,
+    parent = UIParent,
+    moverName = "GlassMoverFrame" .. nextId,
+    containerName = "GlassFrame" .. nextId,
+    dockName = "GlassChatDock" .. nextId,
+    primaryChatFrame = _G["ChatFrame" .. chatFrameIndex],
+  })
+  if not newWindow then
+    Core:DeleteWindowProfile(windowId)
+    return nil
+  end
+
+  -- Register in windows table
+  self.windows[windowId] = newWindow
+
+  -- Offset the new window slightly from main so it's visible
+  local mainPos = self.mainWindow.profile.positionAnchor
+  profile.positionAnchor = {
+    point = mainPos.point,
+    xOfs = (mainPos.xOfs or 0) + 30,
+    yOfs = (mainPos.yOfs or 0) - 30,
+  }
+  newWindow.moverFrame:ClearAllPoints()
+  newWindow.moverFrame:SetPoint(
+    profile.positionAnchor.point,
+    UIParent,
+    profile.positionAnchor.point,
+    profile.positionAnchor.xOfs,
+    profile.positionAnchor.yOfs
+  )
+
+  -- Store which chat frames belong to this window
+  profile.chatFrames = profile.chatFrames or {}
+  table.insert(profile.chatFrames, chatFrameIndex)
+
+  -- Move the SMF from mainWindow to newWindow
+  local smf = self.state.frames[chatFrameIndex]
+  if smf then
+    -- Re-parent to new window's container and pool
+    smf.window = newWindow
+    smf.profile = newWindow.profile
+    -- Update the dock reference for the tab
+    if smf.tab then
+      smf.tab.glassDock = newWindow.dock
+    end
+    -- Move from main frames to new window frames
+    self.state.frames[chatFrameIndex] = nil
+    newWindow.frames[chatFrameIndex] = smf
+  end
+
+  -- Refresh tabs in both windows
+  local UpdateTabPositions = Core.Components.UpdateTabPositions
+  if UpdateTabPositions then
+    local mainTabs = {}
+    for _, tab in pairs(self.state.tabs) do
+      if tab then table.insert(mainTabs, tab) end
+    end
+    UpdateTabPositions(mainTabs)
+
+    local newTabs = {}
+    for _, tab in pairs(newWindow.tabs) do
+      if tab then table.insert(newTabs, tab) end
+    end
+    UpdateTabPositions(newTabs)
+  end
+
+  -- Show the new window
+  newWindow.moverFrame:Show()
+  newWindow.container:Show()
+  newWindow.dock:Show()
+
+  return newWindow
+end
+
+-- Delete a CleanerChat window and move its chat frames back to main.
+function UIManager:DeleteWindow(windowId)
+  if not windowId or windowId == "Main" then return end
+
+  local window = self.windows[windowId]
+  if not window then return end
+
+  -- Move all SMFs back to mainWindow
+  for chatFrameIndex, smf in pairs(window.frames) do
+    smf.window = self.mainWindow
+    smf.profile = self.mainWindow.profile
+    if smf.tab then
+      smf.tab.glassDock = self.mainWindow.dock
+    end
+    self.state.frames[chatFrameIndex] = smf
+    window.frames[chatFrameIndex] = nil
+  end
+
+  -- Hide and destroy the window's frames
+  if window.dock then window.dock:Hide() end
+  if window.container then window.container:Hide() end
+  if window.moverFrame then window.moverFrame:Hide() end
+
+  -- Remove from registry
+  self.windows[windowId] = nil
+
+  -- Delete profile
+  Core:DeleteWindowProfile(windowId)
+
+  -- Refresh main window tabs
+  local UpdateTabPositions = Core.Components.UpdateTabPositions
+  if UpdateTabPositions then
+    local mainTabs = {}
+    for _, tab in pairs(self.state.tabs) do
+      if tab then table.insert(mainTabs, tab) end
+    end
+    UpdateTabPositions(mainTabs)
+  end
+end
+
+-- Get the window that owns a specific chat frame index
+function UIManager:GetWindowForChatFrame(chatFrameIndex)
+  for windowId, window in pairs(self.windows) do
+    if window.frames[chatFrameIndex] then
+      return window, windowId
+    end
+  end
+  -- Default: main window owns it
+  return self.mainWindow, "Main"
 end

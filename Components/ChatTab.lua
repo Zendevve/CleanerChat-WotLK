@@ -214,6 +214,35 @@ function ChatTabMixin:Init(slidingMessageFrame)
       end
     end
     UIDropDownMenu_AddButton(info)
+
+    -- Get the UIManager module for window operations
+    local UIManager = Core:GetModule("UIManager", true)
+
+    -- "Move to new CleanerChat window" - creates a new window with this chat tab
+    if UIManager and self.chatFrame ~= DEFAULT_CHAT_FRAME and not IsCombatLog(self.chatFrame) then
+      local chatFrameIndex = self.chatFrame:GetID()
+      local _, currentWindowId = UIManager:GetWindowForChatFrame(chatFrameIndex)
+
+      -- Only show "Move to new window" if this tab is in the main window
+      if currentWindowId == "Main" then
+        info = UIDropDownMenu_CreateInfo()
+        info.text = "Move to new CleanerChat window"
+        info.notCheckable = 1
+        info.func = function()
+          UIManager:CreateNewWindow(chatFrameIndex)
+        end
+        UIDropDownMenu_AddButton(info)
+      else
+        -- Show "Delete CleanerChat window" if this tab is in a secondary window
+        info = UIDropDownMenu_CreateInfo()
+        info.text = "Delete CleanerChat window"
+        info.notCheckable = 1
+        info.func = function()
+          UIManager:DeleteWindow(currentWindowId)
+        end
+        UIDropDownMenu_AddButton(info)
+      end
+    end
   end, "MENU")
 
   -- Listeners

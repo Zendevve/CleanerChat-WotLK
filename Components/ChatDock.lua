@@ -135,7 +135,7 @@ function ChatDockMixin:ShowTabs()
   self:Show()
 
   -- Slide/fade the tabs in over the configured duration (0 = instant).
-  local duration = (Core.db.profile.dockAnimations ~= false) and (Core.db.profile.dockFadeInDuration or 0) or 0
+  local duration = (self.profile.dockAnimations ~= false) and (self.profile.dockFadeInDuration or 0) or 0
   if duration > 0 then
     self.fadeHandle = LibEasing:Ease(
       function (a) self:SetAlpha(a) end,
@@ -156,7 +156,7 @@ end
 -- Fade the tab dock out after the configured hold time.
 function ChatDockMixin:FadeOutTabs()
   -- If the user pinned the tabs, never fade them out -- keep them on screen.
-  if Core.db.profile.tabsAlwaysVisible then
+  if self.profile.tabsAlwaysVisible then
     self:ShowTabs()
     return
   end
@@ -165,11 +165,11 @@ function ChatDockMixin:FadeOutTabs()
     self.fadeOutTimer:Cancel()
   end
 
-  self.fadeOutTimer = C_Timer.NewTimer(Core.db.profile.dockHoldTime or 10, function ()
+  self.fadeOutTimer = C_Timer.NewTimer(self.profile.dockHoldTime or 10, function ()
     self.fadeOutTimer = nil
     if self.state.mouseOver then return end
 
-    local duration = (Core.db.profile.dockAnimations ~= false) and (Core.db.profile.dockFadeOutDuration or 0.6) or 0
+    local duration = (self.profile.dockAnimations ~= false) and (self.profile.dockFadeOutDuration or 0.6) or 0
     if self.fadeHandle then
       LibEasing:StopEasing(self.fadeHandle)
       self.fadeHandle = nil
@@ -195,7 +195,7 @@ function ChatDockMixin:FadeOutTabs()
   end)
 end
 
-Core.Components.CreateChatDock = function (parent, name)
+Core.Components.CreateChatDock = function (parent, name, profile)
   local FadingFrameMixin = Core.Components.FadingFrameMixin
   local GradientBackgroundMixin = Core.Components.GradientBackgroundMixin
 
@@ -206,6 +206,7 @@ Core.Components.CreateChatDock = function (parent, name)
   
   local object = Mixin(frame, FadingFrameMixin, GradientBackgroundMixin, ChatDockMixin)
   AceHook:Embed(object)
+  object.profile = profile or Core.db.profile
   FadingFrameMixin.Init(object)
   GradientBackgroundMixin.Init(object)
   ChatDockMixin.Init(object, parent)

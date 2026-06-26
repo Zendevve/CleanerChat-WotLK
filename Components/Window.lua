@@ -55,7 +55,7 @@ local function CreateWindow(opts)
   -- and its SMFs carry a back-reference to this window so their tabs target the
   -- correct dock.
   window.dock = Core.Components.CreateChatDock(
-    window.container, opts.dockName or ("GlassChatDock" .. id)
+    window.container, opts.dockName or ("GlassChatDock" .. id), window.profile
   )
   window.pool = Core.Components.CreateSlidingMessageFramePool(window.container, window)
 
