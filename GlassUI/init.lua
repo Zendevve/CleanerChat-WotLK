@@ -105,6 +105,11 @@ Core.defaults = {
     scrollIndicatorBgColor = { r = 17 / 255, g = 17 / 255, b = 17 / 255 }, -- codGray (same as chat bg)
     scrollIndicatorBgOpacity = 0.65, -- slightly transparent
     hideScrollIndicator = false, -- when true, hides the "Unread messages" / "Bring me to the present" indicator
+
+    -- Per-window settings (multi-window). The default ("Main") window uses the
+    -- flat keys above; each additional window stores its own full copy of the
+    -- window-scoped style settings here, keyed by window id (see Core:GetWindowProfile).
+    windows = {},
   }
 }
 
@@ -113,6 +118,70 @@ function Core:OnInitialize()
 
   self.db = self.Libs.AceDB:New("GlassDB", self.defaults, true)
   self.printBuffer = {}
+end
+
+-- Per-window settings (multi-window) -----------------------------------------
+--
+-- The default ("Main") window reads the flat profile directly, so existing saved
+-- settings keep working unchanged. Each additional window keeps its own copy of
+-- the window-scoped style settings under profile.windows[id].
+
+local function deepCopy(value)
+  if type(value) ~= "table" then
+    return value
+  end
+  local copy = {}
+  for k, v in pairs(value) do
+    copy[k] = deepCopy(v)
+  end
+  return copy
+end
+
+-- Returns the settings table a window should read from. A nil/"Main" id returns
+-- the shared main profile (unchanged behaviour for the default window).
+function Core:GetWindowProfile(windowId)
+  if not windowId or windowId == "Main" then
+    return self.db.profile
+  end
+
+  local windows = self.db.profile.windows
+  local w = windows and windows[windowId]
+  return w or self.db.profile
+end
+
+-- Creates settings for a new window by copying the source window's resolved
+-- settings, so the new window starts identical and is then edited independently.
+function Core:CreateWindowProfile(newId, sourceId)
+  if not newId or newId == "Main" then
+    return self.db.profile
+  end
+
+  self.db.profile.windows = self.db.profile.windows or {}
+  local source = self:GetWindowProfile(sourceId)
+
+  local copy = {}
+  for key, value in pairs(self.db.profile) do
+    if key ~= "windows" then
+      local v = source[key]
+      if v == nil then
+        v = value
+      end
+      copy[key] = deepCopy(v)
+    end
+  end
+
+  self.db.profile.windows[newId] = copy
+  return self:GetWindowProfile(newId)
+end
+
+-- Removes a window's settings (used by the "Delete window" action).
+function Core:DeleteWindowProfile(windowId)
+  if not windowId or windowId == "Main" then
+    return
+  end
+  if self.db.profile.windows then
+    self.db.profile.windows[windowId] = nil
+  end
 end
 
 function Core:OnEnable()

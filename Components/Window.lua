@@ -35,6 +35,10 @@ local function CreateWindow(opts)
     tabs = {},
   }
 
+  -- Settings this window reads from. The main window uses the shared profile;
+  -- additional windows get their own copy (see Core:GetWindowProfile).
+  window.profile = Core:GetWindowProfile(id)
+
   -- Mover handle (drag/resize). Self-positions from the profile.
   window.moverFrame = Core.Components.CreateMoverFrame(
     opts.moverName or ("GlassMoverFrame" .. id), parent
