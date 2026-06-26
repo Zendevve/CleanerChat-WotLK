@@ -654,9 +654,13 @@ local function CreateSlidingMessageFrame(name, parent, chatFrame)
   return object
 end
 
-local function CreateSlidingMessageFramePool(parent)
+local function CreateSlidingMessageFramePool(parent, window)
   return CreateObjectPool(
-    function () return CreateSlidingMessageFrame(nil, parent) end,
+    function ()
+      local smf = CreateSlidingMessageFrame(nil, parent)
+      smf.window = window
+      return smf
+    end,
     function (_, smf)
       smf:Hide()
 

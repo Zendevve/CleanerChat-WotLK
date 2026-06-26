@@ -256,15 +256,19 @@ Core.Components.CreateChatTab = function (slidingMessageFrame)
   -- Mark as initialized
   frame._glassInitialized = true
   
-  -- Store reference to dock for later positioning
-  object.glassDock = _G["GlassChatDock"]
+  -- Store reference to the owning window's dock for later positioning. Falls
+  -- back to the global main dock for safety.
+  object.glassDock = (slidingMessageFrame.window and slidingMessageFrame.window.dock) or _G["GlassChatDock"]
   
   return object
 end
 
 -- Helper function to update tab positions (called after all tabs are created)
 Core.Components.UpdateTabPositions = function(tabs)
-  local glassDock = _G["GlassChatDock"]
+  -- Position tabs in their owning window's dock (falls back to the main dock).
+  local firstTab = tabs and tabs[1]
+  local ownerWindow = firstTab and firstTab.slidingMessageFrame and firstTab.slidingMessageFrame.window
+  local glassDock = (ownerWindow and ownerWindow.dock) or _G["GlassChatDock"]
   if not glassDock then 
     return 
   end
@@ -390,9 +394,11 @@ Core.Components.SelectChatTab = function(selectedTab)
     end
   end
   
-  -- Ensure dock stays visible
-  local glassDock = _G["GlassChatDock"]
-  if glassDock then
-    glassDock:Show()
+  -- Ensure the owning window's dock stays visible
+  local visTab = tabs and tabs[1]
+  local visWindow = visTab and visTab.slidingMessageFrame and visTab.slidingMessageFrame.window
+  local visDock = (visWindow and visWindow.dock) or _G["GlassChatDock"]
+  if visDock then
+    visDock:Show()
   end
 end

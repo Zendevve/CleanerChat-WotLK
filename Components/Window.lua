@@ -50,9 +50,14 @@ local function CreateWindow(opts)
   )
   window.container:SetPoint("TOPLEFT", window.moverFrame)
 
-  -- Tab dock and the message-frame pool live inside the container.
-  window.dock = Core.Components.CreateChatDock(window.container)
-  window.pool = Core.Components.CreateSlidingMessageFramePool(window.container)
+  -- Tab dock and the message-frame pool live inside the container. Each window
+  -- owns its own dock (named per window; the main window keeps "GlassChatDock")
+  -- and its SMFs carry a back-reference to this window so their tabs target the
+  -- correct dock.
+  window.dock = Core.Components.CreateChatDock(
+    window.container, opts.dockName or ("GlassChatDock" .. id)
+  )
+  window.pool = Core.Components.CreateSlidingMessageFramePool(window.container, window)
 
   return window
 end

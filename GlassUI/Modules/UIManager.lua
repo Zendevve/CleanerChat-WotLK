@@ -67,6 +67,7 @@ function UIManager:OnEnable()
     parent = UIParent,
     moverName = "GlassMoverFrame",
     containerName = "GlassFrame",
+    dockName = "GlassChatDock",
     primaryChatFrame = _G.ChatFrame1,
   })
 

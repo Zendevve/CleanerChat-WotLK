@@ -195,21 +195,14 @@ function ChatDockMixin:FadeOutTabs()
   end)
 end
 
-local isCreated = false
-
-Core.Components.CreateChatDock = function (parent)
-  if isCreated then
-    error("ChatDock already exists. Only one ChatDock can exist at a time.")
-  end
-
+Core.Components.CreateChatDock = function (parent, name)
   local FadingFrameMixin = Core.Components.FadingFrameMixin
   local GradientBackgroundMixin = Core.Components.GradientBackgroundMixin
 
-  isCreated = true
-  
-  -- In WotLK 3.3.5, GeneralDockManager doesn't exist
-  -- We create our own frame instead
-  local frame = CreateFrame("Frame", "GlassChatDock", parent)
+  -- In WotLK 3.3.5, GeneralDockManager doesn't exist; we create our own dock
+  -- frame. Each Glass window owns its own dock, so the name is parameterised
+  -- (the main window keeps "GlassChatDock").
+  local frame = CreateFrame("Frame", name or "GlassChatDock", parent)
   
   local object = Mixin(frame, FadingFrameMixin, GradientBackgroundMixin, ChatDockMixin)
   AceHook:Embed(object)
