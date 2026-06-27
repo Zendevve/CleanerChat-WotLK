@@ -190,6 +190,7 @@ function ChatTabMixin:Init(slidingMessageFrame)
     local chatFrameIndex = self.chatFrame:GetID()
     local currentWindowId = nil
     if UIManager then
+      local _
       _, currentWindowId = UIManager:GetWindowForChatFrame(chatFrameIndex)
     end
 
