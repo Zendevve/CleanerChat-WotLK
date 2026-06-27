@@ -21,8 +21,8 @@ function NewMessageAlertFrameMixin:Init()
       self.text = self:CreateFontString(nil, "ARTWORK", "GlassMessageFont")
     end
     -- Use customizable color and opacity (defaults to apache gold, fully solid).
-    local indicatorColor = Core.db.profile.scrollIndicatorColor or Colors.apache
-    local indicatorOpacity = Core.db.profile.scrollIndicatorOpacity or 1
+    local indicatorColor = self.profile.scrollIndicatorColor or Colors.apache
+    local indicatorOpacity = self.profile.scrollIndicatorOpacity or 1
     self.text:SetTextColor(indicatorColor.r, indicatorColor.g, indicatorColor.b, indicatorOpacity)
     self.text:SetPoint("BOTTOMLEFT", 30, 10)
     self.text:SetText("Unread messages")
@@ -44,8 +44,8 @@ function NewMessageAlertFrameMixin:Init()
 end
 
 function NewMessageAlertFrameMixin:UpdateIndicatorStyle()
-  local indicatorColor = Core.db.profile.scrollIndicatorColor or Colors.apache
-  local indicatorOpacity = Core.db.profile.scrollIndicatorOpacity or 1
+  local indicatorColor = self.profile.scrollIndicatorColor or Colors.apache
+  local indicatorOpacity = self.profile.scrollIndicatorOpacity or 1
   if self.text then
     self.text:SetTextColor(indicatorColor.r, indicatorColor.g, indicatorColor.b, indicatorOpacity)
   end
@@ -55,12 +55,13 @@ function NewMessageAlertFrameMixin:UpdateIndicatorStyle()
   end
 end
 
-local function CreateNewMessageAlertFrame(parent)
+local function CreateNewMessageAlertFrame(parent, profile)
   local FadingFrameMixin = Core.Components.FadingFrameMixin
 
   local frame = CreateFrame("Frame", nil, parent)
   local object = Mixin(frame, FadingFrameMixin, NewMessageAlertFrameMixin)
 
+  object.profile = profile or Core.db.profile
   FadingFrameMixin.Init(object)
   NewMessageAlertFrameMixin.Init(object)
 

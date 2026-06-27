@@ -18,6 +18,7 @@
 	<Script file="Components\NewMessageAlertFrame.lua"/>
 	<Script file="Components\ScrollOverlayFrame.lua"/>
 	<Script file="Components\SlidingMessageFrame.lua"/>
+	<Script file="Components\Window.lua"/>
 
 	<!-- Modules -->
 	<Script file="GlassUI\Modules\Config.lua"/>

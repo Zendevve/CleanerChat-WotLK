@@ -1,7 +1,7 @@
 local Core, Constants = unpack(select(2, ...))
 
-local MouseEnter = Constants.ACTIONS.MouseEnter
-local MouseLeave = Constants.ACTIONS.MouseLeave
+local MOUSE_ENTER = Constants.EVENTS.MOUSE_ENTER
+local MOUSE_LEAVE = Constants.EVENTS.MOUSE_LEAVE
 
 local UPDATE_CONFIG = Constants.EVENTS.UPDATE_CONFIG
 
@@ -19,8 +19,19 @@ function MainContainerFrameMixin:Init()
     lastMouseCheck = 0,  -- Debounce timer
   }
 
-  self:SetWidth(Core.db.profile.frameWidth)
-  self:SetHeight(Core.db.profile.frameHeight)
+  self:SetWidth(self.profile.frameWidth)
+  self:SetHeight(self.profile.frameHeight)
+
+  -- Enable mouse so clicking on the chat area sets focus to this window.
+  self:EnableMouse(true)
+  self:SetScript("OnMouseDown", function(frame, button)
+    if button == "LeftButton" then
+      local UIManager = Core:GetModule("UIManager", true)
+      if UIManager and UIManager.SetActiveWindow and frame.window then
+        UIManager:SetActiveWindow(frame.window)
+      end
+    end
+  end)
 
   --[===[@debug@
   -- Helper to set solid color texture (3.3.5 compatibility)
@@ -37,13 +48,22 @@ function MainContainerFrameMixin:Init()
   self.bg:SetAllPoints()
   --@end-debug@]===]
 
-  Core:Subscribe(UPDATE_CONFIG, function (key)
+  Core:Subscribe(UPDATE_CONFIG, function (payload)
+    local key = type(payload) == "table" and payload.key or payload
+    local targetWindowId = type(payload) == "table" and payload.windowId or nil
+    
+    -- If a specific window was targeted, only update if we match
+    local myWindowId = self.window and self.window.id or "Main"
+    if targetWindowId and targetWindowId ~= myWindowId then
+      return
+    end
+    
     if key == "frameWidth" then
-      self:SetWidth(Core.db.profile.frameWidth)
+      self:SetWidth(self.profile.frameWidth)
     end
 
     if key == "frameHeight" then
-      self:SetHeight(Core.db.profile.frameHeight)
+      self:SetHeight(self.profile.frameHeight)
     end
   end)
 end
@@ -53,18 +73,20 @@ function MainContainerFrameMixin:OnFrame()
   local isOver = MouseIsOver(self)
   if self.state.mouseOver ~= isOver then
     if not self.state.mouseOver then
-      Core:Dispatch(MouseEnter())
+      -- Scope the hover event to this window so only its messages/tabs react.
+      Core:Dispatch(MOUSE_ENTER, self.window)
     else
-      Core:Dispatch(MouseLeave())
+      Core:Dispatch(MOUSE_LEAVE, self.window)
     end
 
     self.state.mouseOver = not self.state.mouseOver
   end
 end
 
-Core.Components.CreateMainContainerFrame = function (name, parent)
+Core.Components.CreateMainContainerFrame = function (name, parent, profile)
   local frame = CreateFrame("Frame", name, parent)
   local object = Mixin(frame, MainContainerFrameMixin)
+  object.profile = profile or Core.db.profile
   object:Init()
   return object
 end

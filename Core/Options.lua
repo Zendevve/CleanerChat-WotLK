@@ -321,8 +321,20 @@ Options.GenerateOptionsMenu = function(self)
 	-- through ns.SetRawDebug. Defined here (not in Glass) so it stays a
 	-- CleanerChat-owned setting; idempotent on rebuild.
 	local generalTab = options.args.general
+	-- Glass's General category is now a per-window tab group (its args are the
+	-- window tabs: Main, Window 2, ...). This global debug toggle isn't
+	-- per-window, so place it on the Main window's tab. Fall back to the
+	-- category args directly if Glass isn't tabbed (older layout).
+	local debugTarget
 	if (generalTab) and (generalTab.args) then
-		generalTab.args.ccDebugSection = {
+		if (generalTab.args.Main) and (generalTab.args.Main.args) then
+			debugTarget = generalTab.args.Main.args
+		else
+			debugTarget = generalTab.args
+		end
+	end
+	if (debugTarget) then
+		debugTarget.ccDebugSection = {
 			name = "Debugging",
 			type = "group",
 			inline = true,

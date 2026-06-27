@@ -1,6 +1,7 @@
 local Core, Constants = unpack(select(2, ...))
 
 local AceHook = Core.Libs.AceHook
+local LSM = Core.Libs.LSM
 
 -- Dedicated AceHook host. We must NOT embed AceHook onto the native Blizzard
 -- chat tab frames (ChatFrameNTab): Embed() overwrites the frame's native
@@ -16,6 +17,8 @@ local UnlockMover = Constants.ACTIONS.UnlockMover
 local Colors = Constants.COLORS
 
 local UPDATE_CONFIG = Constants.EVENTS.UPDATE_CONFIG
+
+local L = LibStub("AceLocale-3.0"):GetLocale("CleanerChat")
 
 -- luacheck: push ignore 113
 local CHAT_CONFIGURATION = CHAT_CONFIGURATION
@@ -73,6 +76,9 @@ function ChatTabMixin:Init(slidingMessageFrame)
   -- In WotLK 3.3.5, the text element may be accessed differently
   local tabText = self.Text or _G[self:GetName().."Text"] or self:GetFontString()
   self.Text = tabText  -- Store reference for later use
+  
+  -- Apply per-window font settings
+  self:UpdateFontFromProfile()
   
   if tabText then
     tabText:ClearAllPoints()
@@ -134,8 +140,9 @@ function ChatTabMixin:Init(slidingMessageFrame)
       FCF_StopAlertFlash(self.chatFrame)
     end
     
-    -- Switch to this SlidingMessageFrame (our custom handler)
-    Core.Components.SelectChatTab(self)
+    -- Switch to this SlidingMessageFrame (our custom handler). The `true` flag
+    -- marks this as a real user click so it also makes this window active.
+    Core.Components.SelectChatTab(self, true)
     
     -- For Combat Log, skip the original Blizzard handler since we manage it ourselves
     -- Otherwise Blizzard's handler interferes with our show/hide logic
@@ -212,7 +219,7 @@ function ChatTabMixin:Init(slidingMessageFrame)
 
     -- CleanerChat settings (opens the /cc options panel)
     info = UIDropDownMenu_CreateInfo()
-    info.text = "CleanerChat settings"
+    info.text = L["CleanerChat settings"]
     info.notCheckable = 1
     info.func = function()
       local AceAddon = LibStub and LibStub("AceAddon-3.0", true)
@@ -223,17 +230,77 @@ function ChatTabMixin:Init(slidingMessageFrame)
       end
     end
     UIDropDownMenu_AddButton(info)
+
+    -- Get the UIManager module for window operations
+    local UIManager = Core:GetModule("UIManager", true)
+
+    -- "New window" — spawn a brand-new CleanerChat window (a new chat frame
+    -- rendered as its own Glass window, copying the current window's settings).
+    -- Available on ANY chat tab that is not the Combat Log.
+    if UIManager and not IsCombatLog(self.chatFrame) then
+      local chatFrameIndex = self.chatFrame:GetID()
+      local _, currentWindowId = UIManager:GetWindowForChatFrame(chatFrameIndex)
+
+      info = UIDropDownMenu_CreateInfo()
+      info.text = L["New detached window"]
+      info.notCheckable = 1
+      info.func = function()
+        UIManager:SpawnNewWindow(currentWindowId)
+      end
+      UIDropDownMenu_AddButton(info)
+
+      -- "Delete window" — only on non-default (added) windows.
+      if currentWindowId ~= "Main" then
+        info = UIDropDownMenu_CreateInfo()
+        info.text = L["Delete window"]
+        info.notCheckable = 1
+        info.func = function()
+          UIManager:DeleteWindow(currentWindowId)
+        end
+        UIDropDownMenu_AddButton(info)
+      end
+    end
   end, "MENU")
 
   -- Listeners
   if self.subscriptions == nil then
     self.subscriptions = {
-      Core:Subscribe(UPDATE_CONFIG, function (key)
+      Core:Subscribe(UPDATE_CONFIG, function (payload)
+        local key = type(payload) == "table" and payload.key or payload
+        local targetWindowId = type(payload) == "table" and payload.windowId or nil
+        
+        -- If a specific window was targeted, only update if we match
+        local myWindowId = (self.slidingMessageFrame and self.slidingMessageFrame.window and self.slidingMessageFrame.window.id) or "Main"
+        if targetWindowId and targetWindowId ~= myWindowId then
+          return
+        end
+        
         if key == "frameWidth" or key == "frameHeight" or key == "dockFont" or key == "messageFontSize" then
           self:SetWidth()
         end
+        
+        -- Update font when dock font settings change for this window
+        if key == "dockFont" or key == "dockFontSize" or key == "dockFontFlags" then
+          self:UpdateFontFromProfile()
+        end
       end)
     }
+  end
+end
+
+---
+-- Apply font settings from the window's profile directly to the tab's FontString.
+-- This allows each window to have independent tab font settings.
+function ChatTabMixin:UpdateFontFromProfile()
+  local profile = self.slidingMessageFrame and self.slidingMessageFrame.window and self.slidingMessageFrame.window.profile
+  profile = profile or Core.db.profile
+  
+  local fontPath = LSM:Fetch(LSM.MediaType.FONT, profile.dockFont)
+  local fontSize = profile.dockFontSize
+  local fontFlags = profile.dockFontFlags
+  
+  if fontPath and fontSize and self.Text then
+    self.Text:SetFont(fontPath, fontSize, fontFlags or "")
   end
 end
 
@@ -246,8 +313,13 @@ Core.Components.CreateChatTab = function (slidingMessageFrame)
     return nil  -- Tab doesn't exist
   end
   
-  -- If already initialized, just return it
+  -- If already initialized, update its SMF reference (in case the tab was
+  -- re-homed to a different window after deletion) and return it.
   if frame._glassInitialized then
+    frame.slidingMessageFrame = slidingMessageFrame
+    frame.chatFrame = slidingMessageFrame.chatFrame
+    -- Update the dock reference too
+    frame.glassDock = (slidingMessageFrame.window and slidingMessageFrame.window.dock) or _G["GlassChatDock"]
     return frame
   end
   
@@ -264,15 +336,19 @@ Core.Components.CreateChatTab = function (slidingMessageFrame)
   -- Mark as initialized
   frame._glassInitialized = true
   
-  -- Store reference to dock for later positioning
-  object.glassDock = _G["GlassChatDock"]
+  -- Store reference to the owning window's dock for later positioning. Falls
+  -- back to the global main dock for safety.
+  object.glassDock = (slidingMessageFrame.window and slidingMessageFrame.window.dock) or _G["GlassChatDock"]
   
   return object
 end
 
 -- Helper function to update tab positions (called after all tabs are created)
 Core.Components.UpdateTabPositions = function(tabs)
-  local glassDock = _G["GlassChatDock"]
+  -- Position tabs in their owning window's dock (falls back to the main dock).
+  local firstTab = tabs and tabs[1]
+  local ownerWindow = firstTab and firstTab.slidingMessageFrame and firstTab.slidingMessageFrame.window
+  local glassDock = (ownerWindow and ownerWindow.dock) or _G["GlassChatDock"]
   if not glassDock then 
     return 
   end
@@ -308,17 +384,30 @@ end
 -- Track currently selected tab
 Core.Components.selectedTab = nil
 
--- Select a chat tab and show its SlidingMessageFrame
-Core.Components.SelectChatTab = function(selectedTab)
+-- Select a chat tab and show its SlidingMessageFrame. `isUserClick` is true when
+-- the user actually clicked the tab (vs. programmatic selection during setup);
+-- only real clicks change which window is active for the edit box / ENTER.
+Core.Components.SelectChatTab = function(selectedTab, isUserClick)
   local UIManager = Core:GetModule("UIManager")
   if not UIManager or not UIManager.state then 
     return 
   end
-  
-  local frames = UIManager.state.frames
-  local tabs = UIManager.state.tabs
-  
-  -- Store selected tab
+
+  -- Operate on the tab's OWNING window, so selecting a tab only changes that
+  -- window's visible chat (multi-window). Falls back to the main render state.
+  local window = selectedTab.slidingMessageFrame and selectedTab.slidingMessageFrame.window
+  local frames = (window and window.frames) or UIManager.state.frames
+  local tabs = (window and window.tabs) or UIManager.state.tabs
+
+  -- Store selected tab (per-window, plus a global "last selected" for sync).
+  if window then
+    window.selectedTab = selectedTab
+    -- A real click makes this window active: the edit box follows it, so ENTER
+    -- opens under this window until another window is clicked.
+    if isUserClick and UIManager.SetActiveWindow then
+      UIManager:SetActiveWindow(window)
+    end
+  end
   Core.Components.selectedTab = selectedTab
   
   -- Get the chatFrame for the selected tab
@@ -398,9 +487,11 @@ Core.Components.SelectChatTab = function(selectedTab)
     end
   end
   
-  -- Ensure dock stays visible
-  local glassDock = _G["GlassChatDock"]
-  if glassDock then
-    glassDock:Show()
+  -- Ensure the owning window's dock stays visible
+  local visTab = tabs and tabs[1]
+  local visWindow = visTab and visTab.slidingMessageFrame and visTab.slidingMessageFrame.window
+  local visDock = (visWindow and visWindow.dock) or _G["GlassChatDock"]
+  if visDock then
+    visDock:Show()
   end
 end

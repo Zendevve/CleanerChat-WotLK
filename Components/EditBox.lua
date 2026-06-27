@@ -1,6 +1,7 @@
 local Core, Constants = unpack(select(2, ...))
 
 local AceHook = Core.Libs.AceHook
+local LSM = Core.Libs.LSM
 
 -- Dedicated AceHook host.
 --
@@ -17,8 +18,8 @@ AceHook:Embed(Hooker)
 
 local Colors = Constants.COLORS
 
-local EditFocusGained = Constants.ACTIONS.EditFocusGained
-local EditFocusLost = Constants.ACTIONS.EditFocusLost
+local EDIT_FOCUS_GAINED = Constants.EVENTS.EDIT_FOCUS_GAINED
+local EDIT_FOCUS_LOST = Constants.EVENTS.EDIT_FOCUS_LOST
 local UPDATE_CONFIG = Constants.EVENTS.UPDATE_CONFIG
 
 -- luacheck: push ignore 113
@@ -45,17 +46,20 @@ function EditBoxMixin:Init(parent)
   -- New styling
   self:ClearAllPoints()
 
-  self:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 8, Core.db.profile.editBoxAnchor.yOfs)
+  self:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 8, self.profile.editBoxAnchor.yOfs)
 
-  if Core.db.profile.editBoxAnchor.position == "ABOVE" then
+  if self.profile.editBoxAnchor.position == "ABOVE" then
     self:ClearAllPoints()
-    self:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 8, Core.db.profile.editBoxAnchor.yOfs)
+    self:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 8, self.profile.editBoxAnchor.yOfs)
   end
 
   self:SetFontObject("GlassEditBoxFont")
-  self:SetWidth(Core.db.profile.frameWidth - 8 * 2)
+  self:SetWidth(self.profile.frameWidth - 8 * 2)
   self.header:SetFontObject("GlassEditBoxFont")
   self.header:SetPoint("LEFT", 8, 0)
+  
+  -- Apply per-window font settings directly
+  self:UpdateFontFromProfile()
 
   -- Helper to set solid color texture (3.3.5 compatibility)
   local function SetSolidColor(texture, r, g, b, a)
@@ -68,12 +72,12 @@ function EditBoxMixin:Init(parent)
     end
   end
 
-  local bg = self:CreateTexture(nil, "BACKGROUND")
-  local editBoxColor = Core.db.profile.editBoxBackgroundColor or Colors.codGray
+  self.bg = self:CreateTexture(nil, "BACKGROUND")
+  local editBoxColor = self.profile.editBoxBackgroundColor or Colors.codGray
   SetSolidColor(
-    bg, editBoxColor.r, editBoxColor.g, editBoxColor.b, Core.db.profile.editBoxBackgroundOpacity
+    self.bg, editBoxColor.r, editBoxColor.g, editBoxColor.b, self.profile.editBoxBackgroundOpacity
   )
-  bg:SetAllPoints()
+  self.bg:SetAllPoints()
 
   -- Strip the native edit box skin. The original backport only hid the
   -- Left/Mid/Right background slices and assumed focus textures don't exist on
@@ -84,7 +88,7 @@ function EditBoxMixin:Init(parent)
   -- texture region except our own bg and pin them hidden, so our bg is the
   -- only skin and its opacity is actually visible.
   for _, region in ipairs({ self:GetRegions() }) do
-    if region ~= bg and region.GetObjectType and region:GetObjectType() == "Texture" then
+    if region ~= self.bg and region.GetObjectType and region:GetObjectType() == "Texture" then
       region:Hide()
       Hooker:RawHook(region, "Show", function () end, true)
     end
@@ -142,11 +146,12 @@ function EditBoxMixin:Init(parent)
   end)
 
   -- When the edit box gains focus (user presses Enter or clicks), reveal the
-  -- chat messages if the option is enabled.
+  -- chat messages if the option is enabled. Scope the reveal to the window the
+  -- edit box is currently attached to (set via AttachToWindow).
   local oldOnEditFocusGained = self:GetScript("OnEditFocusGained")
   self:SetScript("OnEditFocusGained", function (frame, ...)
-    if Core.db.profile.showOnEditFocus then
-      Core:Dispatch(EditFocusGained())
+    if self.profile.showOnEditFocus then
+      Core:Dispatch(EDIT_FOCUS_GAINED, self.window)
     end
     if oldOnEditFocusGained then
       oldOnEditFocusGained(frame, ...)
@@ -157,46 +162,111 @@ function EditBoxMixin:Init(parent)
   -- This ensures the mouseOver state is properly reset when typing is done.
   local oldOnEditFocusLost = self:GetScript("OnEditFocusLost")
   self:SetScript("OnEditFocusLost", function (frame, ...)
-    if Core.db.profile.showOnEditFocus then
-      Core:Dispatch(EditFocusLost())
+    if self.profile.showOnEditFocus then
+      Core:Dispatch(EDIT_FOCUS_LOST, self.window)
     end
     if oldOnEditFocusLost then
       oldOnEditFocusLost(frame, ...)
     end
   end)
 
-  Core:Subscribe(UPDATE_CONFIG, function (key)
-    if key == "editBoxFont" or key == "editBoxFontSize" then
+  Core:Subscribe(UPDATE_CONFIG, function (payload)
+    local key = type(payload) == "table" and payload.key or payload
+    local targetWindowId = type(payload) == "table" and payload.windowId or nil
+    
+    -- If a specific window was targeted, only update if we match the currently
+    -- attached window (edit box follows the active window)
+    local myWindowId = self.window and self.window.id or "Main"
+    if targetWindowId and targetWindowId ~= myWindowId then
+      return
+    end
+    
+    if key == "editBoxFont" or key == "editBoxFontSize" or key == "editBoxFontFlags" then
+      self:UpdateFontFromProfile()
       Ypadding = GetFontHeight(self.header) * 0.66
       self:SetHeight(GetFontHeight(self.header) + Ypadding * 2)
       self:SetTextInsets()
     end
 
     if key == "frameWidth" then
-      self:SetWidth(Core.db.profile.frameWidth - 8 * 2)
+      self:SetWidth(self.profile.frameWidth - 8 * 2)
     end
 
     if key == "editBoxBackgroundOpacity" or key == "editBoxBackgroundColor" then
-      local color = Core.db.profile.editBoxBackgroundColor or Colors.codGray
-      SetSolidColor(
-        bg, color.r, color.g, color.b, Core.db.profile.editBoxBackgroundOpacity
-      )
+      self:UpdateBackgroundFromProfile()
     end
 
     if key == "editBoxAnchor" then
-      if Core.db.profile.editBoxAnchor.position == "ABOVE" then
+      -- Anchor relative to whichever window container the box is currently
+      -- attached to (it follows the active window), not the original parent.
+      local anchorParent = self:GetParent() or parent
+      if self.profile.editBoxAnchor.position == "ABOVE" then
         self:ClearAllPoints()
-        self:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 8, Core.db.profile.editBoxAnchor.yOfs)
+        self:SetPoint("BOTTOMLEFT", anchorParent, "TOPLEFT", 8, self.profile.editBoxAnchor.yOfs)
       else
         self:ClearAllPoints()
-        self:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 8, Core.db.profile.editBoxAnchor.yOfs)
+        self:SetPoint("TOPLEFT", anchorParent, "BOTTOMLEFT", 8, self.profile.editBoxAnchor.yOfs)
       end
     end
   end)
 end
 
-Core.Components.CreateEditBox = function (parent)
+-- Re-attach the edit box to a different window's container (multi-window). The
+-- single edit box "follows" the active window: clicking a window makes ENTER
+-- open the box under that window and target that window for focus reveals.
+function EditBoxMixin:AttachToWindow(parent, profile, window)
+  self.profile = profile or self.profile
+  self.window = window
+
+  self:SetParent(parent)
+  self:ClearAllPoints()
+  if self.profile.editBoxAnchor.position == "ABOVE" then
+    self:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 8, self.profile.editBoxAnchor.yOfs)
+  else
+    self:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 8, self.profile.editBoxAnchor.yOfs)
+  end
+  self:SetWidth(self.profile.frameWidth - 8 * 2)
+  
+  -- Apply the new window's visual settings
+  self:UpdateFontFromProfile()
+  self:UpdateBackgroundFromProfile()
+end
+
+---
+-- Apply font settings from the current window's profile directly.
+-- This allows the edit box to use the active window's font settings.
+function EditBoxMixin:UpdateFontFromProfile()
+  local fontPath = LSM:Fetch(LSM.MediaType.FONT, self.profile.editBoxFont)
+  local fontSize = self.profile.editBoxFontSize
+  local fontFlags = self.profile.editBoxFontFlags
+  
+  if fontPath and fontSize then
+    self:SetFont(fontPath, fontSize, fontFlags or "")
+    if self.header then
+      self.header:SetFont(fontPath, fontSize, fontFlags or "")
+    end
+  end
+end
+
+---
+-- Apply background settings from the current window's profile.
+-- This allows the edit box background to change when switching windows.
+function EditBoxMixin:UpdateBackgroundFromProfile()
+  if not self.bg then return end
+  local color = self.profile.editBoxBackgroundColor or Colors.codGray
+  local opacity = self.profile.editBoxBackgroundOpacity or 0.6
+  if self.bg.SetColorTexture then
+    self.bg:SetColorTexture(color.r, color.g, color.b, opacity)
+  else
+    self.bg:SetTexture("Interface\\Buttons\\WHITE8x8")
+    self.bg:SetVertexColor(color.r, color.g, color.b, opacity)
+  end
+end
+
+Core.Components.CreateEditBox = function (parent, profile)
   local object = Mixin(_G.ChatFrame1EditBox, EditBoxMixin)
+  AceHook:Embed(object)
+  object.profile = profile or Core.db.profile
   object:Init(parent)
   return object
 end

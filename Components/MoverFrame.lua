@@ -1,6 +1,5 @@
 local Core, Constants = unpack(select(2, ...))
 
-local SaveFramePosition = Constants.ACTIONS.SaveFramePosition
 local UpdateConfig = Constants.ACTIONS.UpdateConfig
 
 local LOCK_MOVER = Constants.EVENTS.LOCK_MOVER
@@ -19,12 +18,12 @@ function MoverFrameMixin:Init()
   local editBoxMargin = 35
   self:ClearAllPoints()
   self:SetPoint(
-    Core.db.profile.positionAnchor.point,
-    Core.db.profile.positionAnchor.xOfs,
-    Core.db.profile.positionAnchor.yOfs
+    self.profile.positionAnchor.point,
+    self.profile.positionAnchor.xOfs,
+    self.profile.positionAnchor.yOfs
   )
-  self:SetWidth(Core.db.profile.frameWidth)
-  self:SetHeight(Core.db.profile.frameHeight + editBoxMargin)
+  self:SetWidth(self.profile.frameWidth)
+  self:SetHeight(self.profile.frameHeight + editBoxMargin)
 
   -- Draw the mover above the chat (which sits at MEDIUM) so its move/resize
   -- card and corner grips stay visible even over a full chat window.
@@ -96,11 +95,6 @@ function MoverFrameMixin:Init()
   self.hint:SetText("Drag to move · Corners to resize · Lock to save")
   self.hint:SetTextColor(0.8, 0.8, 0.8, 1)
 
-  -- Size the plate to wrap the wider of the two text lines with padding on both
-  -- sides (16 left + text + 16 right = 32 + text).
-  local plateText = math.max(self.title:GetStringWidth(), self.hint:GetStringWidth())
-  self.plate:SetWidth(math.max(32 + plateText, 180))
-
   self:Hide()
 
   self:RegisterForDrag("LeftButton")
@@ -136,12 +130,12 @@ function MoverFrameMixin:Init()
       if (newHeight < 1) then newHeight = 1 end
 
       local changed = false
-      if (Core.db.profile.frameWidth ~= newWidth) then
-        Core.db.profile.frameWidth = newWidth
+      if (self.profile.frameWidth ~= newWidth) then
+        self.profile.frameWidth = newWidth
         changed = true
       end
-      if (Core.db.profile.frameHeight ~= newHeight) then
-        Core.db.profile.frameHeight = newHeight
+      if (self.profile.frameHeight ~= newHeight) then
+        self.profile.frameHeight = newHeight
         changed = true
       end
 
@@ -220,34 +214,42 @@ function MoverFrameMixin:Init()
         self:SetMovable(false)
 
         local point, _, _, xOfs, yOfs = self:GetPoint(1)
-        local position = {
+        -- Save position to this window's profile (multi-window aware)
+        self.profile.positionAnchor = {
           point = point,
           xOfs = xOfs,
           yOfs = yOfs
         }
-
-        Core:Dispatch(SaveFramePosition(position))
       end),
       Core:Subscribe(UNLOCK_MOVER, function ()
         self:Show()
         self:EnableMouse(true)
         self:SetMovable(true)
       end),
-      Core:Subscribe(UPDATE_CONFIG, function (key)
+      Core:Subscribe(UPDATE_CONFIG, function (payload)
+        local key = type(payload) == "table" and payload.key or payload
+        local targetWindowId = type(payload) == "table" and payload.windowId or nil
+        
+        -- If a specific window was targeted, only update if we match
+        local myWindowId = self.window and self.window.id or "Main"
+        if targetWindowId and targetWindowId ~= myWindowId then
+          return
+        end
+        
         if (key == "frameWidth") then
-          if (not self.isSizing) then self:SetWidth(Core.db.profile.frameWidth) end
+          if (not self.isSizing) then self:SetWidth(self.profile.frameWidth) end
         end
 
         if (key == "frameHeight") then
-          if (not self.isSizing) then self:SetHeight(Core.db.profile.frameHeight + editBoxMargin) end
+          if (not self.isSizing) then self:SetHeight(self.profile.frameHeight + editBoxMargin) end
         end
 
         if key == "framePosition" then
           self:ClearAllPoints()
           self:SetPoint(
-            Core.db.profile.positionAnchor.point,
-            Core.db.profile.positionAnchor.xOfs,
-            Core.db.profile.positionAnchor.yOfs
+            self.profile.positionAnchor.point,
+            self.profile.positionAnchor.xOfs,
+            self.profile.positionAnchor.yOfs
           )
         end
       end),
@@ -255,9 +257,49 @@ function MoverFrameMixin:Init()
   end
 end
 
-Core.Components.CreateMoverFrame = function (name, parent)
+-- Update the mover's title to show which window it belongs to.
+-- Called after the window reference is set on the moverFrame.
+function MoverFrameMixin:SetWindowLabel(windowId)
+  local label
+  if windowId and windowId ~= "Main" then
+    -- Convert "Window2" to "Window 2"
+    local num = windowId:match("Window(%d+)")
+    if num then
+      label = "Move chat frame - Window " .. num
+    else
+      label = "Move chat frame - " .. windowId
+    end
+  else
+    label = "Move chat frame - Main"
+  end
+  self.title:SetText(label)
+  
+  -- Resize the plate to fit the new title
+  local plateText = math.max(self.title:GetStringWidth(), self.hint:GetStringWidth())
+  self.plate:SetWidth(math.max(32 + plateText, 180))
+end
+
+-- Clean up subscriptions and hide the frame. Called when the owning window is deleted.
+function MoverFrameMixin:Destroy()
+  -- Unsubscribe from all events
+  if self.subscriptions then
+    for _, unsubscribe in ipairs(self.subscriptions) do
+      if type(unsubscribe) == "function" then
+        unsubscribe()
+      end
+    end
+    self.subscriptions = nil
+  end
+  -- Hide and disable
+  self:Hide()
+  self:EnableMouse(false)
+  self:SetMovable(false)
+end
+
+Core.Components.CreateMoverFrame = function (name, parent, profile)
   local frame = CreateFrame("Frame", name, parent)
   local object = Mixin(frame, MoverFrameMixin)
+  object.profile = profile or Core.db.profile
   object:Init()
   return object
 end

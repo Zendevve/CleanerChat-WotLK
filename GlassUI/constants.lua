@@ -61,7 +61,7 @@ Constants.ACTIONS = {
   UnlockMover = function ()
     return Constants.EVENTS.UNLOCK_MOVER
   end,
-  UpdateConfig = function (payload)
-    return Constants.EVENTS.UPDATE_CONFIG, payload
+  UpdateConfig = function (key, windowId)
+    return Constants.EVENTS.UPDATE_CONFIG, { key = key, windowId = windowId }
   end,
 }

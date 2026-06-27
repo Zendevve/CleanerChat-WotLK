@@ -35,7 +35,7 @@ function ChatDockMixin:Init(parent)
     mouseOver = false
   }
 
-  self:SetWidth(Core.db.profile.frameWidth)
+  self:SetWidth(self.profile.frameWidth)
   self:SetHeight(Constants.DOCK_HEIGHT)
   self:ClearAllPoints()
   self:SetPoint("TOPLEFT", parent, "TOPLEFT")
@@ -48,7 +48,7 @@ function ChatDockMixin:Init(parent)
   -- We create our own dock frame instead
 
   -- Gradient background. Opacity is user-configurable via the Top Bar settings.
-  self:SetGradientBackground(50, 250, Core.db.profile.dockBackgroundColor or Colors.black, Core.db.profile.dockBackgroundOpacity or 0.4)
+  self:SetGradientBackground(50, 250, self.profile.dockBackgroundColor or Colors.black, self.profile.dockBackgroundOpacity or 0.4)
 
   -- Override drag behaviour
   -- Disable undocking frames (if GENERAL_CHAT_DOCK exists)
@@ -69,37 +69,51 @@ function ChatDockMixin:Init(parent)
   -- (only if tabsOnHover is enabled).
   self:Show()
   self:SetAlpha(1)
-  if Core.db.profile.tabsOnHover then
+  if self.profile.tabsOnHover then
     self:FadeOutTabs()
   end
 
   if self.subscriptions == nil then
     self.subscriptions = {
-      Core:Subscribe(MOUSE_ENTER, function ()
+      Core:Subscribe(MOUSE_ENTER, function (window)
+        -- Only react to our own window's hover (nil = legacy global).
+        if window and window ~= self.window then return end
         -- Reveal the tabs while the mouse is over the chat
         self.state.mouseOver = true
-        if Core.db.profile.tabsOnHover then
+        if self.profile.tabsOnHover then
           self:ShowTabs()
         end
       end),
-      Core:Subscribe(MOUSE_LEAVE, function ()
+      Core:Subscribe(MOUSE_LEAVE, function (window)
+        if window and window ~= self.window then return end
         -- Fade the tabs out after the configured delay
         self.state.mouseOver = false
-        if Core.db.profile.tabsOnHover then
+        if self.profile.tabsOnHover then
           self:FadeOutTabs()
         end
       end),
-      Core:Subscribe(UPDATE_CONFIG, function (key)
+      Core:Subscribe(UPDATE_CONFIG, function (payload)
+        local key = type(payload) == "table" and payload.key or payload
+        local targetWindowId = type(payload) == "table" and payload.windowId or nil
+        
+        -- If a specific window was targeted, only update if we match
+        local myWindowId = self.window and self.window.id or "Main"
+        if targetWindowId and targetWindowId ~= myWindowId then
+          return
+        end
+        
+        local profile = self.profile or Core.db.profile
+        
         if key == "frameWidth" then
-          self:SetWidth(Core.db.profile.frameWidth)
+          self:SetWidth(profile.frameWidth)
         end
 
         if key == "frameWidth" or key == "dockBackgroundOpacity" or key == "dockBackgroundColor" then
-          self:SetGradientBackground(50, 250, Core.db.profile.dockBackgroundColor or Colors.black, Core.db.profile.dockBackgroundOpacity or 0.4)
+          self:SetGradientBackground(50, 250, profile.dockBackgroundColor or Colors.black, profile.dockBackgroundOpacity or 0.4)
         end
 
         if key == "tabsOnHover" then
-          if Core.db.profile.tabsOnHover then
+          if profile.tabsOnHover then
             -- Tabs on hover enabled - start fade out timer
             self:FadeOutTabs()
           else
@@ -109,10 +123,10 @@ function ChatDockMixin:Init(parent)
         end
 
         if key == "tabsAlwaysVisible" then
-          if Core.db.profile.tabsAlwaysVisible then
+          if profile.tabsAlwaysVisible then
             -- Pin the tabs on screen.
             self:ShowTabs()
-          elseif Core.db.profile.tabsOnHover then
+          elseif profile.tabsOnHover then
             -- Resume the normal fade-out behaviour.
             self:FadeOutTabs()
           end
@@ -135,7 +149,7 @@ function ChatDockMixin:ShowTabs()
   self:Show()
 
   -- Slide/fade the tabs in over the configured duration (0 = instant).
-  local duration = (Core.db.profile.dockAnimations ~= false) and (Core.db.profile.dockFadeInDuration or 0) or 0
+  local duration = (self.profile.dockAnimations ~= false) and (self.profile.dockFadeInDuration or 0) or 0
   if duration > 0 then
     self.fadeHandle = LibEasing:Ease(
       function (a) self:SetAlpha(a) end,
@@ -156,7 +170,7 @@ end
 -- Fade the tab dock out after the configured hold time.
 function ChatDockMixin:FadeOutTabs()
   -- If the user pinned the tabs, never fade them out -- keep them on screen.
-  if Core.db.profile.tabsAlwaysVisible then
+  if self.profile.tabsAlwaysVisible then
     self:ShowTabs()
     return
   end
@@ -165,11 +179,11 @@ function ChatDockMixin:FadeOutTabs()
     self.fadeOutTimer:Cancel()
   end
 
-  self.fadeOutTimer = C_Timer.NewTimer(Core.db.profile.dockHoldTime or 10, function ()
+  self.fadeOutTimer = C_Timer.NewTimer(self.profile.dockHoldTime or 10, function ()
     self.fadeOutTimer = nil
     if self.state.mouseOver then return end
 
-    local duration = (Core.db.profile.dockAnimations ~= false) and (Core.db.profile.dockFadeOutDuration or 0.6) or 0
+    local duration = (self.profile.dockAnimations ~= false) and (self.profile.dockFadeOutDuration or 0.6) or 0
     if self.fadeHandle then
       LibEasing:StopEasing(self.fadeHandle)
       self.fadeHandle = nil
@@ -195,24 +209,18 @@ function ChatDockMixin:FadeOutTabs()
   end)
 end
 
-local isCreated = false
-
-Core.Components.CreateChatDock = function (parent)
-  if isCreated then
-    error("ChatDock already exists. Only one ChatDock can exist at a time.")
-  end
-
+Core.Components.CreateChatDock = function (parent, name, profile)
   local FadingFrameMixin = Core.Components.FadingFrameMixin
   local GradientBackgroundMixin = Core.Components.GradientBackgroundMixin
 
-  isCreated = true
-  
-  -- In WotLK 3.3.5, GeneralDockManager doesn't exist
-  -- We create our own frame instead
-  local frame = CreateFrame("Frame", "GlassChatDock", parent)
+  -- In WotLK 3.3.5, GeneralDockManager doesn't exist; we create our own dock
+  -- frame. Each Glass window owns its own dock, so the name is parameterised
+  -- (the main window keeps "GlassChatDock").
+  local frame = CreateFrame("Frame", name or "GlassChatDock", parent)
   
   local object = Mixin(frame, FadingFrameMixin, GradientBackgroundMixin, ChatDockMixin)
   AceHook:Embed(object)
+  object.profile = profile or Core.db.profile
   FadingFrameMixin.Init(object)
   GradientBackgroundMixin.Init(object)
   ChatDockMixin.Init(object, parent)
