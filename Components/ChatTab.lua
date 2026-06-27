@@ -459,7 +459,7 @@ function ChatTabMixin:UpdateSkinColors(isHovered)
   local b = math.min(1, baseColor.b * hoverMult)
   
   -- Opacity multiplier based on state
-  local opacityMult = isSelected and 1.0 or (isHovered and 0.85 or 0.7)
+  local opacityMult = isSelected and 1.0 or (isHovered and 0.5 or 0.3)
   local finalOpacity = bgOpacity * opacityMult
   
   if isRounded then

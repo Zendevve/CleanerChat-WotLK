@@ -95,10 +95,10 @@ Core.defaults = {
 
     -- Tab button skin style
     tabStyle = "minimal", -- "minimal" = text only, "outline" = border only
-    tabCornerStyle = "square", -- "square" or "rounded" (only applies when tabStyle is not minimal)
-    tabActiveColor = { r = 223 / 255, g = 186 / 255, b = 105 / 255 }, -- apache (gold) for selected tab
-    tabInactiveColor = { r = 0.4, g = 0.4, b = 0.4 }, -- gray for unselected tabs
-    tabBackgroundOpacity = 0.7, -- background/border opacity
+    tabCornerStyle = "rounded", -- "square" or "rounded" (only applies when tabStyle is not minimal)
+    tabActiveColor = { r = 1.0, g = 191 / 255, b = 0 }, -- amber for selected tab
+    tabInactiveColor = { r = 1.0, g = 191 / 255, b = 0 }, -- amber for unselected tabs
+    tabBackgroundOpacity = 1.0, -- background/border opacity (full for active, multiplied for inactive)
     tabSpacing = 5, -- spacing between tabs
     tabBorderThickness = 1, -- border line thickness (1-5)
     tabPadding = 5, -- padding from dock edge
