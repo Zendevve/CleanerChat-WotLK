@@ -14,6 +14,7 @@ local GetAddOnMetadata = GetAddOnMetadata
 local GetChannelName = GetChannelName
 local GetNumGroupMembers = GetNumGroupMembers or GetNumRaidMembers
 local GetNumPartyMembers = GetNumPartyMembers
+local GetTime = GetTime
 local IsInGuild = IsInGuild
 local IsInInstance = IsInInstance
 local SendAddonMessage = SendAddonMessage
@@ -28,6 +29,8 @@ local CURRENT_VERSION = GetAddOnMetadata(Addon, "Version") or "0.0"
 -- State
 local hasNotifiedThisSession = false
 local highestVersionSeen = CURRENT_VERSION
+local lastBroadcastTime = 0
+local BROADCAST_THROTTLE = 60 -- seconds between broadcasts
 
 -- Parse version string to comparable number (e.g., "2.12" -> 212, "2.9" -> 209)
 local function ParseVersion(versionStr)
@@ -58,6 +61,13 @@ end
 
 -- Broadcast version to all available channels
 local function BroadcastVersion()
+  -- Throttle broadcasts to prevent spam
+  local now = GetTime()
+  if now - lastBroadcastTime < BROADCAST_THROTTLE then
+    return
+  end
+  lastBroadcastTime = now
+
   -- Guild
   if IsInGuild() then
     SendVersion("GUILD")
