@@ -3,6 +3,19 @@ local Core, Constants = unpack(select(2, ...))
 local AceHook = Core.Libs.AceHook
 local LSM = Core.Libs.LSM
 
+-- Dedicated AceHook host.
+--
+-- We must NOT embed AceHook directly onto the live Blizzard ChatFrame1EditBox.
+-- AceHook:Embed() copies its mixin methods onto the target, and one of them --
+-- HookScript -- overwrites the frame's native :HookScript with AceHook's
+-- different signature (object, script, handler). Other addons (e.g. Ludwig)
+-- still call the native editBox:HookScript("OnChar", handler), which then hits
+-- AceHook's version and errors with "'object' - nil or table expected got
+-- string". Hooking through this separate plain-table host lets us keep using
+-- AceHook's RawHook while leaving the editbox's native methods untouched.
+local Hooker = {}
+AceHook:Embed(Hooker)
+
 local Colors = Constants.COLORS
 
 local EDIT_FOCUS_GAINED = Constants.EVENTS.EDIT_FOCUS_GAINED
@@ -77,7 +90,7 @@ function EditBoxMixin:Init(parent)
   for _, region in ipairs({ self:GetRegions() }) do
     if region ~= self.bg and region.GetObjectType and region:GetObjectType() == "Texture" then
       region:Hide()
-      self:RawHook(region, "Show", function () end, true)
+      Hooker:RawHook(region, "Show", function () end, true)
     end
   end
 
@@ -102,9 +115,9 @@ function EditBoxMixin:Init(parent)
   local Ypadding = GetFontHeight(self.header) * 0.66
   self:SetHeight(GetFontHeight(self.header) + Ypadding * 2)
 
-  self:RawHook(self, "SetTextInsets", function ()
+  Hooker:RawHook(self, "SetTextInsets", function ()
     Ypadding = GetFontHeight(self.header) * 0.66
-    self.hooks[self].SetTextInsets(
+    Hooker.hooks[self].SetTextInsets(
       self,
       self.header:GetStringWidth() + 8,
       8, Ypadding, Ypadding

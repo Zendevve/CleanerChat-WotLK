@@ -1,4 +1,5 @@
 local Core, Constants, Utils = unpack(select(2, ...))
+local ns = select(2, ...) -- Get raw namespace for ns.Timer access
 local UIManager = Core:GetModule("UIManager")
 
 local UnlockMover = Constants.ACTIONS.UnlockMover
@@ -293,7 +294,11 @@ function UIManager:OnEnable()
   -- restored windows automatically reclaim their saved chat frames.
   SetupTabs(true)
 
-  if (C_Timer and C_Timer.After) then
+  -- Use internal ns.Timer (or native C_Timer if available)
+  if (ns.Timer and ns.Timer.After) then
+    ns.Timer.After(0.5, function () SetupTabs(true) end)
+    ns.Timer.After(2, function () SetupTabs(true) end)
+  elseif (C_Timer and C_Timer.After) then
     C_Timer.After(0.5, function () SetupTabs(true) end)
     C_Timer.After(2, function () SetupTabs(true) end)
   end
@@ -311,7 +316,13 @@ function UIManager:OnEnable()
     local function ReassertTabs()
       if (reassertScheduled) then return end
       reassertScheduled = true
-      if (C_Timer and C_Timer.After) then
+      -- Use internal ns.Timer (or native C_Timer if available)
+      if (ns.Timer and ns.Timer.After) then
+        ns.Timer.After(0, function ()
+          reassertScheduled = false
+          SetupTabs(false)
+        end)
+      elseif (C_Timer and C_Timer.After) then
         C_Timer.After(0, function ()
           reassertScheduled = false
           SetupTabs(false)
