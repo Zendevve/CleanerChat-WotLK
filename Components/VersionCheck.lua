@@ -11,14 +11,8 @@ local string_gsub = string.gsub
 -- WoW API
 local CreateFrame = CreateFrame
 local GetAddOnMetadata = GetAddOnMetadata
-local GetChannelName = GetChannelName
-local GetNumGroupMembers = GetNumGroupMembers or GetNumRaidMembers
-local GetNumPartyMembers = GetNumPartyMembers
 local GetTime = GetTime
 local IsInGuild = IsInGuild
-local IsInInstance = IsInInstance
-local SendAddonMessage = SendAddonMessage
-local UnitInBattleground = UnitInBattleground
 
 -- Addon message prefix (max 16 chars)
 local ADDON_PREFIX = "CleanerChat"
@@ -54,9 +48,7 @@ end
 
 -- Send version to a channel
 local function SendVersion(channel)
-  if SendAddonMessage then
-    SendAddonMessage(ADDON_PREFIX, CURRENT_VERSION, channel)
-  end
+  SendAddonMessage(ADDON_PREFIX, CURRENT_VERSION, channel)
 end
 
 -- Broadcast version to all available channels
@@ -74,8 +66,8 @@ local function BroadcastVersion()
   end
   
   -- Party/Raid
-  local numRaid = GetNumGroupMembers and GetNumGroupMembers() or (GetNumRaidMembers and GetNumRaidMembers()) or 0
-  local numParty = GetNumPartyMembers and GetNumPartyMembers() or 0
+  local numRaid = (GetNumGroupMembers or GetNumRaidMembers or function() return 0 end)()
+  local numParty = (GetNumPartyMembers or function() return 0 end)()
   
   if numRaid > 0 then
     SendVersion("RAID")
@@ -84,13 +76,13 @@ local function BroadcastVersion()
   end
   
   -- Battleground
-  if UnitInBattleground("player") then
+  if UnitInBattleground and UnitInBattleground("player") then
     SendVersion("BATTLEGROUND")
   end
 end
 
 -- Handle incoming version messages
-local function OnAddonMessage(prefix, message, channel, sender)
+local function OnAddonMessage(prefix, message, _channel, _sender)
   if prefix ~= ADDON_PREFIX then return end
   if not message or message == "" then return end
   
@@ -115,14 +107,6 @@ local function OnAddonMessage(prefix, message, channel, sender)
   end
 end
 
--- Module initialization
-function Module:OnInitialize()
-  -- Register addon prefix for communication
-  if RegisterAddonMessagePrefix then
-    RegisterAddonMessagePrefix(ADDON_PREFIX)
-  end
-end
-
 function Module:OnEnable()
   -- Create event frame for addon messages
   local eventFrame = CreateFrame("Frame")
@@ -133,7 +117,7 @@ function Module:OnEnable()
   eventFrame:RegisterEvent("RAID_ROSTER_UPDATE") -- WotLK 3.3.5
   eventFrame:RegisterEvent("GUILD_ROSTER_UPDATE")
   
-  eventFrame:SetScript("OnEvent", function(self, event, ...)
+  eventFrame:SetScript("OnEvent", function(_frame, event, ...)
     if event == "CHAT_MSG_ADDON" then
       OnAddonMessage(...)
     elseif event == "PLAYER_ENTERING_WORLD" then
@@ -146,10 +130,10 @@ function Module:OnEnable()
         -- Fallback: use OnUpdate
         local delay = CreateFrame("Frame")
         local elapsed = 0
-        delay:SetScript("OnUpdate", function(self, dt)
+        delay:SetScript("OnUpdate", function(delayFrame, dt)
           elapsed = elapsed + dt
           if elapsed >= 5 then
-            self:SetScript("OnUpdate", nil)
+            delayFrame:SetScript("OnUpdate", nil)
             BroadcastVersion()
           end
         end)
