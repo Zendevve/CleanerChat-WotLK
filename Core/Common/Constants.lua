@@ -2,16 +2,6 @@ local _, ns = ...
 
 -- GLOBALS: GetBuildInfo
 
--- Addon version
-------------------------------------------------------
--- Keyword substitution requires the packager,
--- and does not affect direct GitHub repo pulls.
-local addonVersion = "2.0.59-Release"
-if (addonVersion:find("project%-version")) then
-	addonVersion = "Development"
-end
-ns.Private.Version = addonVersion
-
 -- WoW client interface version
 ------------------------------------------------------
 local _, _, _, interfaceVersion = GetBuildInfo()

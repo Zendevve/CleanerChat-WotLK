@@ -1,22 +1,23 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
 
-	<Script file="Achievements.lua"/>
-	<Script file="Auctions.lua"/>
-	<Script file="Blacklist.lua"/>
-	<Script file="Channels.lua"/>
-	<Script file="ColorClass.lua"/>
-	<Script file="ColorQuality.lua"/>
-	<Script file="Empty.lua"/>
-	<Script file="Experience.lua"/>
-	<Script file="Loot.lua"/>
-	<Script file="Money.lua"/>
-	<Script file="PlayerNames.lua"/>
-	<Script file="Quests.lua"/>
-	<Script file="Reputation.lua"/>
-	<Script file="Spells.lua"/>
-	<Script file="Status.lua"/>
-	<Script file="Tradeskills.lua"/>
-	<Script file="VersionCheck.lua"/>
-	<Script file="_Debug.lua"/>
+	<!-- ChatCleaner message filters -->
+	<Script file="Filters\Achievements.lua"/>
+	<Script file="Filters\Auctions.lua"/>
+	<Script file="Filters\Blacklist.lua"/>
+	<Script file="Filters\Channels.lua"/>
+	<Script file="Filters\ColorClass.lua"/>
+	<Script file="Filters\ColorQuality.lua"/>
+	<Script file="Filters\Empty.lua"/>
+	<Script file="Filters\Experience.lua"/>
+	<Script file="Filters\Loot.lua"/>
+	<Script file="Filters\Money.lua"/>
+	<Script file="Filters\PlayerNames.lua"/>
+	<Script file="Filters\Quests.lua"/>
+	<Script file="Filters\Reputation.lua"/>
+	<Script file="Filters\Spells.lua"/>
+	<Script file="Filters\Status.lua"/>
+	<Script file="Filters\Tradeskills.lua"/>
+	<Script file="Filters\VersionCheck.lua"/>
+	<Script file="Filters\_Debug.lua"/>
 
 </Ui>

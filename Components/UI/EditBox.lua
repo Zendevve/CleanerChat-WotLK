@@ -104,11 +104,11 @@ function EditBoxMixin:Init(parent)
     end
   end
 
-  local Ypadding = GetFontHeight(self.header) * 0.66
+  local Ypadding = GetFontHeight(self.header) * Constants.EDITBOX_PADDING_RATIO
   self:SetHeight(GetFontHeight(self.header) + Ypadding * 2)
 
   Hooker:RawHook(self, "SetTextInsets", function ()
-    Ypadding = GetFontHeight(self.header) * 0.66
+    Ypadding = GetFontHeight(self.header) * Constants.EDITBOX_PADDING_RATIO
     Hooker.hooks[self].SetTextInsets(
       self,
       self.header:GetStringWidth() + 8,

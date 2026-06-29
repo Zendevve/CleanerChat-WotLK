@@ -134,6 +134,9 @@ jobs:
                     --exclude='changelog.txt' \
                     --exclude='README.md' \
                     --exclude='LICENSE.txt' \
+                    --exclude='CONTRIBUTING.md' \
+                    --exclude='docs' \
+                    --exclude='spec' \
                     ./ release/CleanerChat/
           
           # Create the zip file

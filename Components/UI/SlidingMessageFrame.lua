@@ -48,7 +48,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
   self.profile = self.window and self.window.profile or Core.db.profile
 
   self.config = {
-    height = self.profile.frameHeight - Constants.DOCK_HEIGHT - 5,
+    height = self.profile.frameHeight - Constants.DOCK_HEIGHT - Constants.MESSAGE_DOCK_GAP,
     width = self.profile.frameWidth,
     overflowHeight = 60,
   }
@@ -80,7 +80,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
     -- Set up minimal scroll frame (not used for combat log display)
     self:SetHeight(self.config.height + self.config.overflowHeight)
     self:SetWidth(self.config.width)
-    self:SetPoint("TOPLEFT", 0, (Constants.DOCK_HEIGHT + 5) * -1)
+    self:SetPoint("TOPLEFT", 0, (Constants.DOCK_HEIGHT + Constants.MESSAGE_DOCK_GAP) * -1)
     self:SetVerticalScroll(self.config.overflowHeight)
     self:Hide()  -- Hide Glass overlay for combat log - native frame renders instead
     
@@ -130,7 +130,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
   -- Chat scroll frame for our custom messages
   self:SetHeight(self.config.height + self.config.overflowHeight)
   self:SetWidth(self.config.width)
-  self:SetPoint("TOPLEFT", 0, (Constants.DOCK_HEIGHT + 5) * -1)
+  self:SetPoint("TOPLEFT", 0, (Constants.DOCK_HEIGHT + Constants.MESSAGE_DOCK_GAP) * -1)
 
   -- Set initial scroll position
   self:SetVerticalScroll(self.config.overflowHeight)
@@ -384,7 +384,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
             key == "indentWordWrap"
           ) then
             -- Adjust frame dimensions first
-            self.config.height = self.profile.frameHeight - Constants.DOCK_HEIGHT - 5
+            self.config.height = self.profile.frameHeight - Constants.DOCK_HEIGHT - Constants.MESSAGE_DOCK_GAP
             self.config.width = self.profile.frameWidth
 
             self:SetHeight(self.config.height + self.config.overflowHeight)

@@ -175,6 +175,15 @@ CleanerChat is an independent project maintained by **migwynkriid**, who bundles
 
 ---
 
+## Contributing
+
+Contributions are welcome. See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the
+project layout, local linting/tests, and the conventions for adding filters, and
+**[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** for a tour of how the addon is
+put together.
+
+---
+
 ## License
 
 Custom License — see [LICENSE.txt](LICENSE.txt).

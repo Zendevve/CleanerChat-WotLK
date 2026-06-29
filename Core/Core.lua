@@ -432,7 +432,7 @@ ns.UpgradeSettings = function(self)
 
 				-- Old settings are true when the filter is disabled,
 				-- new settings are true when filter is enabled.
-				-- Also, old naming scheme was horrible.
+				-- The old setting naming scheme has also been replaced.
 				CleanerChat_DB[setting] = nil
 				CleanerChat_DB.filters[string_lower(moduleName)] = not value
 			end
@@ -581,13 +581,6 @@ ns.OnEnable = function(self)
 	self:GetModule("Blacklist"):Enable()
 	self:GetModule("Empty"):Enable()
 	self:GetModule("VersionCheck"):Enable()
-
-	-- Enable development version modules.
-	-- *not recommended for the public
-	if (ns.Version == "Development") then
-		self:GetModule("DevelopmentFilters"):Enable()
-		self:GetModule("Creatures"):Enable()
-	end
 
 	-- Print startup message (delayed so it's visible after login spam)
 	if (self.db.showStartupMessage) then

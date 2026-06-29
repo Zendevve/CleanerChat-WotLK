@@ -686,7 +686,7 @@ files = {
   },
 
   -- ChatTab modifies SELECTED_CHAT_FRAME
-  ["Components/ChatTab.lua"] = {
+  ["Components/UI/ChatTab.lua"] = {
     ignore = { "122", "212" },  -- Setting SELECTED_CHAT_FRAME + callbacks
     globals = {
       "SELECTED_CHAT_FRAME",
@@ -695,7 +695,7 @@ files = {
   },
 
   -- Debug component adds slash commands
-  ["Components/_Debug.lua"] = {
+  ["Components/Filters/_Debug.lua"] = {
     ignore = { "122", "212" },  -- Adding to SlashCmdList + callbacks
     globals = {
       "SlashCmdList",
@@ -704,50 +704,50 @@ files = {
   },
 
   -- Loot uses StaticPopupDialogs
-  ["Components/Loot.lua"] = {
+  ["Components/Filters/Loot.lua"] = {
     ignore = { "212" },  -- Callback signatures
     globals = { "StaticPopupDialogs" },
   },
 
   -- Chat filter components have callbacks with fixed signatures
   -- (self, chatFrame, event/msg, r, g, b, chatID, ...)
-  ["Components/Achievements.lua"] = {
+  ["Components/Filters/Achievements.lua"] = {
     ignore = { "212" },  -- Chat filter callback signature
   },
-  ["Components/Auctions.lua"] = {
+  ["Components/Filters/Auctions.lua"] = {
     ignore = { "212" },  -- Chat filter callback signature
   },
-  ["Components/Blacklist.lua"] = {
+  ["Components/Filters/Blacklist.lua"] = {
     ignore = { "212" },  -- Chat filter callback signature
   },
-  ["Components/Empty.lua"] = {
+  ["Components/Filters/Empty.lua"] = {
     ignore = { "212" },  -- Chat filter callback signature
   },
-  ["Components/Experience.lua"] = {
+  ["Components/Filters/Experience.lua"] = {
     ignore = { "212" },  -- Chat filter callback signature
   },
-  ["Components/GradientBackground.lua"] = {
+  ["Components/UI/GradientBackground.lua"] = {
     ignore = { "212" },  -- Mixin callback signature
   },
-  ["Components/Money.lua"] = {
+  ["Components/Filters/Money.lua"] = {
     ignore = { "212" },  -- Chat filter callback signature
   },
-  ["Components/Quests.lua"] = {
+  ["Components/Filters/Quests.lua"] = {
     ignore = { "212" },  -- Chat filter callback signature
   },
-  ["Components/Reputation.lua"] = {
+  ["Components/Filters/Reputation.lua"] = {
     ignore = { "212" },  -- Chat filter callback signature
   },
-  ["Components/SlidingMessageFrame.lua"] = {
+  ["Components/UI/SlidingMessageFrame.lua"] = {
     ignore = { "212" },  -- Callback signatures
   },
-  ["Components/Spells.lua"] = {
+  ["Components/Filters/Spells.lua"] = {
     ignore = { "212" },  -- Chat filter callback signature
   },
-  ["Components/Status.lua"] = {
+  ["Components/Filters/Status.lua"] = {
     ignore = { "212" },  -- Chat filter callback signature
   },
-  ["Components/Tradeskills.lua"] = {
+  ["Components/Filters/Tradeskills.lua"] = {
     ignore = { "212" },  -- Chat filter callback signature
   },
 
