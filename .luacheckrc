@@ -752,10 +752,10 @@ files = {
   },
 
   -- Unit tests run under the busted framework (describe/it/assert/before_each)
-  -- and stub a couple of WoW globals (ChatTypeInfo, C_Timer) on _G for the
-  -- helpers under test, so writing to them is expected here.
+  -- and intentionally stub WoW globals (ChatTypeInfo, C_Timer) on _G to exercise
+  -- the helpers, so allow assigning to those otherwise read-only global fields.
   ["spec/*.lua"] = {
     std = "+busted",
-    globals = { "ChatTypeInfo", "C_Timer" },
+    ignore = { "122" }, -- W122: setting read-only field of _G (intentional test stubs)
   },
 }
