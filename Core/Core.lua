@@ -587,7 +587,7 @@ ns.OnEnable = function(self)
 		-- Use internal ns.Timer (or native C_Timer if available)
 		if (ns.Timer and ns.Timer.After) then
 			ns.Timer.After(2, function()
-				print("|cffDFBA69CleanerChat|r: Use |cffffd200/cc|r for settings.")
+				print("|cffDFBA69CleanerChat|r: " .. string_format(L["Use %s for settings."], "|cffffd200/cc|r"))
 			end)
 		elseif (C_Timer and C_Timer.After) then
 			C_Timer.After(2, function()
