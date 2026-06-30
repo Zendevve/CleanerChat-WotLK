@@ -37,29 +37,7 @@ end
 function UIManager:OnEnable()
   self.tickerFrame = CreateFrame("Frame", "GlassUpdaterFrame", UIParent)
 
-  -- Watch for Blizzard_CombatLog loading to hide its quick-button bar
-  local addonWatcher = CreateFrame("Frame")
-  addonWatcher:RegisterEvent("ADDON_LOADED")
-  addonWatcher:SetScript("OnEvent", function(_, event, addon)
-    if addon == "Blizzard_CombatLog" then
-      local combatLogButtons = _G["CombatLogQuickButtonFrame"]
-      if combatLogButtons then
-        combatLogButtons:Hide()
-        combatLogButtons:SetAlpha(0)
-        -- Replace Show to prevent it from ever appearing
-        combatLogButtons.Show = function() end
-      end
-    end
-  end)
-  -- Also check if it's already loaded
-  if IsAddOnLoaded("Blizzard_CombatLog") then
-    local combatLogButtons = _G["CombatLogQuickButtonFrame"]
-    if combatLogButtons then
-      combatLogButtons:Hide()
-      combatLogButtons:SetAlpha(0)
-      combatLogButtons.Show = function() end
-    end
-  end
+  self:HideCombatLogQuickButtons()
 
   -- Shared "unlock to move" dialog (one for the whole UI).
   self.moverDialog = CreateMoverDialog("GlassMoverDialog", UIParent)
@@ -394,78 +372,7 @@ function UIManager:OnEnable()
     end
   end
 
-  -- Handle the Social (friends) button visibility based on settings
-  -- FriendsMicroButton is the friends/social button in WotLK 3.3.5
-  if not self._socialButtonHooked then
-    self._socialButtonHooked = true
-    local socialButton = _G["FriendsMicroButton"]
-    if socialButton then
-      -- Apply initial state
-      if Core.db.profile.hideSocialButton then
-        socialButton:Hide()
-      else
-        socialButton:Show()
-      end
-      -- Hook to enforce setting when Blizzard tries to show it
-      if _G.hooksecurefunc then
-        _G.hooksecurefunc(socialButton, "Show", function(b)
-          if Core.db.profile.hideSocialButton then
-            b:Hide()
-          end
-        end)
-      end
-    end
-    -- Listen for setting changes
-    Core:Subscribe(UPDATE_CONFIG, function(payload)
-      local key = type(payload) == "table" and payload.key or payload
-      if key == "hideSocialButton" then
-        local btn = _G["FriendsMicroButton"]
-        if btn then
-          if Core.db.profile.hideSocialButton then
-            btn:Hide()
-          else
-            btn:Show()
-          end
-        end
-      end
-    end)
-  end
-
-  -- Handle the Chat Menu button (speech bubble with language/emote options)
-  if not self._chatMenuButtonHooked then
-    self._chatMenuButtonHooked = true
-    local chatMenuButton = _G["ChatFrameMenuButton"]
-    if chatMenuButton then
-      -- Apply initial state
-      if Core.db.profile.hideChatMenuButton then
-        chatMenuButton:Hide()
-      else
-        chatMenuButton:Show()
-      end
-      -- Hook to enforce setting when Blizzard tries to show it
-      if _G.hooksecurefunc then
-        _G.hooksecurefunc(chatMenuButton, "Show", function(b)
-          if Core.db.profile.hideChatMenuButton then
-            b:Hide()
-          end
-        end)
-      end
-    end
-    -- Listen for setting changes
-    Core:Subscribe(UPDATE_CONFIG, function(payload)
-      local key = type(payload) == "table" and payload.key or payload
-      if key == "hideChatMenuButton" then
-        local btn = _G["ChatFrameMenuButton"]
-        if btn then
-          if Core.db.profile.hideChatMenuButton then
-            btn:Hide()
-          else
-            btn:Show()
-          end
-        end
-      end
-    end)
-  end
+  self:SetupTopBarButtonToggles()
   
   -- Hide Blizzard chat frame backgrounds and scroll buttons
   for i = 1, NUM_CHAT_WINDOWS do
@@ -517,6 +424,119 @@ function UIManager:OnEnable()
     self.editBox:ClearFocus()
   end
 
+  self:InstallChatHooks()
+
+  self:StartRenderLoop()
+end
+
+-- Hide Blizzard_CombatLog's quick-button bar, now and whenever that addon loads.
+function UIManager:HideCombatLogQuickButtons()
+  -- Watch for Blizzard_CombatLog loading to hide its quick-button bar
+  local addonWatcher = CreateFrame("Frame")
+  addonWatcher:RegisterEvent("ADDON_LOADED")
+  addonWatcher:SetScript("OnEvent", function(_, event, addon)
+    if addon == "Blizzard_CombatLog" then
+      local combatLogButtons = _G["CombatLogQuickButtonFrame"]
+      if combatLogButtons then
+        combatLogButtons:Hide()
+        combatLogButtons:SetAlpha(0)
+        -- Replace Show to prevent it from ever appearing
+        combatLogButtons.Show = function() end
+      end
+    end
+  end)
+  -- Also check if it's already loaded
+  if IsAddOnLoaded("Blizzard_CombatLog") then
+    local combatLogButtons = _G["CombatLogQuickButtonFrame"]
+    if combatLogButtons then
+      combatLogButtons:Hide()
+      combatLogButtons:SetAlpha(0)
+      combatLogButtons.Show = function() end
+    end
+  end
+end
+
+-- Apply and enforce the user's "hide Social / Chat Menu button" settings, and
+-- keep them in sync when those settings change.
+function UIManager:SetupTopBarButtonToggles()
+  -- Handle the Social (friends) button visibility based on settings
+  -- FriendsMicroButton is the friends/social button in WotLK 3.3.5
+  if not self._socialButtonHooked then
+    self._socialButtonHooked = true
+    local socialButton = _G["FriendsMicroButton"]
+    if socialButton then
+      -- Apply initial state
+      if Core.db.profile.hideSocialButton then
+        socialButton:Hide()
+      else
+        socialButton:Show()
+      end
+      -- Hook to enforce setting when Blizzard tries to show it
+      if _G.hooksecurefunc then
+        _G.hooksecurefunc(socialButton, "Show", function(b)
+          if Core.db.profile.hideSocialButton then
+            b:Hide()
+          end
+        end)
+      end
+    end
+    -- Listen for setting changes
+    Core:Subscribe(UPDATE_CONFIG, function(payload)
+      local key = Core:ResolveConfigKey(payload)
+      if key == "hideSocialButton" then
+        local btn = _G["FriendsMicroButton"]
+        if btn then
+          if Core.db.profile.hideSocialButton then
+            btn:Hide()
+          else
+            btn:Show()
+          end
+        end
+      end
+    end)
+  end
+
+  -- Handle the Chat Menu button (speech bubble with language/emote options)
+  if not self._chatMenuButtonHooked then
+    self._chatMenuButtonHooked = true
+    local chatMenuButton = _G["ChatFrameMenuButton"]
+    if chatMenuButton then
+      -- Apply initial state
+      if Core.db.profile.hideChatMenuButton then
+        chatMenuButton:Hide()
+      else
+        chatMenuButton:Show()
+      end
+      -- Hook to enforce setting when Blizzard tries to show it
+      if _G.hooksecurefunc then
+        _G.hooksecurefunc(chatMenuButton, "Show", function(b)
+          if Core.db.profile.hideChatMenuButton then
+            b:Hide()
+          end
+        end)
+      end
+    end
+    -- Listen for setting changes
+    Core:Subscribe(UPDATE_CONFIG, function(payload)
+      local key = Core:ResolveConfigKey(payload)
+      if key == "hideChatMenuButton" then
+        local btn = _G["ChatFrameMenuButton"]
+        if btn then
+          if Core.db.profile.hideChatMenuButton then
+            btn:Hide()
+          else
+            btn:Show()
+          end
+        end
+      end
+    end)
+  end
+end
+
+-- Install the defensive Blizzard chat-frame hooks: route temporary (whisper)
+-- windows into Glass, and guard the dropdown/channel APIs against the nil chat
+-- frame that Glass's tab selection can leave behind.
+function UIManager:InstallChatHooks()
   -- Handle temporary chat frames (whisper popout, pet battle)
   self:RawHook("FCF_OpenTemporaryWindow", function (...)
     local chatFrame = self.hooks["FCF_OpenTemporaryWindow"](...)
@@ -610,12 +630,15 @@ function UIManager:OnEnable()
     -- GeneralDockManager -- and that path does not call FCF_DockUpdate, so our
     -- normal re-assert hook never fires. Without this, all tabs vanish until a
     -- /reload. Re-assert now to pull the remaining tabs back into the Glass dock.
-    if SetupTabs then
-      SetupTabs(true)
+    if self._setupTabs then
+      self._setupTabs(true)
     end
   end, true)
+end
 
-  -- Start rendering
+-- Drive the per-window render loop: tick each window's container (mouse-over
+-- tracking) and its sliding message frames, plus any temporary whisper frames.
+function UIManager:StartRenderLoop()
   self.timeElapsed = 0
   self.tickerFrame:SetScript("OnUpdate", function (_, elapsed)
     self.timeElapsed = self.timeElapsed + elapsed
@@ -787,9 +810,17 @@ function UIManager:DeleteWindow(windowId)
     end
   end
 
-  -- Hide the window's Glass frames and clean up subscriptions.
-  if window.dock then window.dock:Hide() end
-  if window.container then window.container:Hide() end
+  -- Hide the window's Glass frames and clean up subscriptions. The SMFs were
+  -- unsubscribed by the pool resetter (Release -> smf:Destroy()) above; the dock
+  -- and container are one-per-window, so destroy them directly.
+  if window.dock then
+    if window.dock.Destroy then window.dock:Destroy() end
+    window.dock:Hide()
+  end
+  if window.container then
+    if window.container.Destroy then window.container:Destroy() end
+    window.container:Hide()
+  end
   if window.moverFrame then
     -- Destroy unsubscribes from LOCK_MOVER/UNLOCK_MOVER so the mover won't
     -- reappear when the user does /cc lock after deleting this window.

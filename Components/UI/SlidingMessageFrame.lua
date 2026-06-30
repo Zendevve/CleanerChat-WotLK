@@ -1,4 +1,4 @@
-local Core, Constants = unpack(select(2, ...))
+local Core, Constants, Utils = unpack(select(2, ...))
 local TP = Core:GetModule("TextProcessing")
 
 local AceHook = Core.Libs.AceHook
@@ -19,15 +19,8 @@ local LibEasing = Core.Libs.LibEasing
 local lodash = Core.Libs.lodash
 local drop, reduce, take = lodash.drop, lodash.reduce, lodash.take
 
--- Helper to set solid color texture (3.3.5 compatibility)
-local function SetSolidColor(texture, r, g, b, a)
-  if texture.SetColorTexture then
-    texture:SetColorTexture(r, g, b, a)
-  else
-    texture:SetTexture("Interface\\Buttons\\WHITE8x8")
-    texture:SetVertexColor(r or 1, g or 1, b or 1, a or 1)
-  end
-end
+-- Solid colour texture helper (shared; SetColorTexture polyfilled in compat).
+local SetSolidColor = Utils.SetSolidColor
 
 local CreateMessageLinePool = Core.Components.CreateMessageLinePool
 local CreateScrollOverlayFrame = Core.Components.CreateScrollOverlayFrame
@@ -55,7 +48,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
   self.profile = self.window and self.window.profile or Core.db.profile
 
   self.config = {
-    height = self.profile.frameHeight - Constants.DOCK_HEIGHT - 5,
+    height = self.profile.frameHeight - Constants.DOCK_HEIGHT - Constants.MESSAGE_DOCK_GAP,
     width = self.profile.frameWidth,
     overflowHeight = 60,
   }
@@ -87,7 +80,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
     -- Set up minimal scroll frame (not used for combat log display)
     self:SetHeight(self.config.height + self.config.overflowHeight)
     self:SetWidth(self.config.width)
-    self:SetPoint("TOPLEFT", 0, (Constants.DOCK_HEIGHT + 5) * -1)
+    self:SetPoint("TOPLEFT", 0, (Constants.DOCK_HEIGHT + Constants.MESSAGE_DOCK_GAP) * -1)
     self:SetVerticalScroll(self.config.overflowHeight)
     self:Hide()  -- Hide Glass overlay for combat log - native frame renders instead
     
@@ -137,7 +130,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
   -- Chat scroll frame for our custom messages
   self:SetHeight(self.config.height + self.config.overflowHeight)
   self:SetWidth(self.config.width)
-  self:SetPoint("TOPLEFT", 0, (Constants.DOCK_HEIGHT + 5) * -1)
+  self:SetPoint("TOPLEFT", 0, (Constants.DOCK_HEIGHT + Constants.MESSAGE_DOCK_GAP) * -1)
 
   -- Set initial scroll position
   self:SetVerticalScroll(self.config.overflowHeight)
@@ -149,27 +142,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
 
     -- Snap to bottom on click
     self.overlay:SetScript("OnClickSnapFrame", function ()
-      self.state.scrollAtBottom = true
-      self.state.unreadMessages = false
-      self.overlay:Hide()
-      self.overlay:HideNewMessageAlert()
-
-      local startOffset = math.max(
-        self:GetVerticalScrollRange() - self.config.height * 2,
-        self:GetVerticalScroll()
-      )
-      local endOffset = self:GetVerticalScrollRange()
-
-      LibEasing:Ease(
-        function (offset) self:SetVerticalScroll(offset) end,
-        startOffset,
-        endOffset,
-        0.3,
-        LibEasing.OutCubic,
-        function ()
-          self:SetHeight(self.config.height + self.config.overflowHeight)
-        end
-      )
+      self:SnapToBottom()
     end)
   end
 
@@ -339,27 +312,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
         -- If there are unread messages or the overlay is visible (scrolled up),
         -- snap to the bottom just like clicking the overlay would
         if self.state.unreadMessages or (self.overlay and self.overlay:IsShown()) then
-          self.state.scrollAtBottom = true
-          self.state.unreadMessages = false
-          self.overlay:Hide()
-          self.overlay:HideNewMessageAlert()
-
-          local startOffset = math.max(
-            self:GetVerticalScrollRange() - self.config.height * 2,
-            self:GetVerticalScroll()
-          )
-          local endOffset = self:GetVerticalScrollRange()
-
-          LibEasing:Ease(
-            function (offset) self:SetVerticalScroll(offset) end,
-            startOffset,
-            endOffset,
-            0.3,
-            LibEasing.OutCubic,
-            function ()
-              self:SetHeight(self.config.height + self.config.overflowHeight)
-            end
-          )
+          self:SnapToBottom()
         end
       end),
       Core:Subscribe(EDIT_FOCUS_LOST, function (window)
@@ -376,114 +329,151 @@ function SlidingMessageFrameMixin:Init(chatFrame)
         end
       end),
       Core:Subscribe(UPDATE_CONFIG, function (payload)
-        -- Payload is now { key = "...", windowId = "..." }
-        local key = type(payload) == "table" and payload.key or payload
-        local targetWindowId = type(payload) == "table" and payload.windowId or nil
-        
-        -- If a specific window was targeted, only update if we match
-        local myWindowId = self.window and self.window.id or "Main"
-        if targetWindowId and targetWindowId ~= myWindowId then
-          return
-        end
-        
-        if self.state.isCombatLog == false then
-          if (
-            key == "messageFont" or
-            key == "messageFontSize" or
-            key == "frameWidth" or
-            key == "frameHeight" or
-            key == "messageLeading" or
-            key == "messageLinePadding" or
-            key == "indentWordWrap"
-          ) then
-            -- Adjust frame dimensions first
-            self.config.height = self.profile.frameHeight - Constants.DOCK_HEIGHT - 5
-            self.config.width = self.profile.frameWidth
-
-            self:SetHeight(self.config.height + self.config.overflowHeight)
-            self:SetWidth(self.config.width)
-
-            -- Then adjust message line dimensions
-            for _, message in ipairs(self.state.messages) do
-                message:UpdateFrame()
-            end
-
-            -- Then update scroll values
-            local contentHeight = reduce(self.state.messages, function (acc, message)
-              return acc + message:GetHeight()
-            end, 0)
-            self.slider:SetHeight(self.config.height + self.config.overflowHeight + contentHeight)
-            self.slider:SetWidth(self.config.width)
-
-            self.state.scrollAtBottom = true
-            self.state.unreadMessages = false
-            self:UpdateScrollChildRect()
-            self:SetVerticalScroll(self:GetVerticalScrollRange() + self.config.overflowHeight)
-            self.overlay:Hide()
-            self.overlay:HideNewMessageAlert()
-
-            -- Update overlay position when frame height changes
-            if self.overlay and self.overlay.UpdatePosition then
-              self.overlay:UpdatePosition()
-            end
-          end
-
-          if key == "chatBackgroundOpacity" or key == "chatBackgroundColor" then
-            for _, message in ipairs(self.state.messages) do
-              message:UpdateTextures()
-            end
-          end
-
-          if key == "messagesOnHover" then
-            -- When toggled, just show current messages if mouse is over and option is now enabled
-            if self.profile.messagesOnHover and self.state.mouseOver then
-              for _, message in ipairs(self.state.messages) do
-                message:Show()
-              end
-            end
-          end
-
-          if key == "messagesAlwaysVisible" then
-            if self.profile.messagesAlwaysVisible then
-              -- Pin every message on screen and cancel any pending fade-out.
-              for _, message in ipairs(self.state.messages) do
-                if message.hideTimer then
-                  message.hideTimer:Cancel()
-                  message.hideTimer = nil
-                end
-                message:Show()
-              end
-            elseif not self.state.mouseOver then
-              -- Resume the normal fade-out behaviour.
-              for _, message in ipairs(self.state.messages) do
-                message:HideDelay(self.profile.chatHoldTime)
-              end
-            end
-          end
-
-          if key == "scrollIndicatorColor" or key == "scrollIndicatorOpacity" or key == "scrollIndicatorBgColor" or key == "scrollIndicatorBgOpacity" then
-            if self.overlay and self.overlay.UpdateIndicatorStyle then
-              self.overlay:UpdateIndicatorStyle()
-            end
-          end
-
-          if key == "editBoxAnchor" then
-            if self.overlay and self.overlay.UpdatePosition then
-              self.overlay:UpdatePosition()
-            end
-          end
-
-          if key == "hideScrollIndicator" then
-            if self.overlay then
-              if self.profile.hideScrollIndicator then
-                self.overlay:QuickHide()
-              end
-              -- If turned back on, it will show naturally when scrolling up
-            end
-          end
-        end
+        local key = Core:ResolveConfigKey(payload, self.window and self.window.id or "Main")
+        if key ~= nil then self:OnConfigChanged(key) end
       end)
     }
+  end
+end
+
+-- Smoothly scroll to the newest message, clearing the unread state and overlay.
+-- Shared by the scroll-overlay click and the edit-focus reveal.
+function SlidingMessageFrameMixin:SnapToBottom()
+  self.state.scrollAtBottom = true
+  self.state.unreadMessages = false
+  self.overlay:Hide()
+  self.overlay:HideNewMessageAlert()
+
+  local startOffset = math.max(
+    self:GetVerticalScrollRange() - self.config.height * 2,
+    self:GetVerticalScroll()
+  )
+  local endOffset = self:GetVerticalScrollRange()
+
+  LibEasing:Ease(
+    function (offset) self:SetVerticalScroll(offset) end,
+    startOffset,
+    endOffset,
+    0.3,
+    LibEasing.OutCubic,
+    function ()
+      self:SetHeight(self.config.height + self.config.overflowHeight)
+    end
+  )
+end
+
+-- React to a Glass config change for this window's message display. The Combat
+-- Log renders natively, so nothing here applies to it.
+function SlidingMessageFrameMixin:OnConfigChanged(key)
+  if self.state.isCombatLog ~= false then return end
+
+  if (
+    key == "messageFont" or
+    key == "messageFontSize" or
+    key == "frameWidth" or
+    key == "frameHeight" or
+    key == "messageLeading" or
+    key == "messageLinePadding" or
+    key == "indentWordWrap"
+  ) then
+    -- Adjust frame dimensions first
+    self.config.height = self.profile.frameHeight - Constants.DOCK_HEIGHT - Constants.MESSAGE_DOCK_GAP
+    self.config.width = self.profile.frameWidth
+
+    self:SetHeight(self.config.height + self.config.overflowHeight)
+    self:SetWidth(self.config.width)
+
+    -- Then adjust message line dimensions
+    for _, message in ipairs(self.state.messages) do
+      message:UpdateFrame()
+    end
+
+    -- Then update scroll values
+    local contentHeight = reduce(self.state.messages, function (acc, message)
+      return acc + message:GetHeight()
+    end, 0)
+    self.slider:SetHeight(self.config.height + self.config.overflowHeight + contentHeight)
+    self.slider:SetWidth(self.config.width)
+
+    self.state.scrollAtBottom = true
+    self.state.unreadMessages = false
+    self:UpdateScrollChildRect()
+    self:SetVerticalScroll(self:GetVerticalScrollRange() + self.config.overflowHeight)
+    self.overlay:Hide()
+    self.overlay:HideNewMessageAlert()
+
+    -- Update overlay position when frame height changes
+    if self.overlay and self.overlay.UpdatePosition then
+      self.overlay:UpdatePosition()
+    end
+  end
+
+  if key == "chatBackgroundOpacity" or key == "chatBackgroundColor" then
+    for _, message in ipairs(self.state.messages) do
+      message:UpdateTextures()
+    end
+  end
+
+  if key == "messagesOnHover" then
+    -- When toggled, show current messages if the mouse is over and it's now enabled.
+    if self.profile.messagesOnHover and self.state.mouseOver then
+      for _, message in ipairs(self.state.messages) do
+        message:Show()
+      end
+    end
+  end
+
+  if key == "messagesAlwaysVisible" then
+    if self.profile.messagesAlwaysVisible then
+      -- Pin every message on screen and cancel any pending fade-out.
+      for _, message in ipairs(self.state.messages) do
+        if message.hideTimer then
+          message.hideTimer:Cancel()
+          message.hideTimer = nil
+        end
+        message:Show()
+      end
+    elseif not self.state.mouseOver then
+      -- Resume the normal fade-out behaviour.
+      for _, message in ipairs(self.state.messages) do
+        message:HideDelay(self.profile.chatHoldTime)
+      end
+    end
+  end
+
+  if key == "scrollIndicatorColor" or key == "scrollIndicatorOpacity" or key == "scrollIndicatorBgColor" or key == "scrollIndicatorBgOpacity" then
+    if self.overlay and self.overlay.UpdateIndicatorStyle then
+      self.overlay:UpdateIndicatorStyle()
+    end
+  end
+
+  if key == "editBoxAnchor" then
+    if self.overlay and self.overlay.UpdatePosition then
+      self.overlay:UpdatePosition()
+    end
+  end
+
+  if key == "hideScrollIndicator" then
+    if self.overlay then
+      if self.profile.hideScrollIndicator then
+        self.overlay:QuickHide()
+      end
+      -- If turned back on, it will show naturally when scrolling up.
+    end
+  end
+end
+
+-- Unsubscribe this frame's event-bus listeners. Called when the frame is
+-- released back to the pool (and re-subscribed on the next Init), so a deleted
+-- window's frames stop reacting to events.
+function SlidingMessageFrameMixin:Destroy()
+  if self.subscriptions then
+    for _, unsubscribe in ipairs(self.subscriptions) do
+      if type(unsubscribe) == "function" then
+        unsubscribe()
+      end
+    end
+    self.subscriptions = nil
   end
 end
 
@@ -695,6 +685,7 @@ local function CreateSlidingMessageFramePool(parent, window)
     end,
     function (_, smf)
       smf:Hide()
+      smf:Destroy()  -- unsubscribe event-bus listeners (re-subscribed on next Init)
 
       if smf.chatFrame and not smf.state.isCombatLog then
         -- Only unhook if we actually hooked

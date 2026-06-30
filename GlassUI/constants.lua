@@ -3,6 +3,10 @@ local _, Constants = unpack(select(2, ...))
 -- Constants
 Constants.DOCK_HEIGHT = 20
 Constants.TEXT_XPADDING = 15
+-- Vertical gap (px) between the tab dock and the message area below it.
+Constants.MESSAGE_DOCK_GAP = 5
+-- Edit box vertical padding as a fraction of the font height (top and bottom).
+Constants.EDITBOX_PADDING_RATIO = 0.66
 
 -- Colors
 local function createColor(r, g, b)

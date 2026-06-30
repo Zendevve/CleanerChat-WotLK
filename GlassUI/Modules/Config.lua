@@ -95,6 +95,77 @@ local FLAGS = {
   ["OUTLINE, MONOCHROME"] = L["Outline Monochrome"],
 }
 
+-- Option factories -----------------------------------------------------------
+--
+-- Almost every Glass setting is a flat profile key edited through the same
+-- get/set pair: read ProfileFor(info)[key], write it, then dispatch an
+-- UPDATE_CONFIG event. These factories build the AceConfig option table for
+-- that common shape so the option list stays declarative. `o` fields:
+--   key       (required) profile key to read/write
+--   dispatch  event key to fire on set; defaults to `key`, pass false for none
+--   default   value get returns when the stored value is nil
+--   plus the usual name/desc/order/width/min/max/softMin/softMax/step/values/
+--   hidden/disabled pass-throughs.
+
+local function optionGet(key, default)
+  if default ~= nil then
+    return function (info) return ProfileFor(info)[key] or default end
+  end
+  return function (info) return ProfileFor(info)[key] end
+end
+
+local function optionSet(key, dispatch)
+  return function (info, input)
+    ProfileFor(info)[key] = input
+    if dispatch ~= false then
+      Core:Dispatch(UpdateConfig(dispatch or key, WindowIdFor(info)))
+    end
+  end
+end
+
+local function rangeOption(o)
+  return {
+    type = "range", name = o.name, desc = o.desc, order = o.order, width = o.width,
+    min = o.min, max = o.max, softMin = o.softMin, softMax = o.softMax, step = o.step,
+    hidden = o.hidden, disabled = o.disabled,
+    get = optionGet(o.key, o.default), set = optionSet(o.key, o.dispatch),
+  }
+end
+
+local function selectOption(o)
+  return {
+    type = "select", name = o.name, desc = o.desc, order = o.order, width = o.width,
+    values = o.values, dialogControl = o.dialogControl,
+    hidden = o.hidden, disabled = o.disabled,
+    get = optionGet(o.key, o.default), set = optionSet(o.key, o.dispatch),
+  }
+end
+
+local function fontOption(o)
+  return selectOption({
+    key = o.key, name = o.name or L["Font"], desc = o.desc, order = o.order,
+    dialogControl = "LSM30_Font", values = LSM:HashTable("font"), dispatch = o.dispatch,
+  })
+end
+
+local function colorOption(o)
+  return {
+    type = "color", name = o.name, desc = o.desc, order = o.order, width = o.width,
+    hasAlpha = false, hidden = o.hidden, disabled = o.disabled,
+    get = function (info)
+      local c = ProfileFor(info)[o.key]
+      return c.r, c.g, c.b
+    end,
+    set = function (info, r, g, b)
+      local c = ProfileFor(info)[o.key]
+      c.r, c.g, c.b = r, g, b
+      if o.dispatch ~= false then
+        Core:Dispatch(UpdateConfig(o.dispatch or o.key, WindowIdFor(info)))
+      end
+    end,
+  }
+end
+
 function C:OnEnable()
   local options = {
       name = L["Glass"],
@@ -243,87 +314,11 @@ function C:OnEnable()
               inline = true,
               order = 1,
               args = {
-                editBoxFont = {
-                  name = L["Font"],
-                  desc = L["Font to use for the edit box text."],
-                  type = "select",
-                  order = 1.0,
-                  dialogControl = "LSM30_Font",
-                  values = LSM:HashTable("font"),
-                  get = function (info)
-                    return ProfileFor(info).editBoxFont
-                  end,
-                  set = function (info, input)
-                    ProfileFor(info).editBoxFont = input
-                    Core:Dispatch(UpdateConfig("editBoxFont", WindowIdFor(info)))
-                  end,
-                },
-                editBoxFontSize = {
-                  name = L["Font size"],
-                  desc = "Default: "..Core.defaults.profile.editBoxFontSize.."\nMin: 1\nMax: 100",
-                  type = "range",
-                  min = 1,
-                  max = 100,
-                  softMin = 6,
-                  softMax = 24,
-                  step = 1,
-                  get = function (info)
-                    return ProfileFor(info).editBoxFontSize
-                  end,
-                  set = function (info, input)
-                    ProfileFor(info).editBoxFontSize = input
-                    Core:Dispatch(UpdateConfig("editBoxFontSize", WindowIdFor(info)))
-                  end,
-                  order = 1.1,
-                },
-                editBoxFontFlags = {
-                  name = L["Font style"],
-                  desc = L["Add an outline to the edit box text so it stands out instead of looking flat."],
-                  type = "select",
-                  order = 1.3,
-                  values = FLAGS,
-                  get = function (info)
-                    return ProfileFor(info).editBoxFontFlags
-                  end,
-                  set = function (info, input)
-                    ProfileFor(info).editBoxFontFlags = input
-                    Core:Dispatch(UpdateConfig("editBoxFontFlags", WindowIdFor(info)))
-                  end,
-                },
-                editBoxBackgroundOpacity = {
-                  name = L["Background opacity"],
-                  desc = "Default: "..Core.defaults.profile.editBoxBackgroundOpacity,
-                  type = "range",
-                  order = 1.2,
-                  min = 0,
-                  max = 1,
-                  softMin = 0,
-                  softMax = 1,
-                  step = 0.01,
-                  get = function (info)
-                    return ProfileFor(info).editBoxBackgroundOpacity
-                  end,
-                  set = function (info, input)
-                    ProfileFor(info).editBoxBackgroundOpacity = input
-                    Core:Dispatch(UpdateConfig("editBoxBackgroundOpacity", WindowIdFor(info)))
-                  end,
-                },
-                editBoxBackgroundColor = {
-                  name = L["Background color"],
-                  desc = L["The colour of the edit box background."],
-                  type = "color",
-                  hasAlpha = false,
-                  order = 1.4,
-                  get = function (info)
-                    local c = ProfileFor(info).editBoxBackgroundColor
-                    return c.r, c.g, c.b
-                  end,
-                  set = function (info, r, g, b)
-                    local c = ProfileFor(info).editBoxBackgroundColor
-                    c.r, c.g, c.b = r, g, b
-                    Core:Dispatch(UpdateConfig("editBoxBackgroundColor", WindowIdFor(info)))
-                  end,
-                },
+                editBoxFont = fontOption({ key = "editBoxFont", desc = L["Font to use for the edit box text."], order = 1.0 }),
+                editBoxFontSize = rangeOption({ key = "editBoxFontSize", name = L["Font size"], desc = "Default: "..Core.defaults.profile.editBoxFontSize.."\nMin: 1\nMax: 100", order = 1.1, min = 1, max = 100, softMin = 6, softMax = 24, step = 1 }),
+                editBoxFontFlags = selectOption({ key = "editBoxFontFlags", name = L["Font style"], desc = L["Add an outline to the edit box text so it stands out instead of looking flat."], order = 1.3, values = FLAGS }),
+                editBoxBackgroundOpacity = rangeOption({ key = "editBoxBackgroundOpacity", name = L["Background opacity"], desc = "Default: "..Core.defaults.profile.editBoxBackgroundOpacity, order = 1.2, min = 0, max = 1, softMin = 0, softMax = 1, step = 0.01 }),
+                editBoxBackgroundColor = colorOption({ key = "editBoxBackgroundColor", name = L["Background color"], desc = L["The colour of the edit box background."], order = 1.4 }),
               }
             },
             section2 = {
@@ -408,141 +403,14 @@ function C:OnEnable()
               inline = true,
               order = 1,
               args = {
-                messageFont = {
-                  name = L["Font"],
-                  desc = L["Font to use for chat messages."],
-                  type = "select",
-                  order = 1.0,
-                  dialogControl = "LSM30_Font",
-                  values = LSM:HashTable("font"),
-                  get = function (info)
-                    return ProfileFor(info).messageFont
-                  end,
-                  set = function (info, input)
-                    ProfileFor(info).messageFont = input
-                    Core:Dispatch(UpdateConfig("messageFont", WindowIdFor(info)))
-                  end,
-                },
-                messageFontSize = {
-                  name = L["Font size"],
-                  desc = "Default: "..Core.defaults.profile.messageFontSize.."\nMin: 1\nMax: 100",
-                  type = "range",
-                  min = 1,
-                  max = 100,
-                  softMin = 6,
-                  softMax = 24,
-                  step = 1,
-                  get = function (info)
-                    return ProfileFor(info).messageFontSize
-                  end,
-                  set = function (info, input)
-                    ProfileFor(info).messageFontSize = input
-                    Core:Dispatch(UpdateConfig("messageFontSize", WindowIdFor(info)))
-                  end,
-                  order = 1.2,
-                },
-                messageFontFlags = {
-                  name = L["Font style"],
-                  desc = L["Add an outline to chat message text so it stands out instead of looking flat."],
-                  type = "select",
-                  order = 1.6,
-                  values = FLAGS,
-                  get = function (info)
-                    return ProfileFor(info).messageFontFlags
-                  end,
-                  set = function (info, input)
-                    ProfileFor(info).messageFontFlags = input
-                    Core:Dispatch(UpdateConfig("messageFontFlags", WindowIdFor(info)))
-                  end,
-                },
-                chatBackgroundOpacity = {
-                  name = L["Background opacity"],
-                  desc = "Default: "..Core.defaults.profile.chatBackgroundOpacity,
-                  type = "range",
-                  order = 1.2,
-                  min = 0,
-                  max = 1,
-                  softMin = 0,
-                  softMax = 1,
-                  step = 0.01,
-                  get = function (info)
-                    return ProfileFor(info).chatBackgroundOpacity
-                  end,
-                  set = function (info, input)
-                    ProfileFor(info).chatBackgroundOpacity = input
-                    Core:Dispatch(UpdateConfig("chatBackgroundOpacity", WindowIdFor(info)))
-                  end,
-                },
-                chatBackgroundColor = {
-                  name = L["Background color"],
-                  desc = L["The colour of the chat message background."],
-                  type = "color",
-                  hasAlpha = false,
-                  order = 1.7,
-                  get = function (info)
-                    local c = ProfileFor(info).chatBackgroundColor
-                    return c.r, c.g, c.b
-                  end,
-                  set = function (info, r, g, b)
-                    local c = ProfileFor(info).chatBackgroundColor
-                    c.r, c.g, c.b = r, g, b
-                    Core:Dispatch(UpdateConfig("chatBackgroundColor", WindowIdFor(info)))
-                  end,
-                },
-                messageLeading = {
-                  name = L["Leading"],
-                  desc = "Default: "..Core.defaults.profile.messageLeading.."\nMin: 0\nMax: 10",
-                  type = "range",
-                  min = 0,
-                  max = 10,
-                  softMin = 0,
-                  softMax = 5,
-                  step = 1,
-                  get = function (info)
-                    return ProfileFor(info).messageLeading
-                  end,
-                  set = function (info, input)
-                    ProfileFor(info).messageLeading = input
-                    Core:Dispatch(UpdateConfig("messageLeading", WindowIdFor(info)))
-                  end,
-                  order = 1.3,
-                },
-                messageLinePadding = {
-                  name = L["Line padding"],
-                  desc = "Default: "..Core.defaults.profile.messageLinePadding.."\nMin: 0\nMax: 5",
-                  type = "range",
-                  min = 0,
-                  max = 5,
-                  softMin = 0,
-                  softMax = 1,
-                  step = 0.05,
-                  get = function (info)
-                    return ProfileFor(info).messageLinePadding
-                  end,
-                  set = function (info, input)
-                    ProfileFor(info).messageLinePadding = input
-                    Core:Dispatch(UpdateConfig("messageLinePadding", WindowIdFor(info)))
-                  end,
-                  order = 1.4,
-                },
-                messageLeftPadding = {
-                  name = L["Left padding"],
-                  desc = "Default: "..Core.defaults.profile.messageLeftPadding.."\nMin: 0\nMax: 50\n\n"..L["Controls the blank space on the left side of messages."],
-                  type = "range",
-                  min = 0,
-                  max = 50,
-                  softMin = 0,
-                  softMax = 30,
-                  step = 1,
-                  get = function (info)
-                    return ProfileFor(info).messageLeftPadding
-                  end,
-                  set = function (info, input)
-                    ProfileFor(info).messageLeftPadding = input
-                    Core:Dispatch(UpdateConfig("messageLeftPadding", WindowIdFor(info)))
-                  end,
-                  order = 1.5,
-                },
+                messageFont = fontOption({ key = "messageFont", desc = L["Font to use for chat messages."], order = 1.0 }),
+                messageFontSize = rangeOption({ key = "messageFontSize", name = L["Font size"], desc = "Default: "..Core.defaults.profile.messageFontSize.."\nMin: 1\nMax: 100", order = 1.2, min = 1, max = 100, softMin = 6, softMax = 24, step = 1 }),
+                messageFontFlags = selectOption({ key = "messageFontFlags", name = L["Font style"], desc = L["Add an outline to chat message text so it stands out instead of looking flat."], order = 1.6, values = FLAGS }),
+                chatBackgroundOpacity = rangeOption({ key = "chatBackgroundOpacity", name = L["Background opacity"], desc = "Default: "..Core.defaults.profile.chatBackgroundOpacity, order = 1.2, min = 0, max = 1, softMin = 0, softMax = 1, step = 0.01 }),
+                chatBackgroundColor = colorOption({ key = "chatBackgroundColor", name = L["Background color"], desc = L["The colour of the chat message background."], order = 1.7 }),
+                messageLeading = rangeOption({ key = "messageLeading", name = L["Leading"], desc = "Default: "..Core.defaults.profile.messageLeading.."\nMin: 0\nMax: 10", order = 1.3, min = 0, max = 10, softMin = 0, softMax = 5, step = 1 }),
+                messageLinePadding = rangeOption({ key = "messageLinePadding", name = L["Line padding"], desc = "Default: "..Core.defaults.profile.messageLinePadding.."\nMin: 0\nMax: 5", order = 1.4, min = 0, max = 5, softMin = 0, softMax = 1, step = 0.05 }),
+                messageLeftPadding = rangeOption({ key = "messageLeftPadding", name = L["Left padding"], desc = "Default: "..Core.defaults.profile.messageLeftPadding.."\nMin: 0\nMax: 50\n\n"..L["Controls the blank space on the left side of messages."], order = 1.5, min = 0, max = 50, softMin = 0, softMax = 30, step = 1 }),
                 messageHistoryLimit = {
                   name = L["Message history"],
                   desc = "Default: "..Core.defaults.profile.messageHistoryLimit.."\nMin: 128\nMax: 2048\n\n"..L["Maximum number of messages to keep in memory per chat window. Higher values use more memory."],
@@ -857,88 +725,11 @@ function C:OnEnable()
               inline = true,
               order = 1,
               args = {
-                dockFont = {
-                  name = L["Font"],
-                  desc = L["Font to use for the chat tab text."],
-                  type = "select",
-                  order = 1.0,
-                  dialogControl = "LSM30_Font",
-                  values = LSM:HashTable("font"),
-                  get = function (info)
-                    return ProfileFor(info).dockFont
-                  end,
-                  set = function (info, input)
-                    ProfileFor(info).dockFont = input
-                    Core:Dispatch(UpdateConfig("dockFont", WindowIdFor(info)))
-                  end,
-                },
-                dockFontSize = {
-                  name = L["Font size"],
-                  desc = "Default: "..Core.defaults.profile.dockFontSize.."\nMin: 1\nMax: 100"..
-                    "\n"..L["Tab widths refit on /reload."],
-                  type = "range",
-                  order = 1.1,
-                  min = 1,
-                  max = 100,
-                  softMin = 6,
-                  softMax = 24,
-                  step = 1,
-                  get = function (info)
-                    return ProfileFor(info).dockFontSize
-                  end,
-                  set = function (info, input)
-                    ProfileFor(info).dockFontSize = input
-                    Core:Dispatch(UpdateConfig("dockFontSize", WindowIdFor(info)))
-                  end,
-                },
-                dockFontFlags = {
-                  name = L["Font style"],
-                  desc = L["Add an outline to the chat tab text so it stands out instead of looking flat."],
-                  type = "select",
-                  order = 1.15,
-                  values = FLAGS,
-                  get = function (info)
-                    return ProfileFor(info).dockFontFlags
-                  end,
-                  set = function (info, input)
-                    ProfileFor(info).dockFontFlags = input
-                    Core:Dispatch(UpdateConfig("dockFontFlags", WindowIdFor(info)))
-                  end,
-                },
-                dockBackgroundOpacity = {
-                  name = L["Background opacity"],
-                  desc = "Default: "..Core.defaults.profile.dockBackgroundOpacity,
-                  type = "range",
-                  order = 1.2,
-                  min = 0,
-                  max = 1,
-                  softMin = 0,
-                  softMax = 1,
-                  step = 0.01,
-                  get = function (info)
-                    return ProfileFor(info).dockBackgroundOpacity
-                  end,
-                  set = function (info, input)
-                    ProfileFor(info).dockBackgroundOpacity = input
-                    Core:Dispatch(UpdateConfig("dockBackgroundOpacity", WindowIdFor(info)))
-                  end,
-                },
-                dockBackgroundColor = {
-                  name = L["Background color"],
-                  desc = L["The colour of the top bar background."],
-                  type = "color",
-                  hasAlpha = false,
-                  order = 1.3,
-                  get = function (info)
-                    local c = ProfileFor(info).dockBackgroundColor
-                    return c.r, c.g, c.b
-                  end,
-                  set = function (info, r, g, b)
-                    local c = ProfileFor(info).dockBackgroundColor
-                    c.r, c.g, c.b = r, g, b
-                    Core:Dispatch(UpdateConfig("dockBackgroundColor", WindowIdFor(info)))
-                  end,
-                },
+                dockFont = fontOption({ key = "dockFont", desc = L["Font to use for the chat tab text."], order = 1.0 }),
+                dockFontSize = rangeOption({ key = "dockFontSize", name = L["Font size"], desc = "Default: "..Core.defaults.profile.dockFontSize.."\nMin: 1\nMax: 100".."\n"..L["Tab widths refit on /reload."], order = 1.1, min = 1, max = 100, softMin = 6, softMax = 24, step = 1 }),
+                dockFontFlags = selectOption({ key = "dockFontFlags", name = L["Font style"], desc = L["Add an outline to the chat tab text so it stands out instead of looking flat."], order = 1.15, values = FLAGS }),
+                dockBackgroundOpacity = rangeOption({ key = "dockBackgroundOpacity", name = L["Background opacity"], desc = "Default: "..Core.defaults.profile.dockBackgroundOpacity, order = 1.2, min = 0, max = 1, softMin = 0, softMax = 1, step = 0.01 }),
+                dockBackgroundColor = colorOption({ key = "dockBackgroundColor", name = L["Background color"], desc = L["The colour of the top bar background."], order = 1.3 }),
                 tabStyleSpacer = {
                   name = "",
                   type = "description",

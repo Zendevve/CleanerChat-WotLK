@@ -76,6 +76,9 @@ end
 ---
 -- Adds Prat Timestamps if configured
 local function pratTimestampProcessor(text)
+  -- Prat isn't installed for most users; bail out instead of erroring. This runs
+  -- inside a pcall, so the failure was silent -- but it happened on every message.
+  if not _G.Prat then return text end
   return _G.Prat.Addon:GetModule("Timestamps"):InsertTimeStamp(text)
 end
 

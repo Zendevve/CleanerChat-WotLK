@@ -93,14 +93,9 @@ function ChatDockMixin:Init(parent)
         end
       end),
       Core:Subscribe(UPDATE_CONFIG, function (payload)
-        local key = type(payload) == "table" and payload.key or payload
-        local targetWindowId = type(payload) == "table" and payload.windowId or nil
+        local key = Core:ResolveConfigKey(payload, self.window and self.window.id or "Main")
         
-        -- If a specific window was targeted, only update if we match
-        local myWindowId = self.window and self.window.id or "Main"
-        if targetWindowId and targetWindowId ~= myWindowId then
-          return
-        end
+        if key == nil then return end
         
         local profile = self.profile or Core.db.profile
         
@@ -207,6 +202,27 @@ function ChatDockMixin:FadeOutTabs()
       self:SetAlpha(1)
     end
   end)
+end
+
+-- Unsubscribe the dock's event-bus listeners and stop any pending fade/timer,
+-- so a deleted window's dock stops reacting to events and never fires its timer.
+function ChatDockMixin:Destroy()
+  if self.subscriptions then
+    for _, unsubscribe in ipairs(self.subscriptions) do
+      if type(unsubscribe) == "function" then
+        unsubscribe()
+      end
+    end
+    self.subscriptions = nil
+  end
+  if self.fadeOutTimer then
+    self.fadeOutTimer:Cancel()
+    self.fadeOutTimer = nil
+  end
+  if self.fadeHandle then
+    LibEasing:StopEasing(self.fadeHandle)
+    self.fadeHandle = nil
+  end
 end
 
 Core.Components.CreateChatDock = function (parent, name, profile)

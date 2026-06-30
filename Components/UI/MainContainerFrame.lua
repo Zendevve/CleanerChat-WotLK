@@ -48,15 +48,10 @@ function MainContainerFrameMixin:Init()
   self.bg:SetAllPoints()
   --@end-debug@]===]
 
-  Core:Subscribe(UPDATE_CONFIG, function (payload)
-    local key = type(payload) == "table" and payload.key or payload
-    local targetWindowId = type(payload) == "table" and payload.windowId or nil
+  self.subscriptions = { Core:Subscribe(UPDATE_CONFIG, function (payload)
+    local key = Core:ResolveConfigKey(payload, self.window and self.window.id or "Main")
     
-    -- If a specific window was targeted, only update if we match
-    local myWindowId = self.window and self.window.id or "Main"
-    if targetWindowId and targetWindowId ~= myWindowId then
-      return
-    end
+    if key == nil then return end
     
     if key == "frameWidth" then
       self:SetWidth(self.profile.frameWidth)
@@ -65,7 +60,19 @@ function MainContainerFrameMixin:Init()
     if key == "frameHeight" then
       self:SetHeight(self.profile.frameHeight)
     end
-  end)
+  end) }
+end
+
+-- Unsubscribe the container's event-bus listeners when its window is deleted.
+function MainContainerFrameMixin:Destroy()
+  if self.subscriptions then
+    for _, unsubscribe in ipairs(self.subscriptions) do
+      if type(unsubscribe) == "function" then
+        unsubscribe()
+      end
+    end
+    self.subscriptions = nil
+  end
 end
 
 function MainContainerFrameMixin:OnFrame()

@@ -91,6 +91,12 @@ local function OnAddonMessage(prefix, message, _channel, _sender)
   if not message or message == "" then return end
   
   local incomingVersion = string_gsub(message, "%s+", "") -- trim whitespace
+
+  -- Reject anything that isn't a bare "major.minor" version. This is untrusted
+  -- input from another player's addon message; without this, a crafted version
+  -- string (e.g. one containing |H links or |c colour codes) would be stored
+  -- and later printed straight into the user's chat frame.
+  if not string_match(incomingVersion, "^%d+%.%d+$") then return end
   
   -- Check if this is a newer version than we've seen
   if IsNewerVersion(incomingVersion, highestVersionSeen) then

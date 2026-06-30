@@ -8,8 +8,6 @@ local Module = ns:NewModule("Money", "LibMoreEvents-1.0")
 local math_abs = math.abs
 local math_floor = math.floor
 local math_mod = math.fmod
-local rawget = rawget
-local rawset = rawset
 local setmetatable = setmetatable
 local string_find = string.find
 local string_format = string.format
@@ -55,16 +53,8 @@ local Coin = setmetatable({}, { __index = function(t,k)
 	end
 end })
 
--- Convert a WoW global string to a search pattern
-local makePattern = ns.MakePattern
-
--- Search Pattern Cache.
--- This will generate the pattern on the first lookup.
-local P = setmetatable({}, { __index = function(t,k)
-	if (k == nil) or (k == "") then return nil end
-	rawset(t,k,makePattern(k))
-	return rawget(t,k)
-end })
+-- Search Pattern Cache (self-populating via ns.MakePattern on first lookup).
+local P = ns.MakePatternCache()
 
 -- Remove large number formatting
 local simplifyNumbers = function(message)
@@ -75,8 +65,7 @@ local simplifyNumbers = function(message)
 	end
 end
 
--- Add pretty spacing to large numbers
--- *commas as separators are moronic
+-- Add pretty spacing to large numbers using spaces as the thousands separator.
 local prettify = function(value)
 	if (value >= 1e9) then
 		local billions =  math_floor(value / 1e9)
@@ -146,11 +135,10 @@ local parseForMoney = function(message)
 	local copper = string_match(message, P[G.COPPER_AMOUNT]) -- "%d Copper"
 	local copper_amount = copper and tonumber(copper) or 0
 
-	-- Now we have to do it the hard way.
+	-- Otherwise, fall back to parsing coin icons / colorblind symbols.
 	if (gold_amount == 0) and (silver_amount == 0) and (copper_amount == 0) then
 
-		-- Discover icon and currency existence.
-		-- Could definitely simplify this. But. We don't.
+		-- Detect which coin types are present (icon or colorblind symbol).
 		local hasGold, hasSilver, hasCopper
 		if (_G.ENABLE_COLORBLIND_MODE == "1") then
 			hasGold = string_find(message,"%d"..G.GOLD_AMOUNT_SYMBOL)
@@ -168,11 +156,11 @@ local parseForMoney = function(message)
 			-- Now kill off texture strings, replace with space for number separation.
 			message = string_gsub(message, "\124T(.-)\124t", " ")
 
-			-- Kill off color codes. They might fuck up this thing.
+			-- Strip color codes so they don't interfere with number parsing.
 			message = string_gsub(message, "\124[cC]%x%x%x%x%x%x%x%x", "")
 			message = string_gsub(message, "\124[rR]", "")
 
-			-- And again we do it the clunky way, to minimize needed function calls.
+			-- Parse each present coin type explicitly to minimize function calls.
 			if (hasGold) then
 				if (hasSilver) and (hasCopper) then
 					gold_amount, silver_amount, copper_amount = string_match(message,"(%d+).*%s+(%d+).*%s+(%d+).*")
