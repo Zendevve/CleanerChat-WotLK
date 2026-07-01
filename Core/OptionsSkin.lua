@@ -7,6 +7,9 @@
 	(#DFBA69), so the configuration UI matches the addon's own identity instead
 	of looking like a generic Ace3 backport.
 
+	IMPORTANT: This skin must be cleaned up when the window closes to prevent
+	polluting AceGUI's shared widget pool and bleeding into other addons.
+
 	Everything here is purely cosmetic and fully defensive: each step is guarded
 	so a missing sub-frame (e.g. on a future Ace3 update) is simply skipped and
 	never breaks the actual options. The underlying options table is untouched.
@@ -30,6 +33,26 @@ local SOLID = "Interface\\Buttons\\WHITE8x8"
 local EDGE_INSET = 8 -- Main content inset from window edge
 local TITLE_HEIGHT = 32 -- Title bar height
 local STATUS_HEIGHT = 24 -- Status bar height at bottom
+
+-- Default AceGUI Frame backdrop (to restore on cleanup)
+local DefaultFrameBackdrop = {
+	bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+	edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+	tile = true,
+	tileSize = 32,
+	edgeSize = 32,
+	insets = { left = 8, right = 8, top = 8, bottom = 8 },
+}
+
+-- Default AceGUI Pane backdrop (for tree/border)
+local DefaultPaneBackdrop = {
+	bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
+	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+	tile = true,
+	tileSize = 16,
+	edgeSize = 16,
+	insets = { left = 3, right = 3, top = 5, bottom = 3 },
+}
 
 -- A clean 1px-bordered flat backdrop.
 local GlassBackdrop = {
@@ -71,7 +94,22 @@ end
 
 -- Flat dark button with a gold hover + gold label (used for Close).
 local function styleButton(btn)
-	if (not btn) or btn.ccSkinned then
+	if not btn then
+		return
+	end
+
+	-- If already skinned, just make sure our textures are visible
+	if btn.ccSkinned then
+		if btn.ccBg then
+			btn.ccBg:Show()
+		end
+		if btn.ccBorder then
+			btn.ccBorder:Show()
+		end
+		local label = btn.GetFontString and btn:GetFontString()
+		if label then
+			label:SetTextColor(GOLD.r, GOLD.g, GOLD.b)
+		end
 		return
 	end
 	btn.ccSkinned = true
@@ -220,20 +258,19 @@ function ns.SkinOptionsWindow(widget)
 	applyGlass(f, PANEL, 0.85)
 
 	-- Hide the default parchment header (centre + side caps).
+	-- Do this every time we skin, in case cleanup showed them
 	if widget.titlebg then
 		widget.titlebg:Hide()
 	end
-	if not f.ccHeaderHidden then
-		f.ccHeaderHidden = true
-		for _, region in ipairs({ f:GetRegions() }) do
-			if region.GetObjectType and (region:GetObjectType() == "Texture") then
-				local tex = region.GetTexture and region:GetTexture()
-				if (type(tex) == "string") and (tex:find("UI%-DialogBox%-Header")) then
-					region:Hide()
-				end
+	for _, region in ipairs({ f:GetRegions() }) do
+		if region.GetObjectType and (region:GetObjectType() == "Texture") then
+			local tex = region.GetTexture and region:GetTexture()
+			if (type(tex) == "string") and (tex:find("UI%-DialogBox%-Header")) then
+				region:Hide()
 			end
 		end
 	end
+	f.ccHeaderHidden = true
 
 	-- Custom gold title bar + accent line.
 	if not f.ccTitleBar then
@@ -252,6 +289,10 @@ function ns.SkinOptionsWindow(widget)
 		line:SetHeight(1)
 		line:SetVertexColor(GOLD.r, GOLD.g, GOLD.b, 0.90)
 		f.ccTitleLine = line
+	else
+		-- Show existing elements (may have been hidden by cleanup)
+		f.ccTitleBar:Show()
+		f.ccTitleLine:Show()
 	end
 
 	-- Title text: gold, larger, sitting on the bar.
@@ -288,6 +329,10 @@ function ns.SkinOptionsWindow(widget)
 		statusLine:SetHeight(1)
 		statusLine:SetVertexColor(GOLD.r, GOLD.g, GOLD.b, 0.50)
 		f.ccStatusLine = statusLine
+	else
+		-- Show existing elements (may have been hidden by cleanup)
+		f.ccStatusBar:Show()
+		f.ccStatusLine:Show()
 	end
 
 	-- Handle status text positioning
@@ -351,4 +396,112 @@ function ns.SkinOptionsWindow(widget)
 			tree.border:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -EDGE_INSET, STATUS_HEIGHT + EDGE_INSET)
 		end
 	end
+
+	-- Hook cleanup to run when window closes (before widget returns to pool)
+	if not f.ccCleanupHooked then
+		f.ccCleanupHooked = true
+		f:HookScript("OnHide", function()
+			ns.CleanupOptionsWindow(widget)
+		end)
+	end
+end
+
+-- Cleanup function: restore original AceGUI styling before widget returns to pool
+-- This prevents CleanerChat's theme from bleeding into other addons
+function ns.CleanupOptionsWindow(widget)
+	if not widget then
+		return
+	end
+	local f = widget.frame
+	if not f then
+		return
+	end
+
+	-- Restore main frame backdrop to default
+	if f.SetBackdrop then
+		f:SetBackdrop(DefaultFrameBackdrop)
+		f:SetBackdropColor(0, 0, 0, 1)
+		f:SetBackdropBorderColor(1, 1, 1, 1)
+	end
+
+	-- Hide our custom elements (don't destroy, just hide in case window reopens)
+	if f.ccTitleBar then
+		f.ccTitleBar:Hide()
+	end
+	if f.ccTitleLine then
+		f.ccTitleLine:Hide()
+	end
+	if f.ccStatusBar then
+		f.ccStatusBar:Hide()
+	end
+	if f.ccStatusLine then
+		f.ccStatusLine:Hide()
+	end
+
+	-- Show the original header textures
+	if widget.titlebg then
+		widget.titlebg:Show()
+	end
+	if f.ccHeaderHidden then
+		for _, region in ipairs({ f:GetRegions() }) do
+			if region.GetObjectType and (region:GetObjectType() == "Texture") then
+				local tex = region.GetTexture and region:GetTexture()
+				if (type(tex) == "string") and (tex:find("UI%-DialogBox%-Header")) then
+					region:Show()
+				end
+			end
+		end
+	end
+
+	-- Restore title text to default
+	if widget.titletext then
+		local tt = widget.titletext
+		tt:SetTextColor(1, 0.82, 0) -- Default gold
+		if tt.GetFont and tt.SetFont then
+			local font = tt:GetFont()
+			if font then
+				tt:SetFont(font, 14, "") -- Default size, no outline
+			end
+		end
+	end
+
+	-- Restore status text
+	if widget.statustext then
+		widget.statustext:SetTextColor(1, 1, 1)
+	end
+
+	-- Restore close button
+	local closeBtn = findCloseButton(f)
+	if closeBtn then
+		-- Hide our custom textures
+		if closeBtn.ccBg then
+			closeBtn.ccBg:Hide()
+		end
+		if closeBtn.ccBorder then
+			closeBtn.ccBorder:Hide()
+		end
+		-- Restore font color
+		local label = closeBtn.GetFontString and closeBtn:GetFontString()
+		if label then
+			label:SetTextColor(1, 0.82, 0) -- Default gold
+		end
+	end
+
+	-- Restore tree styling
+	local tree = findTree(widget)
+	if tree then
+		if tree.treeframe and tree.treeframe.SetBackdrop then
+			tree.treeframe:SetBackdrop(DefaultPaneBackdrop)
+			tree.treeframe:SetBackdropColor(0.1, 0.1, 0.1)
+			tree.treeframe:SetBackdropBorderColor(0.4, 0.4, 0.4)
+		end
+		if tree.border and tree.border.SetBackdrop then
+			tree.border:SetBackdrop(DefaultPaneBackdrop)
+			tree.border:SetBackdropColor(0.1, 0.1, 0.1)
+			tree.border:SetBackdropBorderColor(0.4, 0.4, 0.4)
+		end
+	end
+
+	-- Clear skinned flags so next open re-applies our skin
+	f.ccHeaderHidden = nil
 end
