@@ -679,6 +679,33 @@ function SlidingMessageFrameMixin:Update(incoming)
 			self.messageFramePool:Release(message)
 		end
 	end
+
+	-- Flash this tab if it received new messages and is NOT currently selected.
+	-- Each tab that receives messages will flash independently (like Prat/default Blizz).
+	-- This works regardless of whether tabs are faded out.
+	if #newMessages > 0 then
+		-- Find the tab for this chatFrame directly using the tab name pattern
+		local chatFrameName = self.chatFrame:GetName()
+		local tabName = chatFrameName .. "Tab"
+		local myTab = _G[tabName]
+
+		-- Check if flashing is enabled in profile (default true)
+		local flashEnabled = true
+		if self.profile and self.profile.flashTabOnMessage == false then
+			flashEnabled = false
+		end
+
+		-- Flash if enabled, tab exists, and is not the selected one
+		if flashEnabled and myTab and Core.Components.selectedTab ~= myTab then
+			if myTab.FlashTab and myTab._glassInitialized then
+				-- Use our custom flash (shows the tab even when faded)
+				myTab:FlashTab()
+			elseif _G.FCF_StartAlertFlash then
+				-- Fallback to Blizzard's built-in alert flash
+				_G.FCF_StartAlertFlash(self.chatFrame)
+			end
+		end
+	end
 end
 
 local function CreateSlidingMessageFrame(name, parent, chatFrame)

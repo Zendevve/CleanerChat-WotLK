@@ -103,6 +103,8 @@ Core.defaults = {
 		tabSpacing = 5, -- spacing between tabs
 		tabBorderThickness = 1, -- border line thickness (1-5)
 		tabPadding = 5, -- padding from dock edge
+		flashTabOnMessage = true, -- flash inactive tabs when they receive a new message
+		flashTabStyle = "blink", -- flash style: blink, pulse, glow, rapid
 
 		indentWordWrap = true,
 		mouseOverTooltips = true,

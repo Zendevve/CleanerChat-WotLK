@@ -10,6 +10,8 @@ local GameTooltip = GameTooltip
 local ShowUIPanel = ShowUIPanel
 local UIParent = UIParent
 local CreateFrame = CreateFrame
+local IsControlKeyDown = IsControlKeyDown
+local DressUpItemLink = DressUpItemLink
 -- luacheck: pop
 
 -- WotLK 3.3.5 supported link types
@@ -122,6 +124,15 @@ function Hyperlinks:OnEnable()
 			if url and url ~= "" then
 				showCopyDialog(url)
 			end
+			return
+		end
+
+		-- Ctrl-click on item links opens the dressing room.
+		-- SetItemRef normally handles this via IsModifiedClick("DRESSUPLINK"), but
+		-- our custom overlay buttons don't trigger modifier detection correctly.
+		-- Handle it explicitly here.
+		if IsControlKeyDown() and linkType == "item" then
+			DressUpItemLink(link)
 			return
 		end
 

@@ -203,6 +203,15 @@ L["Tab border thickness"] = "標籤邊框厚度"
 L["Thickness of the outline border."] = "輪廓邊框的厚度。"
 L["Tab padding"] = "標籤內邊距"
 L["Padding from the dock edge."] = "從停靠欄邊緣的距離。"
+L["Flash on new message"] = "新訊息時閃爍"
+L["Flash inactive tabs when they receive a new message to draw attention."] =
+	"當非活動標籤收到新訊息時閃爍以引起注意。"
+L["Flash style"] = "閃爍樣式"
+L["Animation style for tab flashing."] = "標籤閃爍的動畫樣式。"
+L["Blink"] = "閃爍"
+L["Pulse"] = "脈衝"
+L["Glow"] = "發光"
+L["Rapid"] = "快速"
 
 L["Show timestamps"] = "顯示時間戳記"
 L["Prepend each message with a timestamp in [HH:MM] format."] =

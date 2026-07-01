@@ -212,6 +212,15 @@ L["Tab border thickness"] = "Tab-Rahmendicke"
 L["Thickness of the outline border."] = "Dicke des Umrissrahmens."
 L["Tab padding"] = "Tab-Innenabstand"
 L["Padding from the dock edge."] = "Abstand vom Dock-Rand."
+L["Flash on new message"] = "Bei neuer Nachricht blinken"
+L["Flash inactive tabs when they receive a new message to draw attention."] =
+	"Lässt inaktive Tabs blinken, wenn sie eine neue Nachricht erhalten, um Aufmerksamkeit zu erregen."
+L["Flash style"] = "Blinkstil"
+L["Animation style for tab flashing."] = "Animationsstil für das Tab-Blinken."
+L["Blink"] = "Blinken"
+L["Pulse"] = "Pulsieren"
+L["Glow"] = "Leuchten"
+L["Rapid"] = "Schnell"
 
 L["Show timestamps"] = "Zeitstempel anzeigen"
 L["Prepend each message with a timestamp in [HH:MM] format."] =

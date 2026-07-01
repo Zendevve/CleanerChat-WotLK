@@ -586,6 +586,181 @@ function ChatTabMixin:UpdateFontFromProfile()
 	end
 end
 
+---
+-- Flash the tab to draw attention when a new message arrives.
+-- Creates a pulsing highlight effect on the tab text and border.
+-- Supports multiple flash styles: blink, pulse, glow, rapid.
+-- Only works with outline tab style (modern/filled/outline).
+-- If the dock/tabs are faded out, this will show just this tab during the flash.
+function ChatTabMixin:FlashTab()
+	-- Don't flash if this tab is already selected
+	if Core.Components.selectedTab == self then
+		return
+	end
+
+	-- Check if flashing is enabled (default to true if not set)
+	local profile = Core.db.profile
+	if self.slidingMessageFrame and self.slidingMessageFrame.window and self.slidingMessageFrame.window.profile then
+		profile = self.slidingMessageFrame.window.profile
+	end
+	local flashEnabled = profile.flashTabOnMessage
+	if flashEnabled == false then
+		return
+	end
+
+	-- Only flash for outline style tabs (outline, modern, filled)
+	local tabStyle = profile.tabStyle or "minimal"
+	if tabStyle ~= "outline" and tabStyle ~= "modern" and tabStyle ~= "filled" then
+		return
+	end
+
+	-- Don't start a new flash if one is already running
+	if self._isFlashing then
+		return
+	end
+
+	local tabText = self.Text or _G[self:GetName() .. "Text"]
+	if not tabText then
+		return
+	end
+
+	self._isFlashing = true
+
+	-- Create a frame for the flash animation if needed
+	if not self._flashFrame then
+		self._flashFrame = CreateFrame("Frame")
+	end
+
+	-- Get tab style info (normalize to outline)
+	local cornerStyle = profile.tabCornerStyle or "square"
+	local isRounded = cornerStyle == "rounded"
+
+	-- Flash style configuration
+	local flashStyle = profile.flashTabStyle or "blink"
+	local activeColor = profile.tabActiveColor or { r = 223 / 255, g = 186 / 255, b = 105 / 255 }
+
+	-- Colors for flash
+	local highlightColor = { r = 1, g = 1, b = 1 } -- Bright white
+	local dimColor = { r = 0.4, g = 0.4, b = 0.4 } -- Dim gray for better contrast
+
+	-- Helper to set border colors for outline style tabs
+	local function SetBorderColor(r, g, b, a)
+		if isRounded and self.skinBackdrop then
+			self.skinBackdrop:SetBackdropBorderColor(r, g, b, a)
+		else
+			for _, border in ipairs({
+				self.skinBorderTop,
+				self.skinBorderBottom,
+				self.skinBorderLeft,
+				self.skinBorderRight,
+			}) do
+				if border then
+					border:SetVertexColor(r, g, b, a)
+				end
+			end
+		end
+	end
+
+	-- Helper to set text color
+	local function SetTextFlash(r, g, b)
+		tabText:SetTextColor(r, g, b)
+	end
+
+	-- Helper to interpolate between two colors
+	local function LerpColor(t, r1, g1, b1, r2, g2, b2)
+		return r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t
+	end
+
+	-- Helper to ensure tab and dock are visible
+	local function EnsureVisible()
+		self:Show()
+		if Hooker.hooks[self] and Hooker.hooks[self].SetAlpha then
+			Hooker.hooks[self].SetAlpha(self, 1)
+		end
+		local dock = self.glassDock or self:GetParent()
+		if dock then
+			if dock.QuickShow then
+				dock:QuickShow()
+			elseif dock.Show then
+				dock:Show()
+				dock:SetAlpha(1)
+			end
+		end
+	end
+
+	-- Animation state
+	local totalTime = 0
+
+	-- Style-specific settings
+	local config = {
+		blink = { duration = 0.25, cycles = 3 }, -- Sharp on/off, 3 cycles
+		pulse = { duration = 1.5, cycles = 2 }, -- Smooth sine wave, 2 cycles
+		glow = { duration = 0.8, cycles = 3 }, -- Bright flash fading out, 3 cycles
+		rapid = { duration = 0.1, cycles = 6 }, -- Fast urgent blinks, 6 cycles
+	}
+	local cfg = config[flashStyle] or config.blink
+	local maxTime = cfg.duration * cfg.cycles
+
+	self._flashFrame:SetScript("OnUpdate", function(frame, delta)
+		totalTime = totalTime + delta
+
+		-- Check if we should stop
+		if totalTime >= maxTime or Core.Components.selectedTab == self then
+			frame:SetScript("OnUpdate", nil)
+			self._isFlashing = false
+			self:UpdateSkinColors()
+			return
+		end
+
+		EnsureVisible()
+
+		-- Calculate animation progress based on style
+		local r, g, b
+
+		if flashStyle == "blink" then
+			-- Sharp on/off alternation
+			local cyclePos = math.floor(totalTime / cfg.duration) % 2
+			if cyclePos == 0 then
+				-- Highlight: white
+				SetTextFlash(highlightColor.r, highlightColor.g, highlightColor.b)
+				SetBorderColor(1, 1, 1, 1)
+			else
+				-- Dim: gray (for contrast)
+				SetTextFlash(dimColor.r, dimColor.g, dimColor.b)
+				SetBorderColor(activeColor.r, activeColor.g, activeColor.b, 0.7)
+			end
+		elseif flashStyle == "pulse" then
+			-- Smooth sine-wave fade between dim and bright
+			local cycleProgress = (totalTime % cfg.duration) / cfg.duration
+			local t = (math.sin(cycleProgress * math.pi * 2 - math.pi / 2) + 1) / 2 -- 0 to 1 sine wave
+			r, g, b =
+				LerpColor(t, dimColor.r, dimColor.g, dimColor.b, highlightColor.r, highlightColor.g, highlightColor.b)
+			local a = 0.7 + t * 0.3 -- 0.7 to 1.0
+			SetTextFlash(r, g, b)
+			SetBorderColor(r, g, b, a)
+		elseif flashStyle == "glow" then
+			-- Starts bright white, gradually fades to dim, then snaps back
+			local cycleProgress = (totalTime % cfg.duration) / cfg.duration
+			local t = 1 - cycleProgress -- 1 to 0 (fade out)
+			r, g, b =
+				LerpColor(t, dimColor.r, dimColor.g, dimColor.b, highlightColor.r, highlightColor.g, highlightColor.b)
+			local a = 0.5 + t * 0.5 -- 0.5 to 1.0
+			SetTextFlash(r, g, b)
+			SetBorderColor(r, g, b, a)
+		elseif flashStyle == "rapid" then
+			-- Fast urgent blinking
+			local cyclePos = math.floor(totalTime / cfg.duration) % 2
+			if cyclePos == 0 then
+				SetTextFlash(highlightColor.r, highlightColor.g, highlightColor.b)
+				SetBorderColor(1, 1, 1, 1)
+			else
+				SetTextFlash(dimColor.r, dimColor.g, dimColor.b)
+				SetBorderColor(activeColor.r, activeColor.g, activeColor.b, 0.7)
+			end
+		end
+	end)
+end
+
 Core.Components.CreateChatTab = function(slidingMessageFrame)
 	local frameName = slidingMessageFrame.chatFrame:GetName()
 	local tabName = frameName .. "Tab"

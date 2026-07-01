@@ -216,6 +216,15 @@ L["Tab border thickness"] = "Grosor del borde de pestaña"
 L["Thickness of the outline border."] = "Grosor del borde del contorno."
 L["Tab padding"] = "Relleno de pestaña"
 L["Padding from the dock edge."] = "Relleno desde el borde del dock."
+L["Flash on new message"] = "Parpadear con nuevo mensaje"
+L["Flash inactive tabs when they receive a new message to draw attention."] =
+	"Hace parpadear las pestañas inactivas cuando reciben un nuevo mensaje para llamar la atención."
+L["Flash style"] = "Estilo de parpadeo"
+L["Animation style for tab flashing."] = "Estilo de animación para el parpadeo de pestañas."
+L["Blink"] = "Parpadeo"
+L["Pulse"] = "Pulso"
+L["Glow"] = "Brillo"
+L["Rapid"] = "Rápido"
 
 L["Show timestamps"] = "Mostrar marcas de tiempo"
 L["Prepend each message with a timestamp in [HH:MM] format."] =

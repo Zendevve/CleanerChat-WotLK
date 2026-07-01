@@ -1116,6 +1116,51 @@ function C:OnEnable()
 										Core:Dispatch(UpdateConfig("tabPadding", WindowIdFor(info)))
 									end,
 								},
+								flashTabOnMessage = {
+									name = L["Flash on new message"],
+									desc = L["Flash inactive tabs when they receive a new message to draw attention."],
+									type = "toggle",
+									order = 1.98,
+									hidden = function(info)
+										local style = ProfileFor(info).tabStyle or "minimal"
+										return style ~= "outline" and style ~= "modern" and style ~= "filled"
+									end,
+									get = function(info)
+										local val = ProfileFor(info).flashTabOnMessage
+										if val == nil then
+											return true
+										end
+										return val
+									end,
+									set = function(info, input)
+										ProfileFor(info).flashTabOnMessage = input
+									end,
+								},
+								flashTabStyle = {
+									name = L["Flash style"],
+									desc = L["Animation style for tab flashing."],
+									type = "select",
+									order = 1.99,
+									values = {
+										["blink"] = L["Blink"],
+										["pulse"] = L["Pulse"],
+										["glow"] = L["Glow"],
+										["rapid"] = L["Rapid"],
+									},
+									hidden = function(info)
+										local style = ProfileFor(info).tabStyle or "minimal"
+										if style ~= "outline" and style ~= "modern" and style ~= "filled" then
+											return true
+										end
+										return ProfileFor(info).flashTabOnMessage == false
+									end,
+									get = function(info)
+										return ProfileFor(info).flashTabStyle or "blink"
+									end,
+									set = function(info, input)
+										ProfileFor(info).flashTabStyle = input
+									end,
+								},
 							},
 						},
 						section2 = {
