@@ -588,7 +588,8 @@ end
 
 ---
 -- Flash the tab to draw attention when a new message arrives.
--- Creates a brief pulsing highlight effect on the tab text and border.
+-- Creates a pulsing highlight effect on the tab text and border.
+-- Supports multiple flash styles: blink, pulse, glow, rapid.
 -- If the dock/tabs are faded out, this will show just this tab during the flash.
 function ChatTabMixin:FlashTab()
 	-- Don't flash if this tab is already selected
@@ -617,8 +618,6 @@ function ChatTabMixin:FlashTab()
 	end
 
 	self._isFlashing = true
-	local flashCount = 0
-	local maxFlashes = 6 -- 3 full cycles (on/off)
 
 	-- Create a frame for the flash animation if needed
 	if not self._flashFrame then
@@ -626,13 +625,17 @@ function ChatTabMixin:FlashTab()
 	end
 
 	-- Get tab style info
-	local style = profile.tabStyle or "minimal"
-	if style == "modern" or style == "filled" then
-		style = "outline"
+	local tabStyle = profile.tabStyle or "minimal"
+	if tabStyle == "modern" or tabStyle == "filled" then
+		tabStyle = "outline"
 	end
 	local cornerStyle = profile.tabCornerStyle or "square"
 	local isRounded = cornerStyle == "rounded"
-	local isOutline = style == "outline"
+	local isOutline = tabStyle == "outline"
+
+	-- Flash style configuration
+	local flashStyle = profile.flashTabStyle or "blink"
+	local activeColor = profile.tabActiveColor or { r = 223 / 255, g = 186 / 255, b = 105 / 255 }
 
 	-- Helper to set border colors for outline style tabs
 	local function SetBorderColor(r, g, b, a)
@@ -646,43 +649,94 @@ function ChatTabMixin:FlashTab()
 		end
 	end
 
+	-- Helper to interpolate between two colors
+	local function LerpColor(t, r1, g1, b1, r2, g2, b2)
+		return r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t
+	end
+
+	-- Helper to ensure tab and dock are visible
+	local function EnsureVisible()
+		self:Show()
+		if Hooker.hooks[self] and Hooker.hooks[self].SetAlpha then
+			Hooker.hooks[self].SetAlpha(self, 1)
+		end
+		local dock = self.glassDock or self:GetParent()
+		if dock then
+			if dock.QuickShow then
+				dock:QuickShow()
+			elseif dock.Show then
+				dock:Show()
+				dock:SetAlpha(1)
+			end
+		end
+	end
+
+	-- Animation state
 	local elapsed = 0
-	local flashDuration = 0.25 -- Time per flash state change
-	local activeColor = profile.tabActiveColor or { r = 223 / 255, g = 186 / 255, b = 105 / 255 }
+	local totalTime = 0
+
+	-- Style-specific settings
+	local config = {
+		blink = { duration = 0.25, cycles = 3 },      -- Sharp on/off, 3 cycles
+		pulse = { duration = 1.5, cycles = 2 },       -- Smooth sine wave, 2 cycles
+		glow = { duration = 0.8, cycles = 3 },        -- Bright flash fading out, 3 cycles
+		rapid = { duration = 0.1, cycles = 6 },       -- Fast urgent blinks, 6 cycles
+	}
+	local cfg = config[flashStyle] or config.blink
+	local maxTime = cfg.duration * cfg.cycles
 
 	self._flashFrame:SetScript("OnUpdate", function(frame, delta)
 		elapsed = elapsed + delta
-		if elapsed >= flashDuration then
-			elapsed = 0
-			flashCount = flashCount + 1
+		totalTime = totalTime + delta
 
-			if flashCount > maxFlashes or Core.Components.selectedTab == self then
-				-- Stop flashing, restore normal colors
-				frame:SetScript("OnUpdate", nil)
-				self._isFlashing = false
-				self:UpdateSkinColors()
-				return
+		-- Check if we should stop
+		if totalTime >= maxTime or Core.Components.selectedTab == self then
+			frame:SetScript("OnUpdate", nil)
+			self._isFlashing = false
+			self:UpdateSkinColors()
+			return
+		end
+
+		EnsureVisible()
+
+		-- Calculate animation progress based on style
+		local r, g, b, a
+
+		if flashStyle == "blink" then
+			-- Sharp on/off alternation
+			local cyclePos = math.floor(totalTime / cfg.duration) % 2
+			if cyclePos == 0 then
+				-- Highlight: white
+				tabText:SetTextColor(1, 1, 1)
+				SetBorderColor(1, 1, 1, 1)
+			else
+				-- Normal: gold
+				tabText:SetTextColor(Colors.apache.r, Colors.apache.g, Colors.apache.b)
+				SetBorderColor(activeColor.r, activeColor.g, activeColor.b, 0.7)
 			end
 
-			-- Force this tab visible during flash (even if dock is faded)
-			self:Show()
-			if Hooker.hooks[self] and Hooker.hooks[self].SetAlpha then
-				Hooker.hooks[self].SetAlpha(self, 1)
-			end
-			
-			-- Ensure the dock is visible
-			local dock = self.glassDock or self:GetParent()
-			if dock then
-				if dock.QuickShow then
-					dock:QuickShow()
-				elseif dock.Show then
-					dock:Show()
-					dock:SetAlpha(1)
-				end
-			end
+		elseif flashStyle == "pulse" then
+			-- Smooth sine-wave fade between white and gold
+			local cycleProgress = (totalTime % cfg.duration) / cfg.duration
+			local t = (math.sin(cycleProgress * math.pi * 2 - math.pi / 2) + 1) / 2  -- 0 to 1 sine wave
+			r, g, b = LerpColor(t, activeColor.r, activeColor.g, activeColor.b, 1, 1, 1)
+			a = 0.7 + t * 0.3  -- 0.7 to 1.0
+			tabText:SetTextColor(r, g, b)
+			SetBorderColor(r, g, b, a)
 
-			-- Alternate between highlight (white) and normal (gold) colors
-			if flashCount % 2 == 1 then
+		elseif flashStyle == "glow" then
+			-- Starts bright white, gradually fades to gold, then snaps back
+			local cycleProgress = (totalTime % cfg.duration) / cfg.duration
+			local t = 1 - cycleProgress  -- 1 to 0 (fade out)
+			r, g, b = LerpColor(t, activeColor.r, activeColor.g, activeColor.b, 1, 1, 1)
+			a = 0.5 + t * 0.5  -- 0.5 to 1.0
+			tabText:SetTextColor(r, g, b)
+			SetBorderColor(r, g, b, a)
+
+		elseif flashStyle == "rapid" then
+			-- Fast urgent blinking
+			local cyclePos = math.floor(totalTime / cfg.duration) % 2
+			if cyclePos == 0 then
 				tabText:SetTextColor(1, 1, 1)
 				SetBorderColor(1, 1, 1, 1)
 			else

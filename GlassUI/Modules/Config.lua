@@ -1132,6 +1132,27 @@ function C:OnEnable()
 										ProfileFor(info).flashTabOnMessage = input
 									end,
 								},
+								flashTabStyle = {
+									name = L["Flash style"],
+									desc = L["Animation style for tab flashing."],
+									type = "select",
+									order = 1.99,
+									values = {
+										["blink"] = L["Blink"],
+										["pulse"] = L["Pulse"],
+										["glow"] = L["Glow"],
+										["rapid"] = L["Rapid"],
+									},
+									hidden = function(info)
+										return ProfileFor(info).flashTabOnMessage == false
+									end,
+									get = function(info)
+										return ProfileFor(info).flashTabStyle or "blink"
+									end,
+									set = function(info, input)
+										ProfileFor(info).flashTabStyle = input
+									end,
+								},
 							},
 						},
 						section2 = {

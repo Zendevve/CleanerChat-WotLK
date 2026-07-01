@@ -232,6 +232,12 @@ L["Tab padding"] = true
 L["Padding from the dock edge."] = true
 L["Flash on new message"] = true
 L["Flash inactive tabs when they receive a new message to draw attention."] = true
+L["Flash style"] = true
+L["Animation style for tab flashing."] = true
+L["Blink"] = true
+L["Pulse"] = true
+L["Glow"] = true
+L["Rapid"] = true
 
 -- Timestamps
 L["Show timestamps"] = true
