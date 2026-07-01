@@ -230,6 +230,8 @@ L["Tab border thickness"] = true
 L["Thickness of the outline border."] = true
 L["Tab padding"] = true
 L["Padding from the dock edge."] = true
+L["Flash on new message"] = true
+L["Flash inactive tabs when they receive a new message to draw attention."] = true
 
 -- Timestamps
 L["Show timestamps"] = true

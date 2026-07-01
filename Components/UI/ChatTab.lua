@@ -586,6 +586,113 @@ function ChatTabMixin:UpdateFontFromProfile()
 	end
 end
 
+---
+-- Flash the tab to draw attention when a new message arrives.
+-- Creates a brief pulsing highlight effect on the tab text and border.
+-- If the dock/tabs are faded out, this will show just this tab during the flash.
+function ChatTabMixin:FlashTab()
+	-- Don't flash if this tab is already selected
+	if Core.Components.selectedTab == self then
+		return
+	end
+
+	-- Check if flashing is enabled (default to true if not set)
+	local profile = Core.db.profile
+	if self.slidingMessageFrame and self.slidingMessageFrame.window and self.slidingMessageFrame.window.profile then
+		profile = self.slidingMessageFrame.window.profile
+	end
+	local flashEnabled = profile.flashTabOnMessage
+	if flashEnabled == false then
+		return
+	end
+
+	-- Don't start a new flash if one is already running
+	if self._isFlashing then
+		return
+	end
+
+	local tabText = self.Text or _G[self:GetName() .. "Text"]
+	if not tabText then
+		return
+	end
+
+	self._isFlashing = true
+	local flashCount = 0
+	local maxFlashes = 6 -- 3 full cycles (on/off)
+
+	-- Create a frame for the flash animation if needed
+	if not self._flashFrame then
+		self._flashFrame = CreateFrame("Frame")
+	end
+
+	-- Get tab style info
+	local style = profile.tabStyle or "minimal"
+	if style == "modern" or style == "filled" then
+		style = "outline"
+	end
+	local cornerStyle = profile.tabCornerStyle or "square"
+	local isRounded = cornerStyle == "rounded"
+	local isOutline = style == "outline"
+
+	-- Helper to set border colors for outline style tabs
+	local function SetBorderColor(r, g, b, a)
+		if not isOutline then return end
+		if isRounded and self.skinBackdrop then
+			self.skinBackdrop:SetBackdropBorderColor(r, g, b, a)
+		else
+			for _, border in ipairs({ self.skinBorderTop, self.skinBorderBottom, self.skinBorderLeft, self.skinBorderRight }) do
+				if border then border:SetVertexColor(r, g, b, a) end
+			end
+		end
+	end
+
+	local elapsed = 0
+	local flashDuration = 0.25 -- Time per flash state change
+	local activeColor = profile.tabActiveColor or { r = 223 / 255, g = 186 / 255, b = 105 / 255 }
+
+	self._flashFrame:SetScript("OnUpdate", function(frame, delta)
+		elapsed = elapsed + delta
+		if elapsed >= flashDuration then
+			elapsed = 0
+			flashCount = flashCount + 1
+
+			if flashCount > maxFlashes or Core.Components.selectedTab == self then
+				-- Stop flashing, restore normal colors
+				frame:SetScript("OnUpdate", nil)
+				self._isFlashing = false
+				self:UpdateSkinColors()
+				return
+			end
+
+			-- Force this tab visible during flash (even if dock is faded)
+			self:Show()
+			if Hooker.hooks[self] and Hooker.hooks[self].SetAlpha then
+				Hooker.hooks[self].SetAlpha(self, 1)
+			end
+			
+			-- Ensure the dock is visible
+			local dock = self.glassDock or self:GetParent()
+			if dock then
+				if dock.QuickShow then
+					dock:QuickShow()
+				elseif dock.Show then
+					dock:Show()
+					dock:SetAlpha(1)
+				end
+			end
+
+			-- Alternate between highlight (white) and normal (gold) colors
+			if flashCount % 2 == 1 then
+				tabText:SetTextColor(1, 1, 1)
+				SetBorderColor(1, 1, 1, 1)
+			else
+				tabText:SetTextColor(Colors.apache.r, Colors.apache.g, Colors.apache.b)
+				SetBorderColor(activeColor.r, activeColor.g, activeColor.b, 0.7)
+			end
+		end
+	end)
+end
+
 Core.Components.CreateChatTab = function(slidingMessageFrame)
 	local frameName = slidingMessageFrame.chatFrame:GetName()
 	local tabName = frameName .. "Tab"
