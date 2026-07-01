@@ -1121,6 +1121,10 @@ function C:OnEnable()
 									desc = L["Flash inactive tabs when they receive a new message to draw attention."],
 									type = "toggle",
 									order = 1.98,
+									hidden = function(info)
+										local style = ProfileFor(info).tabStyle or "minimal"
+										return style ~= "outline" and style ~= "modern" and style ~= "filled"
+									end,
 									get = function(info)
 										local val = ProfileFor(info).flashTabOnMessage
 										if val == nil then
@@ -1144,6 +1148,10 @@ function C:OnEnable()
 										["rapid"] = L["Rapid"],
 									},
 									hidden = function(info)
+										local style = ProfileFor(info).tabStyle or "minimal"
+										if style ~= "outline" and style ~= "modern" and style ~= "filled" then
+											return true
+										end
 										return ProfileFor(info).flashTabOnMessage == false
 									end,
 									get = function(info)
