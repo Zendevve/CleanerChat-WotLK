@@ -13,11 +13,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Cache Lua tools
+        uses: actions/cache@v4
+        id: lua-cache
+        with:
+          path: |
+            ~/.luarocks
+            /usr/local/lib/luarocks
+            /usr/local/share/lua
+          key: lua-tools-${{ runner.os }}-${{ hashFiles('.luacheckrc') }}
+          restore-keys: lua-tools-${{ runner.os }}-
+
       - name: Install Lua and Luacheck
         run: |
           sudo apt-get update
           sudo apt-get install -y lua5.1 luarocks
-          sudo luarocks install luacheck
+          if ! command -v luacheck &> /dev/null; then
+            sudo luarocks install luacheck
+          fi
 
       - name: Lua syntax check
         run: |
@@ -56,8 +69,29 @@ jobs:
             exit $EXIT_CODE
           fi
 
+      - name: Install StyLua
+        run: |
+          curl -L https://github.com/JohnnyMorganz/StyLua/releases/latest/download/stylua-linux-x86_64.zip -o stylua.zip
+          unzip stylua.zip
+          chmod +x stylua
+          sudo mv stylua /usr/local/bin/
+
+      - name: Check Lua formatting
+        run: |
+          echo "Checking Lua formatting with StyLua..."
+          if stylua --check .; then
+            echo "✅ Lua formatting check passed"
+          else
+            echo ""
+            echo "❌ Lua formatting issues found! Run 'stylua .' locally to fix."
+            exit 1
+          fi
+
       - name: Install busted (unit test framework)
-        run: sudo luarocks install busted
+        run: |
+          if ! command -v busted &> /dev/null; then
+            sudo luarocks install busted
+          fi
 
       - name: Run unit tests (busted)
         run: busted spec --verbose
