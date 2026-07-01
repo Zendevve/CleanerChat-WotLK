@@ -215,6 +215,15 @@ L["Tab border thickness"] = "Spessore bordo scheda"
 L["Thickness of the outline border."] = "Spessore del bordo del contorno."
 L["Tab padding"] = "Padding scheda"
 L["Padding from the dock edge."] = "Distanza dal bordo del dock."
+L["Flash on new message"] = "Lampeggia per nuovo messaggio"
+L["Flash inactive tabs when they receive a new message to draw attention."] =
+	"Fa lampeggiare le schede inattive quando ricevono un nuovo messaggio per attirare l'attenzione."
+L["Flash style"] = "Stile lampeggio"
+L["Animation style for tab flashing."] = "Stile di animazione per il lampeggio delle schede."
+L["Blink"] = "Lampeggio"
+L["Pulse"] = "Pulsazione"
+L["Glow"] = "Bagliore"
+L["Rapid"] = "Rapido"
 
 L["Show timestamps"] = "Mostra timestamp"
 L["Prepend each message with a timestamp in [HH:MM] format."] =

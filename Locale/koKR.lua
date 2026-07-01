@@ -213,6 +213,15 @@ L["Tab border thickness"] = "탭 테두리 두께"
 L["Thickness of the outline border."] = "외곽선 테두리의 두께입니다."
 L["Tab padding"] = "탭 여백"
 L["Padding from the dock edge."] = "독 가장자리로부터의 여백입니다."
+L["Flash on new message"] = "새 메시지 시 깜빡임"
+L["Flash inactive tabs when they receive a new message to draw attention."] =
+	"비활성 탭이 새 메시지를 받으면 주의를 끌기 위해 깜빡입니다."
+L["Flash style"] = "깜빡임 스타일"
+L["Animation style for tab flashing."] = "탭 깜빡임의 애니메이션 스타일입니다."
+L["Blink"] = "깜빡임"
+L["Pulse"] = "맥동"
+L["Glow"] = "빛남"
+L["Rapid"] = "빠름"
 
 L["Show timestamps"] = "타임스탬프 표시"
 L["Prepend each message with a timestamp in [HH:MM] format."] =

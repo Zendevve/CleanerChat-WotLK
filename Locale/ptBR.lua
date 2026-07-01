@@ -214,6 +214,15 @@ L["Tab border thickness"] = "Espessura da borda da aba"
 L["Thickness of the outline border."] = "Espessura da borda do contorno."
 L["Tab padding"] = "Preenchimento da aba"
 L["Padding from the dock edge."] = "Preenchimento a partir da borda do dock."
+L["Flash on new message"] = "Piscar com nova mensagem"
+L["Flash inactive tabs when they receive a new message to draw attention."] =
+	"Faz as abas inativas piscarem quando recebem uma nova mensagem para chamar atenção."
+L["Flash style"] = "Estilo de piscar"
+L["Animation style for tab flashing."] = "Estilo de animação para o piscar das abas."
+L["Blink"] = "Piscar"
+L["Pulse"] = "Pulsar"
+L["Glow"] = "Brilho"
+L["Rapid"] = "Rápido"
 
 L["Show timestamps"] = "Mostrar carimbos de hora"
 L["Prepend each message with a timestamp in [HH:MM] format."] =

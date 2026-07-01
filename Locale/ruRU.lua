@@ -222,6 +222,15 @@ L["Tab border thickness"] = "Толщина рамки вкладки"
 L["Thickness of the outline border."] = "Толщина рамки контура."
 L["Tab padding"] = "Отступ вкладки"
 L["Padding from the dock edge."] = "Отступ от края дока."
+L["Flash on new message"] = "Мигать при новом сообщении"
+L["Flash inactive tabs when they receive a new message to draw attention."] =
+	"Мигает неактивными вкладками при получении нового сообщения для привлечения внимания."
+L["Flash style"] = "Стиль мигания"
+L["Animation style for tab flashing."] = "Стиль анимации для мигания вкладок."
+L["Blink"] = "Мигание"
+L["Pulse"] = "Пульсация"
+L["Glow"] = "Свечение"
+L["Rapid"] = "Быстрое"
 
 L["Show timestamps"] = "Показывать время"
 L["Prepend each message with a timestamp in [HH:MM] format."] =

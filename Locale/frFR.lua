@@ -216,6 +216,15 @@ L["Tab border thickness"] = "Épaisseur de la bordure d'onglet"
 L["Thickness of the outline border."] = "Épaisseur de la bordure du contour."
 L["Tab padding"] = "Marge intérieure d'onglet"
 L["Padding from the dock edge."] = "Marge depuis le bord du dock."
+L["Flash on new message"] = "Clignoter pour nouveau message"
+L["Flash inactive tabs when they receive a new message to draw attention."] =
+	"Fait clignoter les onglets inactifs lorsqu'ils reçoivent un nouveau message pour attirer l'attention."
+L["Flash style"] = "Style de clignotement"
+L["Animation style for tab flashing."] = "Style d'animation pour le clignotement des onglets."
+L["Blink"] = "Clignotement"
+L["Pulse"] = "Pulsation"
+L["Glow"] = "Lueur"
+L["Rapid"] = "Rapide"
 
 L["Show timestamps"] = "Afficher les horodatages"
 L["Prepend each message with a timestamp in [HH:MM] format."] =
