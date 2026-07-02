@@ -123,68 +123,11 @@ jobs:
           cat changelog.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Generate AI summary
-        id: ai_summary
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Read the raw changelog
-          COMMITS=$(cat changelog.txt)
-          
-          # Skip AI if no real changes
-          if [ "$COMMITS" = "- Initial release" ]; then
-            echo "summary=" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          
-          # Create prompt using heredoc (avoids YAML indentation issues)
-          PROMPT=$(cat <<'PROMPT_END'
-          You are writing a changelog summary for a WoW addon.
-
-          RULES:
-          - Write like a normal person, not a corporate PR team
-          - NO words like: enhanced, streamlined, robust, seamless, leverage, utilize, optimize, elevate
-          - NO phrases like: "we're excited", "happy to announce", "this release brings"
-          - Just say what changed. Plain English. Short sentences.
-          - Max 3-4 bullet points total
-          - Group similar changes together
-          - If it's a fix, just say "Fixed X"
-          - If it's new, just say "Added X"
-          - Skip anything boring (version bumps, formatting, CI changes)
-
-          COMMITS:
-          PROMPT_END
-          )
-          PROMPT="${PROMPT}
-          ${COMMITS}
-
-          Write 2-4 short bullet points summarizing what actually matters to users:"
-
-          # Use GitHub's AI Models API (free for public repos)
-          RESPONSE=$(curl -s -X POST \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Content-Type: application/json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://models.github.ai/inference/chat/completions" \
-            -d "$(jq -n --arg prompt "$PROMPT" '{
-              "model": "openai/gpt-4o-mini",
-              "messages": [{"role": "user", "content": $prompt}],
-              "max_tokens": 200,
-              "temperature": 0.3
-            }')" 2>/dev/null || echo "")
-          
-          # Extract the summary, fallback to empty if failed
-          SUMMARY=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // empty' 2>/dev/null || echo "")
-          
-          if [ -n "$SUMMARY" ]; then
-            echo "AI summary generated successfully"
-            echo "summary<<EOF" >> $GITHUB_OUTPUT
-            echo "$SUMMARY" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          else
-            echo "AI summary skipped (API unavailable or failed)"
-            echo "summary=" >> $GITHUB_OUTPUT
-          fi
+      # AI summary is disabled - GitHub Models API requires enrollment
+      # To enable: add OPENAI_API_KEY secret and uncomment the step below
+      # - name: Generate AI summary
+      #   id: ai_summary
+      #   ...
 
       - name: Create addon zip
         run: |
@@ -247,30 +190,14 @@ jobs:
       - name: Build release body
         id: body
         run: |
-          # Build the release body dynamically based on whether AI summary exists
+          # Build the release body
           {
             echo "## CleanerChat v${{ steps.version.outputs.version }}"
             echo ""
             echo "A modern chat UI overhaul with message filtering, animations, and extensive customization for WoW 3.3.5a."
             echo ""
-            
-            # Add AI summary if available (the good stuff at the top)
-            AI_SUMMARY='${{ steps.ai_summary.outputs.summary }}'
-            if [ -n "$AI_SUMMARY" ]; then
-              echo "### What's New"
-              echo "$AI_SUMMARY"
-              echo ""
-              echo "<details>"
-              echo "<summary>All commits</summary>"
-              echo ""
-              echo '${{ steps.changelog.outputs.changelog }}'
-              echo ""
-              echo "</details>"
-            else
-              echo "### Changes"
-              echo '${{ steps.changelog.outputs.changelog }}'
-            fi
-            
+            echo "### Changes"
+            echo '${{ steps.changelog.outputs.changelog }}'
             echo ""
             echo "### Installation"
             echo "1. Download \`CleanerChat.zip\`"
