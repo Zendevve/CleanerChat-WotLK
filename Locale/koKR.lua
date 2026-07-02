@@ -69,6 +69,9 @@ L["Simplify messages about new or improved trade skills."] =
 	"새로 배우거나 향상된 전문 기술에 대한 메시지를 간소화합니다."
 
 -- New filter keys (fallback to English)
+L["Numbered Channel Style"] = true
+L["How to display numbered channels like General, Trade, LocalDefense. Requires the Chat Channel Names filter."] =
+	true
 L["Group Channel Style"] = true
 L["How to display group channels like Guild, Party, Raid, Officer. Requires the Chat Channel Names filter."] = true
 L['Shortened (e.g. "[G]", "[P]")'] = true

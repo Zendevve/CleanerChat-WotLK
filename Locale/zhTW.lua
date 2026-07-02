@@ -66,6 +66,9 @@ L["Learning (Crafting)"] = "學習（製造）"
 L["Simplify messages about new or improved trade skills."] = "簡化關於新學或提升專業技能的訊息。"
 
 -- New filter keys (fallback to English)
+L["Numbered Channel Style"] = true
+L["How to display numbered channels like General, Trade, LocalDefense. Requires the Chat Channel Names filter."] =
+	true
 L["Group Channel Style"] = true
 L["How to display group channels like Guild, Party, Raid, Officer. Requires the Chat Channel Names filter."] = true
 L['Shortened (e.g. "[G]", "[P]")'] = true
