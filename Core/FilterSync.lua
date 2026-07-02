@@ -63,13 +63,17 @@ end
 
 -- Sync a CleanerChat filter state TO Blizzard's settings
 function FilterSync:SyncToBlizzard(filterKey, enabled)
-	if isSyncing then return end
-	
+	if isSyncing then
+		return
+	end
+
 	local blizzGroups = CC_TO_BLIZZARD[filterKey]
-	if not blizzGroups then return end
-	
+	if not blizzGroups then
+		return
+	end
+
 	isSyncing = true
-	
+
 	for _, group in ipairs(blizzGroups) do
 		if enabled then
 			EnableMessageGroup(group)
@@ -77,24 +81,28 @@ function FilterSync:SyncToBlizzard(filterKey, enabled)
 			DisableMessageGroup(group)
 		end
 	end
-	
+
 	isSyncing = false
 end
 
 -- Sync a Blizzard message group change TO CleanerChat
 function FilterSync:SyncFromBlizzard(group, enabled)
-	if isSyncing then return end
-	
+	if isSyncing then
+		return
+	end
+
 	local ccFilter = BLIZZARD_TO_CC[group]
-	if not ccFilter then return end
-	
+	if not ccFilter then
+		return
+	end
+
 	-- Only update if different from current state
 	if ns.db and ns.db.filters and ns.db.filters[ccFilter] ~= nil then
 		if ns.db.filters[ccFilter] ~= enabled then
 			isSyncing = true
-			
+
 			ns.db.filters[ccFilter] = enabled
-			
+
 			-- Update module state
 			local moduleName = ns:GetModuleNameFromFilter(ccFilter)
 			local module = ns:GetModule(moduleName, true)
@@ -105,7 +113,7 @@ function FilterSync:SyncFromBlizzard(group, enabled)
 					module:Disable()
 				end
 			end
-			
+
 			isSyncing = false
 		end
 	end
@@ -113,8 +121,10 @@ end
 
 -- Sync ALL CleanerChat filters to Blizzard on load
 function FilterSync:SyncAllToBlizzard()
-	if not ns.db or not ns.db.filters then return end
-	
+	if not ns.db or not ns.db.filters then
+		return
+	end
+
 	for filterKey, enabled in pairs(ns.db.filters) do
 		self:SyncToBlizzard(filterKey, enabled)
 	end
@@ -130,7 +140,7 @@ function FilterSync:HookBlizzardFunctions()
 			end
 		end)
 	end
-	
+
 	-- Hook ChatFrame_RemoveMessageGroup
 	if ChatFrame_RemoveMessageGroup then
 		hooksecurefunc("ChatFrame_RemoveMessageGroup", function(chatFrame, group)
@@ -145,7 +155,7 @@ end
 function FilterSync:Initialize()
 	-- Hook Blizzard functions for reverse sync
 	self:HookBlizzardFunctions()
-	
+
 	-- Sync our settings to Blizzard after a short delay (ensure everything is loaded)
 	if C_Timer and C_Timer.After then
 		C_Timer.After(1, function()

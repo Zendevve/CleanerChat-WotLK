@@ -26,21 +26,23 @@ local safeMatch = ns.SafeMatch
 
 -- Filter out pet spam messages (happiness changes, etc.)
 Module.OnAddMessage = function(_, _, msg, ...)
-	if not msg then return end
-	
+	if not msg then
+		return
+	end
+
 	-- Filter pet happiness messages
 	if string_find(msg, "pet") or string_find(msg, "Pet") then
 		if string_find(msg, G.PET_HAPPY) or string_find(msg, G.PET_CONTENT) or string_find(msg, G.PET_UNHAPPY) then
 			return true -- Suppress the message
 		end
 	end
-	
+
 	-- Filter pet ability learn/unlearn messages
 	local ability = safeMatch(msg, P[G.PET_LEARN_ABILITY])
 	if ability then
 		return true
 	end
-	
+
 	ability = safeMatch(msg, P[G.PET_UNLEARN_ABILITY])
 	if ability then
 		return true

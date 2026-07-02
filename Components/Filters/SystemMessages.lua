@@ -9,19 +9,21 @@ local string_find = string.find
 local G = {
 	-- Session started messages
 	SESSION_START = "Session started",
-	-- Addon loaded messages  
+	-- Addon loaded messages
 	ADDON_LOADED = "AddOn",
 }
 
 -- Filter system message spam
 Module.OnAddMessage = function(_, _, msg, ...)
-	if not msg then return end
-	
+	if not msg then
+		return
+	end
+
 	-- Filter "Session started" spam
 	if string_find(msg, G.SESSION_START) then
 		return true
 	end
-	
+
 	-- Filter addon loaded notifications (if they appear)
 	if string_find(msg, G.ADDON_LOADED) and string_find(msg, "loaded") then
 		return true
@@ -33,8 +35,10 @@ local onAddMessageProxy = function(...)
 end
 
 Module.OnChatEvent = function(_, _, _, message, ...)
-	if not message then return end
-	
+	if not message then
+		return
+	end
+
 	-- Filter repetitive system messages
 	if string_find(message, "Session started") then
 		return true -- Suppress message

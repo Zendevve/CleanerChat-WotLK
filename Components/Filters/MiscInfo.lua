@@ -22,13 +22,15 @@ local safeMatch = ns.SafeMatch
 
 -- Filter out misc combat info spam
 Module.OnAddMessage = function(_, _, msg, ...)
-	if not msg then return end
-	
+	if not msg then
+		return
+	end
+
 	-- Filter combo point messages
 	if string_find(msg, G.COMBO_POINTS) then
 		return true
 	end
-	
+
 	-- Filter "You gain X energy/rage/mana" type spam messages
 	-- These are typically redundant with the UI indicators
 	local amount, power = safeMatch(msg, P[G.POWER_GAIN])

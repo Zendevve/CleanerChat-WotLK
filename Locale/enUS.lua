@@ -16,8 +16,7 @@ L["O"] = true -- Officer
 L["DG"] = true -- Dungeon Guide (Ascension)
 
 L["Numbered Channel Style"] = true
-L["How to display numbered channels like General, Trade, LocalDefense. Requires the Chat Channel Names filter."] =
-	true
+L["How to display numbered channels like General, Trade, LocalDefense. Requires the Chat Channel Names filter."] = true
 L['Shortened (e.g. "[G]")'] = true
 L['Full name (e.g. "[General]")'] = true
 L['Number only (e.g. "1.")'] = true

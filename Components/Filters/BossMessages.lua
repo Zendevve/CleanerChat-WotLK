@@ -9,13 +9,15 @@ local string_format = string.format
 -- by making them more visually distinct and cleaner
 
 Module.OnChatEvent = function(_, _, event, message, author, ...)
-	if not message then return end
-	
+	if not message then
+		return
+	end
+
 	if event == "CHAT_MSG_MONSTER_EMOTE" or event == "CHAT_MSG_RAID_BOSS_EMOTE" then
 		-- Format boss emotes with distinct color
 		return false, string_format(ns.out.boss_emote, message), author, ...
 	end
-	
+
 	if event == "CHAT_MSG_MONSTER_WHISPER" or event == "CHAT_MSG_RAID_BOSS_WHISPER" then
 		-- Format boss whispers with distinct color
 		return false, string_format(ns.out.boss_whisper, message), author, ...

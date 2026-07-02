@@ -10,14 +10,16 @@ local string_match = string.match
 local G = {
 	-- "Opening..."
 	OPENING = "Opening",
-	-- "Unlocking..."  
+	-- "Unlocking..."
 	UNLOCKING = "Unlocking",
 }
 
 -- Filter out opening/unlocking spam messages
 Module.OnAddMessage = function(_, _, msg, ...)
-	if not msg then return end
-	
+	if not msg then
+		return
+	end
+
 	if string_match(msg, "^" .. G.OPENING) or string_match(msg, "^" .. G.UNLOCKING) then
 		return true -- Suppress the message
 	end
