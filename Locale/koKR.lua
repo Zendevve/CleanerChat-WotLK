@@ -9,9 +9,6 @@ L["Delete window"] = "창 삭제"
 L["CleanerChat settings"] = "CleanerChat 설정"
 L["Use %s for settings."] = "설정하려면 %s 을(를) 사용하세요."
 
-L["Channel Name Style"] = "채널 이름 스타일"
-L["Choose whether to show the channel's full name or just its first letter. Requires the Chat Channel Names filter."] =
-	'채널의 전체 이름을 표시할지 첫 글자만 표시할지 선택합니다. "대화 채널 이름" 필터가 필요합니다.'
 L['Shortened (e.g. "[G]")'] = '축약 (예: "[G]")'
 L['Full name (e.g. "[General]")'] = '전체 이름 (예: "[General]")'
 L["Show Channel Number"] = "채널 번호 표시"

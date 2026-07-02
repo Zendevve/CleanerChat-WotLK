@@ -9,9 +9,6 @@ L["Delete window"] = "Удалить окно"
 L["CleanerChat settings"] = "Настройки CleanerChat"
 L["Use %s for settings."] = "Используйте %s для настроек."
 
-L["Channel Name Style"] = "Стиль названия канала"
-L["Choose whether to show the channel's full name or just its first letter. Requires the Chat Channel Names filter."] =
-	'Выберите, показывать полное название канала или только его первую букву. Требуется фильтр "Названия каналов чата".'
 L['Shortened (e.g. "[G]")'] = 'Сокращённо (напр. "[G]")'
 L['Full name (e.g. "[General]")'] = 'Полное название (напр. "[General]")'
 L["Show Channel Number"] = "Показывать номер канала"
