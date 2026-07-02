@@ -15,7 +15,7 @@ local G = {
 }
 
 -- Filter out opening/unlocking spam messages
-Module.OnAddMessage = function(_, _, msg, ...)
+Module.OnAddMessage = function(_, _, msg)
 	if not msg then
 		return
 	end

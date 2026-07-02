@@ -25,7 +25,7 @@ local P = ns.MakePatternCache()
 local safeMatch = ns.SafeMatch
 
 -- Filter out pet spam messages (happiness changes, etc.)
-Module.OnAddMessage = function(_, _, msg, ...)
+Module.OnAddMessage = function(_, _, msg)
 	if not msg then
 		return
 	end

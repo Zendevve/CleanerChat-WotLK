@@ -21,7 +21,7 @@ local P = ns.MakePatternCache()
 local safeMatch = ns.SafeMatch
 
 -- Filter out misc combat info spam
-Module.OnAddMessage = function(_, _, msg, ...)
+Module.OnAddMessage = function(_, _, msg)
 	if not msg then
 		return
 	end

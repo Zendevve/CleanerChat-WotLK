@@ -14,7 +14,7 @@ local G = {
 }
 
 -- Filter system message spam
-Module.OnAddMessage = function(_, _, msg, ...)
+Module.OnAddMessage = function(_, _, msg)
 	if not msg then
 		return
 	end
@@ -34,7 +34,7 @@ local onAddMessageProxy = function(...)
 	return Module:OnAddMessage(...)
 end
 
-Module.OnChatEvent = function(_, _, _, message, ...)
+Module.OnChatEvent = function(_, _, _, message)
 	if not message then
 		return
 	end
