@@ -161,6 +161,8 @@ read_globals = {
   "SetChatColorNameByClass",
   "ChatFrame_AddMessageEventFilter",
   "ChatFrame_RemoveMessageEventFilter",
+  "ChatFrame_AddMessageGroup",
+  "ChatFrame_RemoveMessageGroup",
   "FCF_GetCurrentChatFrame",
   "FCF_SetWindowName",
   "FCF_DockFrame",

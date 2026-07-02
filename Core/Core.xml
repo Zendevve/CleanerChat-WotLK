@@ -17,6 +17,7 @@
 
 	<!-- Core -->
 	<Script file="Core.lua"/>
+	<Script file="FilterSync.lua"/>
 	<Script file="OptionsSkin.lua"/>
 	<Script file="Options.lua"/>
 

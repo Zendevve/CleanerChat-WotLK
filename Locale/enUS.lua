@@ -99,6 +99,24 @@ L["Blacklist messages about new or removed spells, typically spammed on speciali
 L["Player Status"] = true
 L["Simplify status messages about AFK, DND and being rested."] = true
 
+L["Honor"] = true
+L["Simplify PvP honor gain messages."] = true
+
+L["Opening"] = true
+L["Hide opening and unlocking messages (lockpicking, chests)."] = true
+
+L["Pet Info"] = true
+L["Hide pet happiness and ability messages."] = true
+
+L["Misc Info"] = true
+L["Hide miscellaneous combat info like combo points and small power gains."] = true
+
+L["System Messages"] = true
+L["Hide repetitive system messages like session started."] = true
+
+L["Boss Messages"] = true
+L["Format boss emotes and whispers with distinct colors."] = true
+
 L["Learning (Crafting)"] = true
 L["Simplify messages about new or improved trade skills."] = true
 

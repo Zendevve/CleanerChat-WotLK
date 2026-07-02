@@ -30,6 +30,10 @@ local setter = function(info, val)
 			module:Disable()
 		end
 	end
+	-- Sync with Blizzard's chat filter settings
+	if ns.SyncFilterToBlizzard then
+		ns.SyncFilterToBlizzard(info[#info], val)
+	end
 	Options:UpdateReloadStatus()
 end
 
@@ -355,6 +359,54 @@ local filterDB = {
 	tradeskills = {
 		name = L["Learning (Crafting)"],
 		desc = L["Simplify messages about new or improved trade skills."],
+		width = 1.5,
+		type = "toggle",
+		set = setter,
+		get = getter,
+	},
+	honor = {
+		name = L["Honor"],
+		desc = L["Simplify PvP honor gain messages."],
+		width = 1.5,
+		type = "toggle",
+		set = setter,
+		get = getter,
+	},
+	opening = {
+		name = L["Opening"],
+		desc = L["Hide opening and unlocking messages (lockpicking, chests)."],
+		width = 1.5,
+		type = "toggle",
+		set = setter,
+		get = getter,
+	},
+	petinfo = {
+		name = L["Pet Info"],
+		desc = L["Hide pet happiness and ability messages."],
+		width = 1.5,
+		type = "toggle",
+		set = setter,
+		get = getter,
+	},
+	miscinfo = {
+		name = L["Misc Info"],
+		desc = L["Hide miscellaneous combat info like combo points and small power gains."],
+		width = 1.5,
+		type = "toggle",
+		set = setter,
+		get = getter,
+	},
+	systemmessages = {
+		name = L["System Messages"],
+		desc = L["Hide repetitive system messages like session started."],
+		width = 1.5,
+		type = "toggle",
+		set = setter,
+		get = getter,
+	},
+	bossmessages = {
+		name = L["Boss Messages"],
+		desc = L["Format boss emotes and whispers with distinct colors."],
 		width = 1.5,
 		type = "toggle",
 		set = setter,

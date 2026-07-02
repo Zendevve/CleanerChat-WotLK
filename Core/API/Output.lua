@@ -142,3 +142,11 @@ out.durability_loss = "*red*-** *palered*%d%% Durability**"
 
 -- Appearance collection (Ascension)
 out.appearance_added = "*green*+** *pink*Appearance:** %s"
+
+-- Honor outputs (PvP)
+out.honor = "*green*+** *white*%d** *white*%s**"
+out.honor_kill = "*green*+** *white*%d** *white*%s:** *yellow*%s**"
+
+-- Boss message outputs
+out.boss_emote = "*darkorange*[Boss]** %s"
+out.boss_whisper = "*red*[Boss Whisper]** %s"

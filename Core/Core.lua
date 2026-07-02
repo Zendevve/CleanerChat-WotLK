@@ -230,14 +230,20 @@ local defaults = {
 	filters = {
 		achievements = true,
 		auctions = true,
+		bossmessages = true,
 		channels = true,
 		experience = true,
+		honor = true,
 		loot = true,
+		miscinfo = false,
 		names = true,
+		opening = false,
+		petinfo = false,
 		quests = true,
 		reputation = true,
 		spells = true,
 		status = true,
+		systemmessages = false,
 		tradeskills = true,
 	},
 }
@@ -623,6 +629,11 @@ ns.OnEnable = function(self)
 	-- Apply class colors to all chat types if enabled
 	if self.db.forceClassColors then
 		self:ApplyClassColors()
+	end
+
+	-- Initialize filter sync with Blizzard chat settings
+	if ns.FilterSync and ns.FilterSync.Initialize then
+		ns.FilterSync:Initialize()
 	end
 
 	-- Print startup message (delayed so it's visible after login spam)
