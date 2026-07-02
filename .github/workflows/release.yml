@@ -17,6 +17,9 @@ on:
       - '**/*.zip'
       - 'README.md'
       - 'LICENSE.txt'
+      - 'CONTRIBUTING.md'
+      - 'docs/**'
+      - 'spec/**'
 
 jobs:
   release:
@@ -75,8 +78,9 @@ jobs:
             COMMIT_RANGE="${LAST_TAG}..HEAD"
           fi
           
-          # Files that don't trigger releases (same as paths-ignore above)
-          IGNORED_PATTERNS='^\.github/|^\.gitignore$|^\.luacheckrc$|^stylua\.toml$|^APIDocumentation/|^changelog\.txt$|\.zip$|^README\.md$|^LICENSE\.txt$'
+          # Files that don't trigger releases (same as paths-ignore above + rsync excludes)
+          # These should match BOTH paths-ignore at the top AND rsync excludes in the zip step
+          IGNORED_PATTERNS='^\.github/|^\.gitignore$|^\.luacheckrc$|^stylua\.toml$|^APIDocumentation/|^changelog\.txt$|\.zip$|^README\.md$|^LICENSE\.txt$|^CONTRIBUTING\.md$|^docs/|^spec/'
           
           # Build changelog, filtering out:
           # 1. Version bump commits

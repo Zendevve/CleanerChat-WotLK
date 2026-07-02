@@ -1,13 +1,61 @@
 name: Validate
 
 on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - "**.lua"
+      - ".luacheckrc"
+      - "stylua.toml"
+      - "*.toc"
+      - ".github/workflows/validate.yml"
   pull_request:
     branches:
       - main
 
 jobs:
+  format:
+    runs-on: ubuntu-latest
+    # Only auto-format on push (not PR) to avoid permission issues with forks
+    if: github.event_name == 'push'
+    permissions:
+      contents: write
+
+    outputs:
+      formatted: ${{ steps.commit.outputs.changes_detected }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install StyLua
+        run: |
+          curl -L https://github.com/JohnnyMorganz/StyLua/releases/latest/download/stylua-linux-x86_64.zip -o stylua.zip
+          unzip stylua.zip
+          chmod +x stylua
+          sudo mv stylua /usr/local/bin/
+
+      - name: Run StyLua formatting
+        run: stylua .
+
+      - name: Commit formatting changes
+        id: commit
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: auto-format with StyLua"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
+
   validate:
     runs-on: ubuntu-latest
+    # Wait for format job if it ran, otherwise run immediately
+    # Skip if format job made changes (a new workflow will run on the auto-commit)
+    needs: [format]
+    if: |
+      always() && 
+      (needs.format.result == 'skipped' || 
+       (needs.format.result == 'success' && needs.format.outputs.formatted != 'true'))
 
     steps:
       - name: Checkout repository
@@ -262,7 +310,7 @@ jobs:
           echo "✅ Orphan translations check passed"
 
       - name: Discord notification on failure
-        if: failure()
+        if: failure() && github.event_name == 'pull_request'
         run: |
           curl -H "Content-Type: application/json" \
                -d "{\"embeds\": [{\"title\": \"❌ CleanerChat Validation Failed\", \"description\": \"The validation workflow failed on PR #${{ github.event.pull_request.number }}\", \"color\": 15158332, \"fields\": [{\"name\": \"PR\", \"value\": \"[#${{ github.event.pull_request.number }}](${{ github.event.pull_request.html_url }})\", \"inline\": true}, {\"name\": \"Branch\", \"value\": \"\`${{ github.head_ref }}\`\", \"inline\": true}, {\"name\": \"Run\", \"value\": \"[View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\", \"inline\": true}]}]}" \
