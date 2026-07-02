@@ -74,7 +74,8 @@ L["How to display group channels like Guild, Party, Raid, Officer. Requires the 
 L['Shortened (e.g. "[G]", "[P]")'] = true
 L['Full name (e.g. "[Guild]", "[Party]")'] = true
 L["Force Class Colors"] = true
-L["Enable class-colored names for all chat types (Guild, Party, Raid, Whisper, etc.) on login. This overrides Blizzard's default settings."] = true
+L["Enable class-colored names for all chat types (Guild, Party, Raid, Whisper, etc.) on login. This overrides Blizzard's default settings."] =
+	true
 L["Honor"] = true
 L["Simplify PvP honor gain messages."] = true
 L["Opening"] = true
