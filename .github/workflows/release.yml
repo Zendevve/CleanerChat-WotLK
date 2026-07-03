@@ -84,12 +84,13 @@ jobs:
           
           # Build changelog, filtering out:
           # 1. Version bump commits
-          # 2. Commits that only touched non-release files
+          # 2. StyLua auto-format commits
+          # 3. Commits that only touched non-release files
           COMMITS=""
           for SHA in $(git log $COMMIT_RANGE --pretty=format:"%H" --no-merges); do
-            # Skip version bump commits
+            # Skip version bump and StyLua formatting commits
             MSG=$(git log -1 --pretty=format:"%s" $SHA)
-            if echo "$MSG" | grep -q "chore: bump version"; then
+            if echo "$MSG" | grep -qE "^chore: bump version|^style: auto-format with StyLua"; then
               continue
             fi
             
