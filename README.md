@@ -54,35 +54,42 @@ CleanerChat filters and reformats chat to reduce noise. Each filter can be toggl
 
 | Filter | What it does |
 | --- | --- |
-| **Loot messages** | Consolidates multiple loot pickups into cleaner summaries |
-| **Loot rolls** | Cleans up Need, Greed, Disenchant and Pass roll messages |
-| **Money** | Formats gold/silver/copper with icons |
-| **Experience & Reputation** | Cleaner XP and rep gain messages |
 | **Achievements** | Streamlined achievement notifications |
-| **Spells & Abilities** | Consolidated spell-learning messages |
-| **Player status** | Simplifies AFK, DND and rested status messages |
 | **Auctions** | Cleaner auction house notifications |
-| **Quest updates** | Simplified quest progress messages |
-| **Quest rewards** | Formats reward item messages |
-| **Crafting** | Reformats "creates" broadcasts |
-| **Channel names** | Shortened channel prefixes |
-| **Player names** | Class-colored names in chat |
-| **Item quality** | Color-coded item names by rarity |
+| **Boss Messages** | Format boss emotes and whispers with distinct colors |
+| **Channel Names** | Shortened channel prefixes (General → [G], etc.) |
+| **Experience** | Cleaner XP and level-up messages |
+| **Honor** | Simplified PvP honor gain messages |
+| **Learning (Crafting)** | Simplified trade skill learning messages |
+| **Learning (Spells)** | Hide spell learned/unlearned spam (spec changes) |
+| **Loot** | Consolidates loot pickups, rolls (Need/Greed/Pass/DE), and currency |
+| **Misc Info** | Hide combo points and small power gains (off by default) |
+| **Opening** | Hide lockpicking and chest opening messages (off by default) |
+| **Pet Info** | Hide pet happiness and ability messages (off by default) |
+| **Player Names** | Remove brackets from player names |
+| **Player Status** | Simplifies AFK, DND and rested status messages |
+| **Quests** | Simplified quest progress and completion messages |
+| **Reputation** | Cleaner rep gain and loss messages |
+| **System Messages** | Hide repetitive system messages (off by default) |
+
+Class-colored names and item quality colors are always active.
 
 ### Extra formatting options
 
-Finer-grained tweaks that refine how cleaned messages look — all under `/cc → Filters`:
+Finer-grained tweaks under `/cc → Filters`:
 
 | Option | What it does |
 | --- | --- |
-| **One line quest rewards** | Combine quest reward items, currency and XP onto a single line |
-| **Show item destruction** | Print a message when you destroy (delete) an item |
-| **Show vendor sales** | Print a message when you sell an item to a vendor |
-| **Prettify guild status** | Simplify guild online/offline messages to just the player name |
-| **Channel name style** | Show full channel names or just an initial — optionally numbered and capitalized |
-| **Capitalize player names** | Capitalize the first letter of player names in chat |
-| **Hide crafting broadcasts** | Hide the "created:" item broadcasts from other players nearby |
-| **Startup message** | Toggle the login hint that shows how to open the settings |
+| **Prettify Money** | Display gold/silver/copper with coin icons |
+| **One Line Quest Rewards** | Combine quest reward items, currency and XP onto a single line |
+| **Show Item Destruction** | Print a message when you destroy (delete) an item |
+| **Show Vendor Sales** | Print a message when you sell an item to a vendor |
+| **Prettify Guild Status** | Simplify guild online/offline messages to just the player name |
+| **Channel Style** | Show full channel names or just an initial — numbered and/or capitalized |
+| **Capitalize Player Names** | Capitalize the first letter of player names in chat |
+| **Force Class Colors** | Auto-enable class colors for all chat types on login |
+| **Hide Crafting Broadcasts** | Hide the "created:" item broadcasts from other players nearby |
+| **Startup Message** | Toggle the login hint that shows how to open the settings |
 
 ---
 
