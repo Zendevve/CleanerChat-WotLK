@@ -10,7 +10,6 @@
 	<Script file="Components\UI\ChatTab.lua"/>
 	<Script file="Components\UI\EditBox.lua"/>
 	<Script file="Components\UI\FadingFrame.lua"/>
-	<Script file="Components\UI\GradientBackground.lua"/>
 	<Script file="Components\UI\MainContainerFrame.lua"/>
 	<Script file="Components\UI\MessageLine.lua"/>
 	<Script file="Components\UI\MoverDialog.lua"/>

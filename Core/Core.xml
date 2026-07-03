@@ -3,8 +3,7 @@
 	<!-- Protect the environment -->
 	<Script file="Private.lua"/>
 
-	<!-- Data -->
-	<Script file="Common\Constants.lua"/>
+	<!-- Data (Constants merged into Colors) -->
 	<Script file="Common\Colors.lua"/>
 
 	<!--

@@ -724,9 +724,6 @@ files = {
   ["Components/Filters/Experience.lua"] = {
     ignore = { "212" },  -- Chat filter callback signature
   },
-  ["Components/UI/GradientBackground.lua"] = {
-    ignore = { "212" },  -- Mixin callback signature
-  },
   ["Components/Filters/Money.lua"] = {
     ignore = { "212" },  -- Chat filter callback signature
   },

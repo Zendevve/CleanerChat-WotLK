@@ -6,8 +6,7 @@
 	<Script file="Filters\Blacklist.lua"/>
 	<Script file="Filters\BossMessages.lua"/>
 	<Script file="Filters\Channels.lua"/>
-	<Script file="Filters\ColorClass.lua"/>
-	<Script file="Filters\ColorQuality.lua"/>
+	<Script file="Filters\ColorFilters.lua"/>
 	<Script file="Filters\Empty.lua"/>
 	<Script file="Filters\Experience.lua"/>
 	<Script file="Filters\Honor.lua"/>
