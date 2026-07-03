@@ -82,7 +82,6 @@ Finer-grained tweaks that refine how cleaned messages look — all under `/cc �
 | **Channel name style** | Show full channel names or just an initial — optionally numbered and capitalized |
 | **Capitalize player names** | Capitalize the first letter of player names in chat |
 | **Hide crafting broadcasts** | Hide the "created:" item broadcasts from other players nearby |
-| **Hide UI error messages** | Suppress the server's "an interface error occurred" chat spam |
 | **Startup message** | Toggle the login hint that shows how to open the settings |
 
 ---

@@ -87,6 +87,52 @@ function MoverFrameMixin:Init()
 	self.hint:SetText("Drag to move · Corners to resize · Lock to save")
 	self.hint:SetTextColor(0.8, 0.8, 0.8, 1)
 
+	-- Delete button for non-Main windows (positioned below the plate)
+	self.deleteButton = CreateFrame("Button", nil, self)
+	self.deleteButton:SetSize(120, 22)
+	self.deleteButton:SetPoint("TOP", self.plate, "BOTTOM", 0, -6)
+	self.deleteButton:SetFrameLevel(self:GetFrameLevel() + 5)
+	self.deleteButton:Hide()
+
+	-- Red border (drawn first, slightly larger)
+	self.deleteButton.border = self.deleteButton:CreateTexture(nil, "BACKGROUND")
+	self.deleteButton.border:SetTexture("Interface\\Buttons\\WHITE8X8")
+	self.deleteButton.border:SetVertexColor(0.8, 0.2, 0.2, 1)
+	self.deleteButton.border:SetPoint("TOPLEFT", -1, 1)
+	self.deleteButton.border:SetPoint("BOTTOMRIGHT", 1, -1)
+
+	-- Black background (inner)
+	self.deleteButton.innerBg = self.deleteButton:CreateTexture(nil, "BORDER")
+	self.deleteButton.innerBg:SetTexture("Interface\\Buttons\\WHITE8X8")
+	self.deleteButton.innerBg:SetVertexColor(0, 0, 0, 0.9)
+	self.deleteButton.innerBg:SetAllPoints()
+
+	self.deleteButton.text = self.deleteButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+	self.deleteButton.text:SetPoint("CENTER")
+	self.deleteButton.text:SetText("Delete Window")
+	self.deleteButton.text:SetTextColor(0.9, 0.2, 0.2, 1)
+
+	local deleteBtn = self.deleteButton
+	deleteBtn:SetScript("OnEnter", function(btn)
+		btn.innerBg:SetVertexColor(0.15, 0.15, 0.15, 1)
+		btn.border:SetVertexColor(1, 0.3, 0.3, 1)
+		btn.text:SetTextColor(1, 0.4, 0.4, 1)
+	end)
+	deleteBtn:SetScript("OnLeave", function(btn)
+		btn.innerBg:SetVertexColor(0, 0, 0, 0.9)
+		btn.border:SetVertexColor(0.8, 0.2, 0.2, 1)
+		btn.text:SetTextColor(0.9, 0.2, 0.2, 1)
+	end)
+	local mover = self
+	deleteBtn:SetScript("OnClick", function()
+		if mover._windowId and mover._windowId ~= "Main" then
+			local UIManager = Core:GetModule("UIManager", true)
+			if UIManager and UIManager.DeleteWindow then
+				UIManager:DeleteWindow(mover._windowId)
+			end
+		end
+	end)
+
 	self:Hide()
 
 	self:RegisterForDrag("LeftButton")
@@ -276,8 +322,13 @@ end
 -- Update the mover's title to show which window it belongs to.
 -- Called after the window reference is set on the moverFrame.
 function MoverFrameMixin:SetWindowLabel(windowId)
+	-- Store the window ID for the delete button
+	self._windowId = windowId
+
 	local label
-	if windowId and windowId ~= "Main" then
+	local isMainWindow = (not windowId) or (windowId == "Main")
+
+	if not isMainWindow then
 		-- Convert "Window2" to "Window 2"
 		local num = windowId:match("Window(%d+)")
 		if num then
@@ -289,6 +340,15 @@ function MoverFrameMixin:SetWindowLabel(windowId)
 		label = "Move chat frame - Main"
 	end
 	self.title:SetText(label)
+
+	-- Show/hide the delete button based on whether it's Main
+	if self.deleteButton then
+		if isMainWindow then
+			self.deleteButton:Hide()
+		else
+			self.deleteButton:Show()
+		end
+	end
 
 	-- Resize the plate to fit the new title
 	local plateText = math.max(self.title:GetStringWidth(), self.hint:GetStringWidth())

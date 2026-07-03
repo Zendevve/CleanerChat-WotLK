@@ -73,7 +73,7 @@ Core.defaults = {
 		chatBackgroundColor = { r = 17 / 255, g = 17 / 255, b = 17 / 255 }, -- codGray
 		messageLeading = 3,
 		messageLinePadding = 0.25,
-		messageLeftPadding = 15,
+		messageLeftPadding = 3,
 		messageHistoryLimit = 128,
 
 		chatHoldTime = 14,

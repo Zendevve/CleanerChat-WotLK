@@ -173,20 +173,6 @@ local optionDB = {
 				return ns.db.hideOtherCrafts
 			end,
 		},
-		hideUIErrors = {
-			order = 40,
-			name = L["Hide UI Error Messages on Login from CleanerChat"],
-			desc = L['Hide the "UI Error: an interface error occurred" notifications the server prints to chat when a UI error happens.'],
-			width = "full",
-			type = "toggle",
-			set = function(info, value)
-				ns.db.hideUIErrors = value
-				Options:UpdateReloadStatus()
-			end,
-			get = function(info)
-				return ns.db.hideUIErrors
-			end,
-		},
 		showStartupMessage = {
 			order = 45,
 			name = L["Show Startup Message"],
@@ -558,12 +544,20 @@ Options.UpdateReloadStatus = function(self)
 	if not frame or not frame.SetStatusText then
 		return
 	end
+	-- Get the status bar background (parent of statustext)
+	local statusbg = frame.statustext and frame.statustext:GetParent()
 	if self:IsDirty() then
 		frame:SetStatusText(
 			"|cffffd200" .. L["Settings changed - the UI will reload when you close this window."] .. "|r"
 		)
+		if statusbg then
+			statusbg:Show()
+		end
 	else
 		frame:SetStatusText("")
+		if statusbg then
+			statusbg:Hide()
+		end
 	end
 end
 
@@ -602,11 +596,6 @@ Options.OpenOptionsMenu = function(self, input)
 	self:TakeSettingsSnapshot()
 
 	local frame = AceConfigDialog.OpenFrames[Addon]
-
-	-- Re-skin the window into the dark "Glass" theme (purely cosmetic, guarded).
-	if frame and ns.SkinOptionsWindow then
-		pcall(ns.SkinOptionsWindow, frame)
-	end
 
 	if frame and frame.frame and not frame.frame.ccReloadHooked then
 		frame.frame.ccReloadHooked = true

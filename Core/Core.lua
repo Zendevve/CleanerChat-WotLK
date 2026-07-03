@@ -220,7 +220,6 @@ local defaults = {
 	forceClassColors = true, -- force enable class colors for all chat types
 	moneyPrettify = true, -- use spaces in large gold amounts (e.g. "1 234" instead of "1234")
 	hideOtherCrafts = false, -- hide other players' "<name> creates <item>" craft broadcasts
-	hideUIErrors = true, -- hide the server's "UI Error: an interface error occured" chat notification
 	showStartupMessage = true, -- print "Use /cc for settings" on addon load
 	rawDebug = false, -- /ccdebug chat raw/event capture (persists across /reload)
 	oneLineQuestRewards = true, -- combine quest rewards (items, currency, xp) into one line
@@ -652,9 +651,3 @@ ns.OnEnable = function(self)
 		end
 	end
 end
-
-
-
-
-
-

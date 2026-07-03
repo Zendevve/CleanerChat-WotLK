@@ -26,7 +26,6 @@ L['Display money gains and losses with coin icons (e.g. "+ 28"). When off, uses 
 L["Hide Crafting Broadcasts"] = "隱藏製造廣播"
 L['Hide the "<name> created: <item>" messages shown when other players craft items nearby. Requires the Learning (Crafting) filter.'] =
 	"隱藏附近其他玩家製造物品時顯示的「<name> created: <item>」訊息。需要啟用「學習（製造）」過濾器。"
-L["Hide UI Error Messages on Login from CleanerChat"] = "隱藏 CleanerChat 在登入時的介面錯誤訊息"
 L['Hide the "UI Error: an interface error occurred" notifications the server prints to chat when a UI error happens.'] =
 	"隱藏發生介面錯誤時伺服器在聊天中輸出的「UI Error: an interface error occurred」通知。"
 L["Show Startup Message"] = "顯示啟動訊息"

@@ -192,6 +192,11 @@ function Hyperlinks:OnEnable()
 			GameTooltip:SetOwner(UIParent, "ANCHOR_CURSOR")
 			GameTooltip:SetText("Click to copy link")
 			GameTooltip:Show()
+		elseif t == "trade" then
+			-- Trade links (profession windows like Jewelcrafting) cannot be shown in
+			-- a tooltip via SetHyperlink - they need SetItemRef which opens a frame.
+			-- Don't try to show a tooltip on hover; the user can click to open it.
+			return
 		elseif linkTypes[t] then
 			self.state.showingTooltip = GameTooltip
 			ShowUIPanel(GameTooltip)

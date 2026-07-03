@@ -709,6 +709,13 @@ function ChatTabMixin:FlashTab()
 			frame:SetScript("OnUpdate", nil)
 			self._isFlashing = false
 			self:UpdateSkinColors()
+
+			-- After flash ends, restart the dock fade-out timer if tabsOnHover is enabled
+			local dock = self.glassDock or self:GetParent()
+			if dock and profile.tabsOnHover and dock.FadeOutTabs then
+				dock:FadeOutTabs()
+			end
+
 			return
 		end
 

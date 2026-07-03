@@ -49,7 +49,7 @@ function MoverDialogMixin:Init()
 	self.title = self:CreateFontString("ARTWORK")
 	self.title:SetFontObject("GameFontNormal")
 	self.title:SetPoint("TOP", self.header, "TOP", 0, -14)
-	self.title:SetText("Glass")
+	self.title:SetText("CleanerChat")
 
 	self.desc = self:CreateFontString("ARTWORK")
 	self.desc:SetFontObject("GameFontHighlight")

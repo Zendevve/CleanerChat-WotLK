@@ -652,11 +652,6 @@ files = {
     ignore = { "212" },  -- AceConfig get/set callbacks require info arg
   },
 
-  -- OptionsSkin has callback signatures
-  ["Core/OptionsSkin.lua"] = {
-    ignore = { "212" },  -- Callback signatures
-  },
-
   -- Private.lua sets up shared state
   ["Core/Private.lua"] = {
     ignore = { "212" },  -- Callback signatures

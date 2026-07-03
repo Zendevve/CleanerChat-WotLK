@@ -58,7 +58,7 @@ local prevErrorHandler
 local function ccErrorHandler(err, ...)
 	local is3481 = (type(err) == "string") and string_find(err, "ChatFrame.lua:3481", 1, true) and true or false
 	lastErrorWas3481 = is3481
-	if is3481 and ns.db and ns.db.hideUIErrors then
+	if is3481 then
 		return -- swallow ONLY the benign 3481 assert; do not report it
 	end
 	if prevErrorHandler then
@@ -88,12 +88,9 @@ end
 
 -- Drop the generic "UI Error: an interface error occured. Click here..." chat
 -- line (a direct AddMessage carrying a |Huierror|h link) ONLY when the matching
--- error was the benign 3481 assert. Toggled by "Hide UI Error Messages" (/cc),
--- default on. Real errors keep their notification, so they're not missed.
+-- error was the benign 3481 assert. Always enabled (hardcoded). Real errors
+-- keep their notification, so they're not missed.
 Module.OnAddMessage = function(self, chatFrame, msg, r, g, b, chatID, ...)
-	if (not ns.db) or not ns.db.hideUIErrors then
-		return
-	end
 	if not msg then
 		return
 	end

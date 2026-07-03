@@ -26,7 +26,6 @@ L['Display money gains and losses with coin icons (e.g. "+ 28"). When off, uses 
 L["Hide Crafting Broadcasts"] = "Herstellungsmeldungen ausblenden"
 L['Hide the "<name> created: <item>" messages shown when other players craft items nearby. Requires the Learning (Crafting) filter.'] =
 	'Blendet die Meldungen "<name> created: <item>" aus, die erscheinen, wenn andere Spieler in der Nähe Gegenstände herstellen. Erfordert den Filter "Lernen (Handwerk)".'
-L["Hide UI Error Messages on Login from CleanerChat"] = "UI-Fehlermeldungen beim Anmelden von CleanerChat ausblenden"
 L['Hide the "UI Error: an interface error occurred" notifications the server prints to chat when a UI error happens.'] =
 	'Blendet die Benachrichtigungen "UI Error: an interface error occurred" aus, die der Server bei einem UI-Fehler im Chat ausgibt.'
 L["Show Startup Message"] = "Startnachricht anzeigen"

@@ -26,7 +26,6 @@ L['Display money gains and losses with coin icons (e.g. "+ 28"). When off, uses 
 L["Hide Crafting Broadcasts"] = "제작 알림 숨기기"
 L['Hide the "<name> created: <item>" messages shown when other players craft items nearby. Requires the Learning (Crafting) filter.'] =
 	'주변의 다른 플레이어가 아이템을 제작할 때 표시되는 "<name> created: <item>" 메시지를 숨깁니다. "습득 (제작)" 필터가 필요합니다.'
-L["Hide UI Error Messages on Login from CleanerChat"] = "CleanerChat의 접속 시 UI 오류 메시지 숨기기"
 L['Hide the "UI Error: an interface error occurred" notifications the server prints to chat when a UI error happens.'] =
 	'UI 오류가 발생할 때 서버가 대화창에 출력하는 "UI Error: an interface error occurred" 알림을 숨깁니다.'
 L["Show Startup Message"] = "시작 메시지 표시"

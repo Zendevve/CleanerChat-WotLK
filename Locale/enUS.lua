@@ -47,7 +47,6 @@ L["Hide Crafting Broadcasts"] = true
 L['Hide the "<name> created: <item>" messages shown when other players craft items nearby. Requires the Learning (Crafting) filter.'] =
 	true
 
-L["Hide UI Error Messages on Login from CleanerChat"] = true
 L['Hide the "UI Error: an interface error occurred" notifications the server prints to chat when a UI error happens.'] =
 	true
 
