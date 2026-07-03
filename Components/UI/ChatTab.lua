@@ -671,19 +671,57 @@ function ChatTabMixin:FlashTab()
 		return r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t
 	end
 
-	-- Helper to ensure tab and dock are visible
-	local function EnsureVisible()
-		self:Show()
-		if Hooker.hooks[self] and Hooker.hooks[self].SetAlpha then
-			Hooker.hooks[self].SetAlpha(self, 1)
+	-- Track if the dock was hidden when flashing started (so we can hide the tab again after)
+	local dock = self.glassDock or self:GetParent()
+	local dockWasHidden = dock and (not dock:IsVisible() or dock:GetAlpha() < 0.1)
+
+	-- Get the window's tab list so we can hide other tabs during flash
+	local window = self.slidingMessageFrame and self.slidingMessageFrame.window
+	local allTabs = window and window.tabs
+
+	-- Store original alpha of other tabs so we can restore them
+	local otherTabsAlpha = {}
+	if dockWasHidden and allTabs then
+		for _, otherTab in ipairs(allTabs) do
+			if otherTab ~= self then
+				otherTabsAlpha[otherTab] = otherTab:GetAlpha()
+				if Hooker.hooks[otherTab] and Hooker.hooks[otherTab].SetAlpha then
+					Hooker.hooks[otherTab].SetAlpha(otherTab, 0)
+				else
+					otherTab:SetAlpha(0)
+				end
+			end
 		end
-		local dock = self.glassDock or self:GetParent()
+	end
+
+	-- Helper to ensure this tab and dock are visible
+	local function EnsureVisible()
+		-- Show the dock so tabs can be seen
 		if dock then
 			if dock.QuickShow then
 				dock:QuickShow()
 			elseif dock.Show then
 				dock:Show()
 				dock:SetAlpha(1)
+			end
+		end
+		-- Show this tab
+		self:Show()
+		if Hooker.hooks[self] and Hooker.hooks[self].SetAlpha then
+			Hooker.hooks[self].SetAlpha(self, 1)
+		else
+			self:SetAlpha(1)
+		end
+		-- Keep other tabs hidden if dock was hidden
+		if dockWasHidden and allTabs then
+			for _, otherTab in ipairs(allTabs) do
+				if otherTab ~= self then
+					if Hooker.hooks[otherTab] and Hooker.hooks[otherTab].SetAlpha then
+						Hooker.hooks[otherTab].SetAlpha(otherTab, 0)
+					else
+						otherTab:SetAlpha(0)
+					end
+				end
 			end
 		end
 	end
@@ -710,10 +748,37 @@ function ChatTabMixin:FlashTab()
 			self._isFlashing = false
 			self:UpdateSkinColors()
 
-			-- After flash ends, restart the dock fade-out timer if tabsOnHover is enabled
-			local dock = self.glassDock or self:GetParent()
-			if dock and profile.tabsOnHover and dock.FadeOutTabs then
-				dock:FadeOutTabs()
+			-- Restore all tabs to full alpha so they're visible on next hover
+			if allTabs then
+				for _, tab in ipairs(allTabs) do
+					if Hooker.hooks[tab] and Hooker.hooks[tab].SetAlpha then
+						Hooker.hooks[tab].SetAlpha(tab, 1)
+					else
+						tab:SetAlpha(1)
+					end
+				end
+			else
+				-- At minimum restore this tab
+				if Hooker.hooks[self] and Hooker.hooks[self].SetAlpha then
+					Hooker.hooks[self].SetAlpha(self, 1)
+				else
+					self:SetAlpha(1)
+				end
+			end
+
+			-- If the dock was hidden when flashing started, hide the dock immediately
+			if dockWasHidden then
+				if dock and dock.QuickHide then
+					dock:QuickHide()
+				elseif dock then
+					dock:Hide()
+					dock:SetAlpha(1)
+				end
+			else
+				-- Dock was visible, restart the fade-out timer normally
+				if dock and profile.tabsOnHover and dock.FadeOutTabs then
+					dock:FadeOutTabs()
+				end
 			end
 
 			return
