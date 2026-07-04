@@ -644,6 +644,37 @@ Options.OnInitialize = function(self)
 			ns.ToggleRawDebug()
 		end
 	end)
+
+	-- Create Interface Options panel (ESC > Interface > AddOns > CleanerChat)
+	local panel = CreateFrame("Frame", "CleanerChatOptionsPanel", UIParent)
+	panel.name = "CleanerChat"
+
+	-- Title
+	local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+	title:SetPoint("TOPLEFT", 16, -16)
+	title:SetText("|cffff7d0aCleanerChat|r")
+
+	-- Version/description
+	local version = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	version:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+	version:SetText("A chat enhancement addon for World of Warcraft")
+
+	-- Open Settings button
+	local button = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+	button:SetSize(150, 25)
+	button:SetPoint("TOPLEFT", version, "BOTTOMLEFT", 0, -20)
+	button:SetText("Open Settings")
+	button:SetScript("OnClick", function()
+		-- Hide the Interface Options frame first
+		if InterfaceOptionsFrame then
+			InterfaceOptionsFrame:Hide()
+		end
+		-- Open CleanerChat settings
+		self:OpenOptionsMenu("")
+	end)
+
+	-- Add to Interface Options
+	InterfaceOptions_AddCategory(panel)
 end
 
 Options.OnEnable = function(self)
