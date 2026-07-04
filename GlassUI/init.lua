@@ -77,6 +77,7 @@ Core.defaults = {
 		messageLinePadding = 0.25,
 		messageLeftPadding = 3,
 		messageHistoryLimit = 128,
+		restoreChatMessages = true,
 
 		chatHoldTime = 14,
 		chatFadeInDuration = 0.6,
@@ -129,6 +130,11 @@ Core.defaults = {
 		-- flat keys above; each additional window stores its own full copy of the
 		-- window-scoped style settings here, keyed by window id (see Core:GetWindowProfile).
 		windows = {},
+	},
+	-- Global storage for chat history (persists across profile changes, per-character)
+	global = {
+		chatHistory = {},
+		chatHistoryTime = 0,
 	},
 }
 

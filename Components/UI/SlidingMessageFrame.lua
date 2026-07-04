@@ -225,15 +225,21 @@ function SlidingMessageFrameMixin:Init(chatFrame)
 	-- Hook AddMessage to capture messages for our display
 	-- Note: Combat Log returns early in Init, so this only runs for regular chat frames
 	self:Hook(chatFrame, "AddMessage", function(frame, text, ...)
+		-- Skip filtering for restored messages (they were already filtered when originally received)
+		local UIManager = Core:GetModule("UIManager", true)
+		local isRestoring = UIManager and UIManager._restoringMessages
+
 		-- Run incoming text through CleanerChat's filters so the Glass display
 		-- matches CleanerChat's formatting and drops blacklisted messages.
-		local CleanerChat = GetCleanerChat()
-		if CleanerChat and text ~= nil then
-			local filtered = CleanerChat:FilterMessage(frame, text, ...)
-			if filtered == nil then
-				return
+		if not isRestoring then
+			local CleanerChat = GetCleanerChat()
+			if CleanerChat and text ~= nil then
+				local filtered = CleanerChat:FilterMessage(frame, text, ...)
+				if filtered == nil then
+					return
+				end
+				text = filtered
 			end
-			text = filtered
 		end
 		self:AddMessage(frame, text, ...)
 	end, true)
@@ -522,6 +528,27 @@ function SlidingMessageFrameMixin:AddMessage(...)
 	-- Enqueue messages to be displayed
 	local args = { ... }
 	table.insert(self.state.incomingMessages, args)
+
+	-- Store raw message data for restore-on-reload feature
+	-- Skip storing if we're currently restoring messages (to avoid duplicates)
+	local UIManager = Core:GetModule("UIManager", true)
+	if UIManager and UIManager._restoringMessages then
+		return
+	end
+
+	-- Format: { text, r, g, b } (skip frame reference as it can't be serialized)
+	if not self.state.rawMessages then
+		self.state.rawMessages = {}
+	end
+	local frame, text, r, g, b = ...
+	if text then
+		table.insert(self.state.rawMessages, { text = text, r = r or 1, g = g or 1, b = b or 1 })
+		-- Trim to history limit
+		local historyLimit = self.profile.messageHistoryLimit or 128
+		while #self.state.rawMessages > historyLimit do
+			table.remove(self.state.rawMessages, 1)
+		end
+	end
 end
 
 -- Recompute the scroll-child height from the current message heights, keeping

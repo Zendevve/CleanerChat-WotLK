@@ -603,7 +603,7 @@ function C:OnEnable()
 									min = 128,
 									max = 4096,
 									softMin = 128,
-									softMax = 1024,
+									softMax = 4096,
 									step = 64,
 									get = function(info)
 										return ProfileFor(info).messageHistoryLimit
@@ -612,6 +612,18 @@ function C:OnEnable()
 										ProfileFor(info).messageHistoryLimit = input
 									end,
 									order = 1.6,
+								},
+								restoreChatMessages = {
+									name = L["Restore chat on reload"],
+									desc = L["Restores recent chat messages after a UI reload."],
+									type = "toggle",
+									order = 1.7,
+									get = function()
+										return Core.db.profile.restoreChatMessages
+									end,
+									set = function(_, input)
+										Core.db.profile.restoreChatMessages = input
+									end,
 								},
 							},
 						},
