@@ -271,6 +271,13 @@ L["The immersive chat UI is built on Glass by mixxorz. This project keeps the sp
 L["The message filtering is based on ChatCleaner by Lars Norberg (Goldpaw). Backported to 3.3.5."] =
 	"Фильтрация сообщений основана на ChatCleaner от Lars Norberg (Goldpaw). Портировано на 3.3.5."
 -- Channel abbreviations (match slash commands)
+L["Channel Notices"] = "Уведомления каналов"
+L["Hide channel join, leave, and change notifications (works during gameplay, not on initial login)."] = "Скрывает уведомления о входе, выходе и смене канала (работает во время игры, не при первом входе)."
+L["Hide Combat Log tab"] = "Скрыть вкладку Журнала боя"
+L["Hides the Combat Log tab from the chat dock. Requires a UI reload."] = "Скрывает вкладку Журнала боя из панели чата. Требуется перезагрузка интерфейса."
+L["Horizontal padding"] = "Горизонтальный отступ"
+L["Restore chat on reload"] = "Восстановить чат при перезагрузке"
+L["Restores recent chat messages after a UI reload."] = "Восстанавливает недавние сообщения чата после перезагрузки интерфейса."
 L["BGL"] = "BGL"
 L["BG"] = "BG"
 L["PL"] = "PL"
