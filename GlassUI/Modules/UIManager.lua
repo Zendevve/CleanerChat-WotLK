@@ -603,6 +603,33 @@ function UIManager:SaveChatMessages()
 		return
 	end
 
+	-- Build chat type index to name mapping for color lookup
+	local chatTypeIndexToName = {}
+	for t in pairs(ChatTypeInfo) do
+		local idx = GetChatTypeIndex(t)
+		if idx then
+			chatTypeIndexToName[idx] = t
+		end
+	end
+
+	-- Helper to wrap message with its chat type color
+	local function WrapWithColor(msg, lineID)
+		if not msg then
+			return nil
+		end
+		-- Strip textures and atlases that can't be serialized well
+		msg = msg:gsub("|T.-|t", "")
+		msg = msg:gsub("|A.-|a", "")
+
+		-- Get color from chat type info
+		local inf = ChatTypeInfo[chatTypeIndexToName[lineID]]
+		local r, g, b = (inf and inf.r) or 1, (inf and inf.g) or 1, (inf and inf.b) or 1
+		local hex = string.format("|cff%02x%02x%02x", r * 255, g * 255, b * 255)
+
+		-- Wrap message with color and handle |r resets
+		return hex .. msg:gsub("|r", "|r" .. hex) .. "|r"
+	end
+
 	Core.db.global.chatHistory = {}
 	Core.db.global.chatHistoryTime = time()
 
@@ -621,9 +648,12 @@ function UIManager:SaveChatMessages()
 					local first = (num > 50) and (num - 50 + 1) or 1
 
 					for n = first, num do
-						local txt = chatFrame:GetMessageInfo(n)
+						local txt, _, lineID = chatFrame:GetMessageInfo(n)
 						if txt then
-							table.insert(Core.db.global.chatHistory[historyKey], txt)
+							local coloredTxt = WrapWithColor(txt, lineID)
+							if coloredTxt then
+								table.insert(Core.db.global.chatHistory[historyKey], coloredTxt)
+							end
 						end
 					end
 				end
@@ -670,9 +700,10 @@ function UIManager:RestoreChatMessages()
 
 					if messages and #messages > 0 and smf.chatFrame then
 						-- Add each saved message directly to our SMF
+						-- Text is already wrapped with colors from save
 						for _, line in ipairs(messages) do
 							if line then
-								smf:AddMessage(smf.chatFrame, line, 1, 1, 1)
+								smf:AddMessage(smf.chatFrame, line)
 							end
 						end
 					end
