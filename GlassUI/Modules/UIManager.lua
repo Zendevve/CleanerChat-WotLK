@@ -199,6 +199,11 @@ function UIManager:OnEnable()
 				smf.profile = owner.profile
 				local isActive = IsChatFrameActive(i)
 
+				-- Skip Combat Log tab if hideCombatLog is enabled
+				if isCombatLog and Core.db.profile.hideCombatLog then
+					isActive = false
+				end
+
 				if isActive then
 					local tab = CreateChatTab(smf)
 					owner.tabs[i] = tab

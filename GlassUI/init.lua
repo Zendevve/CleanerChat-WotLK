@@ -45,6 +45,7 @@ Core.defaults = {
 		-- General
 		frameWidth = 520,
 		frameHeight = 340,
+		hideCombatLog = true,
 		positionAnchor = {
 			point = "BOTTOMLEFT",
 			xOfs = 20,

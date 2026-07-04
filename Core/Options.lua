@@ -520,6 +520,11 @@ Options.TakeSettingsSnapshot = function(self)
 	self.snapshot = {
 		filters = CopyTable(ns.db.filters),
 	}
+	-- Also snapshot Glass settings that require a reload
+	local glass = _G.Glass
+	if glass and glass.db and glass.db.profile then
+		self.snapshot.hideCombatLog = glass.db.profile.hideCombatLog
+	end
 end
 
 -- Returns true if the current settings differ from the snapshot.
@@ -532,6 +537,13 @@ Options.IsDirty = function(self)
 	end
 	for key, value in next, snapshot.filters do
 		if ns.db.filters[key] ~= value then
+			return true
+		end
+	end
+	-- Check Glass settings that require a reload
+	local glass = _G.Glass
+	if glass and glass.db and glass.db.profile then
+		if snapshot.hideCombatLog ~= nil and snapshot.hideCombatLog ~= glass.db.profile.hideCombatLog then
 			return true
 		end
 	end

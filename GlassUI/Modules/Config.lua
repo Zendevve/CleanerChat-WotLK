@@ -240,6 +240,30 @@ function C:OnEnable()
 									end,
 									order = 2.1,
 								},
+								hideCombatLog = {
+									name = L["Hide Combat Log tab"],
+									desc = L["Hides the Combat Log tab from the chat dock. Requires a UI reload."],
+									type = "toggle",
+									order = 2.2,
+									hidden = function(info)
+										-- Only show for Main window (combat log is only on main)
+										return WindowIdFor(info) ~= "Main"
+									end,
+									get = function()
+										return Core.db.profile.hideCombatLog
+									end,
+									set = function(_, input)
+										Core.db.profile.hideCombatLog = input
+										-- Notify CleanerChat Options module to track this change for reload-on-close
+										local CleanerChat = LibStub("AceAddon-3.0"):GetAddon("CleanerChat", true)
+										if CleanerChat then
+											local Options = CleanerChat:GetModule("Options", true)
+											if Options and Options.UpdateReloadStatus then
+												Options:UpdateReloadStatus()
+											end
+										end
+									end,
+								},
 							},
 						},
 						section3 = {
