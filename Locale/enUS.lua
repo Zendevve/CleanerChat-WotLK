@@ -115,6 +115,9 @@ L["Hide repetitive system messages like session started."] = true
 L["Boss Messages"] = true
 L["Format boss emotes and whispers with distinct colors."] = true
 
+L["Channel Notices"] = true
+L["Hide channel join, leave, and change notifications (works during gameplay, not on initial login)."] = true
+
 L["Learning (Crafting)"] = true
 L["Simplify messages about new or improved trade skills."] = true
 

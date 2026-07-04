@@ -286,6 +286,14 @@ local filterDB = {
 		set = setter,
 		get = getter,
 	},
+	channeljoin = {
+		name = L["Channel Notices"],
+		desc = L["Hide channel join, leave, and change notifications (works during gameplay, not on initial login)."],
+		width = 1.5,
+		type = "toggle",
+		set = setter,
+		get = getter,
+	},
 	experience = {
 		name = L["Experience"],
 		desc = L["Abbreviate and simplify experience- and level gains."],

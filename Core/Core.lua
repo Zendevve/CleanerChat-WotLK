@@ -231,6 +231,7 @@ local defaults = {
 		auctions = true,
 		bossmessages = true,
 		channels = true,
+		channeljoin = false,
 		experience = true,
 		honor = true,
 		loot = true,
