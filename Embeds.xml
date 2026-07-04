@@ -7,7 +7,6 @@
 	<!-- <Include file="Libs\TaintLess\TaintLess.xml"/> -->
 	<Include file="Libs\AceAddon-3.0\AceAddon-3.0.xml"/>
 	<Include file="Libs\AceEvent-3.0\AceEvent-3.0.xml"/>
-	<Include file="Libs\AceTimer-3.0\AceTimer-3.0.xml"/>
 	<Include file="Libs\AceConsole-3.0\AceConsole-3.0.xml"/>
 	<Include file="Libs\AceHook-3.0\AceHook-3.0.xml"/>
 	<Include file="Libs\AceLocale-3.0\AceLocale-3.0.xml"/>
@@ -20,7 +19,6 @@
 	<Include file="Libs\AceDBOptions-3.0\AceDBOptions-3.0.xml"/>
 	<Include file="Libs\AceGUI-3.0-SharedMediaWidgets\widget.xml"/>
 	<Script file="Libs\LibEasing\LibEasing.lua"/>
-	<Include file="Libs\lodash.wow\lodash.wow.xml"/>
 
 	<Script file="Libs\LibMoreEvents-1.0\LibMoreEvents-1.0.lua"/>
 	<!--@end-non-debug@-->
