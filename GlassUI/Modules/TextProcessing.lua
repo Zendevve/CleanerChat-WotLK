@@ -96,6 +96,36 @@ local function timestampProcessor(text, profile)
 end
 
 ---
+-- Adds item icons next to item links if enabled in settings.
+-- Uses the exact same approach as ChatLootIcons addon.
+local function itemIconProcessor(text, profile)
+	local p = profile or Core.db.profile
+	if not p.showItemIcons then
+		return text
+	end
+
+	-- Scale icon based on profile font size
+	local fontSize = p.messageFontSize or 12
+	local iconSize = math.floor(fontSize)
+	if iconSize < 10 then
+		iconSize = 10
+	end
+
+	-- Icon function - exactly like ChatLootIcons
+	local function addIcon(link)
+		local texture = GetItemIcon(link)
+		if texture then
+			return "|T" .. texture .. ":" .. iconSize .. "|t" .. link
+		end
+		return link
+	end
+
+	-- Use the exact ChatLootIcons pattern with escaped pipes
+	-- Pattern: |cXXXXXXXX|Hitem:...|h[name]|h|r
+	return string.gsub(text, "(\124c%x+\124Hitem:.-\124h.-\124h\124r)", addIcon)
+end
+
+---
 -- URL detection + linkification.
 -- Bare URLs in chat are not clickable, so we wrap each detected URL in a custom
 -- "url" hyperlink: |Hurl:<addr>|h<addr>|h. The Glass message overlay then makes
@@ -235,6 +265,7 @@ local SIMPLE_PROCESSORS = {
 -- Processors that need profile context for per-window settings
 local PROFILE_PROCESSORS = {
 	timestampProcessor,
+	itemIconProcessor,
 	textureProcessor,
 }
 

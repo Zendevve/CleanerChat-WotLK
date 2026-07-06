@@ -827,6 +827,19 @@ function C:OnEnable()
 										ProfileFor(info).showTimestamps = input
 									end,
 								},
+								showItemIcons = {
+									name = L["Show item icons"],
+									desc = L["Display icons next to item links in chat messages."],
+									type = "toggle",
+									width = "full",
+									order = 3.36,
+									get = function(info)
+										return ProfileFor(info).showItemIcons
+									end,
+									set = function(info, input)
+										ProfileFor(info).showItemIcons = input
+									end,
+								},
 								scrollIndicatorHeader = {
 									name = L["Scroll Indicator"],
 									type = "header",

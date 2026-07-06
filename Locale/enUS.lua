@@ -222,6 +222,8 @@ L["Rapid"] = true
 -- Timestamps
 L["Show timestamps"] = true
 L["Prepend each message with a timestamp in [HH:MM] format."] = true
+L["Show item icons"] = true
+L["Display icons next to item links in chat messages."] = true
 -- Buttons
 L["Buttons"] = true
 L["Hide Chat Menu button"] = true
