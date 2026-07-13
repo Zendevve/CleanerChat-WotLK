@@ -18,9 +18,6 @@ local ScrollOverlayFrame = {}
 -- Update background style based on useOverlayMask setting
 function ScrollOverlayFrame:UpdateBackgroundStyle()
 	local useOverlayMask = self.profile.useOverlayMask
-	if useOverlayMask == nil then
-		useOverlayMask = true -- Default to true
-	end
 
 	if useOverlayMask then
 		-- Use the overlay mask texture

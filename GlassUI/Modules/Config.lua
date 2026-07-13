@@ -856,9 +856,7 @@ function C:OnEnable()
 										return ProfileFor(info).hideScrollIndicator
 									end,
 									get = function(info)
-										local val = ProfileFor(info).useOverlayMask
-										if val == nil then return true end -- default true
-										return val
+										return ProfileFor(info).useOverlayMask
 									end,
 									set = function(info, input)
 										ProfileFor(info).useOverlayMask = input
@@ -917,7 +915,7 @@ function C:OnEnable()
 									order = 3.7,
 									disabled = function(info)
 										local p = ProfileFor(info)
-										return p.hideScrollIndicator or (p.useOverlayMask ~= false)
+										return p.hideScrollIndicator or (p.useOverlayMask)
 									end,
 									get = function(info)
 										local c = ProfileFor(info).scrollIndicatorBgColor
@@ -940,7 +938,7 @@ function C:OnEnable()
 									order = 3.75,
 									disabled = function(info)
 										local p = ProfileFor(info)
-										return p.hideScrollIndicator or (p.useOverlayMask ~= false)
+										return p.hideScrollIndicator or (p.useOverlayMask)
 									end,
 									min = 0,
 									max = 1,
