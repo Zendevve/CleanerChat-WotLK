@@ -469,6 +469,7 @@ function SlidingMessageFrameMixin:OnConfigChanged(key)
 		or key == "scrollIndicatorOpacity"
 		or key == "scrollIndicatorBgColor"
 		or key == "scrollIndicatorBgOpacity"
+		or key == "useOverlayMask"
 	then
 		if self.overlay and self.overlay.UpdateIndicatorStyle then
 			self.overlay:UpdateIndicatorStyle()

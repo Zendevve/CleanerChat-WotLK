@@ -120,6 +120,7 @@ Core.defaults = {
 		scrollIndicatorBgColor = { r = 17 / 255, g = 17 / 255, b = 17 / 255 }, -- codGray (same as chat bg)
 		scrollIndicatorBgOpacity = 0.65, -- slightly transparent
 		hideScrollIndicator = false, -- when true, hides the "Unread messages" / "Bring me to the present" indicator
+		useOverlayMask = true, -- when true, uses the overlay mask texture instead of solid background
 
 		-- Buttons (native Blizzard chat buttons)
 		hideChatMenuButton = true, -- when true, hides the Chat Menu (speech bubble) button

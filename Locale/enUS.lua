@@ -172,6 +172,8 @@ L["When enabled, hovering over the chat reveals faded messages. When disabled, o
 L["Scroll Indicator"] = true
 L["Hide scroll indicator"] = true
 L['Hide the "Unread messages" and "Bring me to the present" indicator completely.'] = true
+L["Use overlay mask texture"] = true
+L["Use a decorative mask texture for the scroll indicator instead of a solid background."] = true
 L["Indicator text color"] = true
 L['Color of the "Unread messages" and "Bring me to the present" text.'] = true
 L["Indicator text opacity"] = true
