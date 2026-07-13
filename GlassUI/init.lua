@@ -59,7 +59,7 @@ Core.defaults = {
 		editBoxBackgroundColor = { r = 17 / 255, g = 17 / 255, b = 17 / 255 }, -- codGray
 		editBoxAnchor = {
 			position = "BELOW",
-			yOfs = -5,
+			yOfs = 0,
 		},
 		showOnEditFocus = true, -- When ON (default), opening the edit box reveals the chat messages.
 
@@ -75,7 +75,7 @@ Core.defaults = {
 		messageLinePadding = 0.25,
 		messageLeftPadding = 3,
 		messageHistoryLimit = 128,
-		restoreChatMessages = true,
+		restoreChatMessages = false,
 
 		chatHoldTime = 14,
 		chatFadeInDuration = 0.6,
