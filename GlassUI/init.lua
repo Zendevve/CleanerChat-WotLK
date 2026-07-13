@@ -55,11 +55,11 @@ Core.defaults = {
 		editBoxFont = "Friz Quadrata TT",
 		editBoxFontSize = 12,
 		editBoxFontFlags = "OUTLINE",
-		editBoxBackgroundOpacity = 0.6,
+		editBoxBackgroundOpacity = 0.05,
 		editBoxBackgroundColor = { r = 17 / 255, g = 17 / 255, b = 17 / 255 }, -- codGray
 		editBoxAnchor = {
 			position = "BELOW",
-			yOfs = 0,
+			yOfs = -1,
 		},
 		showOnEditFocus = true, -- When ON (default), opening the edit box reveals the chat messages.
 
@@ -69,7 +69,7 @@ Core.defaults = {
 		messageFontFlags = "OUTLINE",
 		messageAnimations = true,
 		messagesAlwaysVisible = false,
-		chatBackgroundOpacity = 0.15,
+		chatBackgroundOpacity = 0.05,
 		chatBackgroundColor = { r = 17 / 255, g = 17 / 255, b = 17 / 255 }, -- codGray
 		messageLeading = 3,
 		messageLinePadding = 0.25,
@@ -117,9 +117,9 @@ Core.defaults = {
 		scrollIndicatorColor = { r = 223 / 255, g = 186 / 255, b = 105 / 255 }, -- apache (gold)
 		scrollIndicatorOpacity = 1, -- fully solid
 		scrollIndicatorBgColor = { r = 17 / 255, g = 17 / 255, b = 17 / 255 }, -- codGray (same as chat bg)
-		scrollIndicatorBgOpacity = 0.15, -- same as chatBackgroundOpacity
+		scrollIndicatorBgOpacity = 0.05, -- same as chatBackgroundOpacity
 		hideScrollIndicator = false, -- when true, hides the "Unread messages" / "Bring me to the present" indicator
-		useOverlayMask = false, -- when true, uses the overlay mask texture instead of solid background
+		useOverlayMask = true, -- when true, uses the overlay mask texture instead of solid background
 
 		-- Buttons (native Blizzard chat buttons)
 		hideChatMenuButton = true, -- when true, hides the Chat Menu (speech bubble) button

@@ -56,15 +56,17 @@ function ScrollOverlayFrame:Init()
 
 	-- Position indicator at the edit box location (outside the chat frame)
 	local mainContainer = self:GetParent():GetParent() -- SlidingMessageFrame's parent is MainContainerFrame
-	-- Offset by -1 to align with the edit box and messages
+	-- Offset by -1 horizontally to align with the edit box and messages
+	-- Offset by +1 vertically to sit just above the edit box
+	local yOffset = (self.profile.editBoxAnchor.yOfs or -1) + 1
 	if self.profile.editBoxAnchor.position == "ABOVE" then
 		-- Edit box is above the chat, so indicator is above the main container
-		self:SetPoint("BOTTOMLEFT", mainContainer, "TOPLEFT", -1, self.profile.editBoxAnchor.yOfs or 5)
-		self:SetPoint("BOTTOMRIGHT", mainContainer, "TOPRIGHT", -1, self.profile.editBoxAnchor.yOfs or 5)
+		self:SetPoint("BOTTOMLEFT", mainContainer, "TOPLEFT", -1, yOffset)
+		self:SetPoint("BOTTOMRIGHT", mainContainer, "TOPRIGHT", -1, yOffset)
 	else
 		-- Edit box is below the chat (default), so indicator is below the main container
-		self:SetPoint("TOPLEFT", mainContainer, "BOTTOMLEFT", -1, self.profile.editBoxAnchor.yOfs or -5)
-		self:SetPoint("TOPRIGHT", mainContainer, "BOTTOMRIGHT", -1, self.profile.editBoxAnchor.yOfs or -5)
+		self:SetPoint("TOPLEFT", mainContainer, "BOTTOMLEFT", -1, yOffset)
+		self:SetPoint("TOPRIGHT", mainContainer, "BOTTOMRIGHT", -1, yOffset)
 	end
 
 	self:SetFadeInDuration(0.3)
@@ -130,15 +132,17 @@ function ScrollOverlayFrame:UpdatePosition()
 	self:ClearAllPoints()
 
 	local mainContainer = self:GetParent():GetParent()
-	-- Offset by -1 to align with the edit box and messages
+	-- Offset by -1 horizontally to align with the edit box and messages
+	-- Offset by +1 vertically to sit just above the edit box
+	local yOffset = (self.profile.editBoxAnchor.yOfs or -1) + 1
 	if self.profile.editBoxAnchor.position == "ABOVE" then
 		-- Edit box is above the chat, so indicator is above the main container
-		self:SetPoint("BOTTOMLEFT", mainContainer, "TOPLEFT", -1, self.profile.editBoxAnchor.yOfs or 5)
-		self:SetPoint("BOTTOMRIGHT", mainContainer, "TOPRIGHT", -1, self.profile.editBoxAnchor.yOfs or 5)
+		self:SetPoint("BOTTOMLEFT", mainContainer, "TOPLEFT", -1, yOffset)
+		self:SetPoint("BOTTOMRIGHT", mainContainer, "TOPRIGHT", -1, yOffset)
 	else
 		-- Edit box is below the chat (default), so indicator is below the main container
-		self:SetPoint("TOPLEFT", mainContainer, "BOTTOMLEFT", -1, self.profile.editBoxAnchor.yOfs or -5)
-		self:SetPoint("TOPRIGHT", mainContainer, "BOTTOMRIGHT", -1, self.profile.editBoxAnchor.yOfs or -5)
+		self:SetPoint("TOPLEFT", mainContainer, "BOTTOMLEFT", -1, yOffset)
+		self:SetPoint("TOPRIGHT", mainContainer, "BOTTOMRIGHT", -1, yOffset)
 	end
 end
 
