@@ -198,6 +198,8 @@ L["Glow"] = "Leuchten"
 L["Rapid"] = "Schnell"
 L["Show timestamps"] = "Zeitstempel anzeigen"
 L["Prepend each message with a timestamp in [HH:MM] format."] = "Stellt jeder Nachricht einen Zeitstempel im Format [HH:MM] voran."
+L["Show item icons"] = "Gegenstandssymbole anzeigen"
+L["Display icons next to item links in chat messages."] = "Zeigt Symbole neben Gegenstandslinks in Chat-Nachrichten an."
 -- Buttons
 L["Buttons"] = "Schaltflächen"
 L["Hide Chat Menu button"] = "Chat-Menü-Schaltfläche ausblenden"

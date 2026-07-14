@@ -198,6 +198,8 @@ L["Glow"] = "Свечение"
 L["Rapid"] = "Быстрое"
 L["Show timestamps"] = "Показывать время"
 L["Prepend each message with a timestamp in [HH:MM] format."] = "Добавляет к каждому сообщению метку времени в формате [ЧЧ:ММ]."
+L["Show item icons"] = "Показывать иконки предметов"
+L["Display icons next to item links in chat messages."] = "Отображает иконки рядом со ссылками на предметы в сообщениях чата."
 -- Buttons
 L["Buttons"] = "Кнопки"
 L["Hide Chat Menu button"] = "Скрыть кнопку меню чата"

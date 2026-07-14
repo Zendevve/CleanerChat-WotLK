@@ -136,11 +136,12 @@ function EditBoxMixin:Init(parent)
 	-- When the edit box gains focus (user presses Enter or clicks), reveal the
 	-- chat messages if the option is enabled. Scope the reveal to the window the
 	-- edit box is currently attached to (set via AttachToWindow).
+	-- We always dispatch so the scroll overlay can hide itself while the edit box
+	-- covers that area; the message reveal itself stays gated by showOnEditFocus
+	-- inside the handler.
 	local oldOnEditFocusGained = self:GetScript("OnEditFocusGained")
 	self:SetScript("OnEditFocusGained", function(frame, ...)
-		if self.profile.showOnEditFocus then
-			Core:Dispatch(EDIT_FOCUS_GAINED, self.window)
-		end
+		Core:Dispatch(EDIT_FOCUS_GAINED, self.window)
 		if oldOnEditFocusGained then
 			oldOnEditFocusGained(frame, ...)
 		end
@@ -150,9 +151,7 @@ function EditBoxMixin:Init(parent)
 	-- This ensures the mouseOver state is properly reset when typing is done.
 	local oldOnEditFocusLost = self:GetScript("OnEditFocusLost")
 	self:SetScript("OnEditFocusLost", function(frame, ...)
-		if self.profile.showOnEditFocus then
-			Core:Dispatch(EDIT_FOCUS_LOST, self.window)
-		end
+		Core:Dispatch(EDIT_FOCUS_LOST, self.window)
 		if oldOnEditFocusLost then
 			oldOnEditFocusLost(frame, ...)
 		end

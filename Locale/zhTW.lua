@@ -197,8 +197,8 @@ L["Pulse"] = "脈衝"
 L["Glow"] = "發光"
 L["Rapid"] = "快速"
 L["Show timestamps"] = "顯示時間戳記"
-L["Prepend each message with a timestamp in [HH:MM] format."] = "在每條訊息前添加[HH:MM]格式的時間戳記。"
--- Buttons
+L["Prepend each message with a timestamp in [HH:MM] format."] = "在每條訊息前添加[HH:MM]格式的時間戳記。"L["Show item icons"] = "顯示物品圖示"
+L["Display icons next to item links in chat messages."] = "在聊天訊息中的物品連結旁顯示圖示。"-- Buttons
 L["Buttons"] = "按鈕"
 L["Hide Chat Menu button"] = "隱藏聊天選單按鈕"
 L["Hide the Chat Menu (speech bubble) button that provides access to languages and emotes."] = "隱藏提供語言和表情存取的聊天選單(對話氣泡)按鈕。"

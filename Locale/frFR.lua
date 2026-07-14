@@ -198,6 +198,8 @@ L["Glow"] = "Lueur"
 L["Rapid"] = "Rapide"
 L["Show timestamps"] = "Afficher les horodatages"
 L["Prepend each message with a timestamp in [HH:MM] format."] = "Préfixe chaque message avec un horodatage au format [HH:MM]."
+L["Show item icons"] = "Afficher les icônes d'objets"
+L["Display icons next to item links in chat messages."] = "Affiche des icônes à côté des liens d'objets dans les messages du chat."
 -- Buttons
 L["Buttons"] = "Boutons"
 L["Hide Chat Menu button"] = "Masquer le bouton Menu de Chat"

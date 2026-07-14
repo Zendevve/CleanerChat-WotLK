@@ -96,6 +96,47 @@ local function timestampProcessor(text, profile)
 end
 
 ---
+-- Adds item icons next to item links if enabled in settings.
+-- Places icon INSIDE the color code so it stays attached during line wrapping.
+-- This processor runs AFTER textureProcessor to avoid Y offset adjustments.
+local function itemIconProcessor(text, profile)
+	local p = profile or Core.db.profile
+	if not p.showItemIcons then
+		return text
+	end
+
+	-- Scale icon based on profile font size
+	local fontSize = p.messageFontSize or 12
+	local iconSize = math.floor(fontSize)
+	if iconSize < 10 then
+		iconSize = 10
+	end
+
+	-- Insert icon after the color code but before the hyperlink
+	-- This keeps icon+item together during line wrapping
+	-- Pattern: |cXXXXXXXX|Hitem:...|h[Name]|h|r
+	-- Result:  |cXXXXXXXX[icon]|Hitem:...|h[Name]|h|r
+	local function addIcon(colorCode, itemLink)
+		local fullLink = colorCode .. itemLink
+		local texture = GetItemIcon(fullLink)
+		if texture then
+			-- Glue the icon directly to the item name with no separating space.
+			-- The icon renders inline (see buildDisplayText), so WoW reserves its
+			-- width and keeps it attached to the link's first word when the line
+			-- wraps. A space here would be a wrap point and could strand the icon
+			-- at the end of a line while its name moves to the next.
+			return colorCode .. "|T" .. texture .. ":" .. iconSize .. "|t" .. itemLink
+		end
+		return fullLink
+	end
+
+	-- Match color code separately from the rest of the item link
+	-- (\124c%x%x%x%x%x%x%x%x) = color code |cXXXXXXXX
+	-- (\124Hitem:.-\124h.-\124h\124r) = hyperlink |Hitem:...|h[Name]|h|r
+	return string.gsub(text, "(\124c%x%x%x%x%x%x%x%x)(\124Hitem:.-\124h.-\124h\124r)", addIcon)
+end
+
+---
 -- URL detection + linkification.
 -- Bare URLs in chat are not clickable, so we wrap each detected URL in a custom
 -- "url" hyperlink: |Hurl:<addr>|h<addr>|h. The Glass message overlay then makes
@@ -233,9 +274,12 @@ local SIMPLE_PROCESSORS = {
 }
 
 -- Processors that need profile context for per-window settings
+-- Order matters: textureProcessor adjusts existing icons' Y offset,
+-- itemIconProcessor adds new item icons AFTER so they don't get modified
 local PROFILE_PROCESSORS = {
 	timestampProcessor,
 	textureProcessor,
+	itemIconProcessor,
 }
 
 function TP:ProcessText(text, profile)

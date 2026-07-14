@@ -198,6 +198,8 @@ L["Glow"] = "빛남"
 L["Rapid"] = "빠름"
 L["Show timestamps"] = "타임스탬프 표시"
 L["Prepend each message with a timestamp in [HH:MM] format."] = "각 메시지 앞에 [HH:MM] 형식의 타임스탬프를 추가합니다."
+L["Show item icons"] = "아이템 아이콘 표시"
+L["Display icons next to item links in chat messages."] = "채팅 메시지에서 아이템 링크 옆에 아이콘을 표시합니다."
 -- Buttons
 L["Buttons"] = "버튼"
 L["Hide Chat Menu button"] = "채팅 메뉴 버튼 숨기기"

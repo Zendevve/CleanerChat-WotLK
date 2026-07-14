@@ -197,8 +197,8 @@ L["Pulse"] = "Pulsazione"
 L["Glow"] = "Bagliore"
 L["Rapid"] = "Rapido"
 L["Show timestamps"] = "Mostra timestamp"
-L["Prepend each message with a timestamp in [HH:MM] format."] = "Antepone a ogni messaggio un timestamp nel formato [HH:MM]."
--- Buttons
+L["Prepend each message with a timestamp in [HH:MM] format."] = "Antepone a ogni messaggio un timestamp nel formato [HH:MM]."L["Show item icons"] = "Mostra icone oggetti"
+L["Display icons next to item links in chat messages."] = "Visualizza le icone accanto ai link degli oggetti nei messaggi della chat."-- Buttons
 L["Buttons"] = "Pulsanti"
 L["Hide Chat Menu button"] = "Nascondi pulsante Menu Chat"
 L["Hide the Chat Menu (speech bubble) button that provides access to languages and emotes."] = "Nasconde il pulsante Menu Chat (fumetto) che fornisce accesso a lingue ed emote."
