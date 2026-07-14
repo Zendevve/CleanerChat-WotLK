@@ -120,8 +120,10 @@ local function itemIconProcessor(text, profile)
 		local fullLink = colorCode .. itemLink
 		local texture = GetItemIcon(fullLink)
 		if texture then
-			-- Put icon after color code: |cXXX + icon + |Hitem...
-			return colorCode .. "|T" .. texture .. ":" .. iconSize .. "|t" .. itemLink
+			-- Put icon after color code: |cXXX + icon + space + |Hitem...
+			-- The trailing space keeps the icon from overlapping the item name,
+			-- since inline textures reserve no gap of their own.
+			return colorCode .. "|T" .. texture .. ":" .. iconSize .. "|t " .. itemLink
 		end
 		return fullLink
 	end

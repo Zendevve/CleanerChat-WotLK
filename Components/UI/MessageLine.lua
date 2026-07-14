@@ -141,6 +141,68 @@ local function buildDisplayText(text, fs)
 	return table.concat(out), icons
 end
 
+-- Convert chat markup in a text prefix to the plain visible text WoW actually
+-- renders, so width/wrap measurements match the on-screen layout.
+local function toVisibleText(str)
+	str = string.gsub(str, "|c%x%x%x%x%x%x%x%x", "")
+	str = string.gsub(str, "|r", "")
+	str = string.gsub(str, "|H.-|h(.-)|h", "%1")
+	str = string.gsub(str, "|T.-|t", "")
+	return str
+end
+
+-- Work out where a split-out icon should sit given the visible text that
+-- precedes it: how many wrapped lines that prefix spans, and the pixel width
+-- already used on the final line (the icon's X offset).
+--
+-- Naively doing `unwrappedWidth % wrapWidth` assumes every wrapped line is
+-- exactly wrapWidth wide, but WoW wraps at word boundaries, so lines are ragged
+-- and shorter than wrapWidth. Once earlier text wraps, that estimate drifts and
+-- the icon lands too far left, overlapping the wrapped text. Instead we locate
+-- the final line break exactly by using WoW's own wrapping (GetStringHeight at
+-- the wrap width) to find the first word that starts on the last line, then
+-- measure only that last line's width.
+local function measureIconAnchor(fs, before, wrapWidth, lineHeight)
+	local visible = toVisibleText(before)
+
+	fs:SetWidth(wrapWidth)
+	fs:SetText(visible)
+	local totalHeight = fs:GetStringHeight() or lineHeight
+	local lineCount = math.max(1, math.floor(totalHeight / lineHeight + 0.5))
+
+	if lineCount <= 1 then
+		fs:SetWidth(0)
+		fs:SetText(visible)
+		return 1, fs:GetStringWidth() or 0
+	end
+
+	-- Scan word boundaries to find the first word whose inclusion makes the
+	-- prefix occupy the full lineCount; that word begins the last visual line.
+	local lastLineStart = 1
+	local wordStart = string.find(visible, "%S", 1)
+	while wordStart do
+		local wordEnd = string.find(visible, "%s", wordStart)
+		local sliceEnd = wordEnd and (wordEnd - 1) or #visible
+		fs:SetWidth(wrapWidth)
+		fs:SetText(string.sub(visible, 1, sliceEnd))
+		local h = fs:GetStringHeight() or lineHeight
+		local lc = math.max(1, math.floor(h / lineHeight + 0.5))
+		if lc >= lineCount then
+			lastLineStart = wordStart
+			break
+		end
+		if not wordEnd then
+			lastLineStart = wordStart
+			break
+		end
+		wordStart = string.find(visible, "%S", wordEnd)
+	end
+
+	fs:SetWidth(0)
+	fs:SetText(string.sub(visible, lastLineStart))
+	return lineCount, fs:GetStringWidth() or 0
+end
+
 local MessageLineMixin = {}
 
 local LSM = Core.Libs.LSM
@@ -347,31 +409,10 @@ function MessageLineMixin:UpdateIcons()
 
 		local before = icon.before or ""
 
-		-- Measure unwrapped width for x position calculation.
-		fs:SetWidth(0)
-		fs:SetText(before)
-		local unwrappedWidth = fs:GetStringWidth() or 0
-
-		-- Measure wrapped height to determine which visual line the icon is on.
-		fs:SetWidth(wrapWidth)
-		fs:SetText(before)
-		local wrappedHeight = fs:GetStringHeight() or lineHeight
-		local lineCount = math.max(1, math.floor(wrappedHeight / lineHeight + 0.5))
-
-		-- X offset: approximate position on the last line.
-		-- For single-line, this is just the unwrapped width.
-		-- For multi-line, use modulo to estimate position on the last line.
-		local x
-		if lineCount == 1 then
-			x = unwrappedWidth
-		else
-			x = unwrappedWidth % wrapWidth
-			-- If the last line is nearly full, the icon might be at the start of next line.
-			-- Add a small buffer for word-wrap variance.
-			if x < 5 then
-				x = 0
-			end
-		end
+		-- Determine which visual line the icon sits on and its X offset on that
+		-- line, using WoW's own wrapping so ragged word-wrapped lines don't throw
+		-- the icon off (which caused it to overlap wrapped text).
+		local lineCount, x = measureIconAnchor(fs, before, wrapWidth, lineHeight)
 
 		-- Y offset: position icon center at center of the correct line.
 		-- From TOPLEFT, line N's center is at y = -lineHeight * (N - 0.5).
