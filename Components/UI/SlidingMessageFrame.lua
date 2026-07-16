@@ -642,6 +642,66 @@ function SlidingMessageFrameMixin:OnFrame()
 		self.state.incomingMessages = {}
 		self:Update(incoming)
 	end
+
+	-- Safety net: about once a second, re-arm the fade-out for any message that
+	-- got stranded fully visible. OnFrame ticks every ~0.01s, so 100 ticks ~= 1s.
+	self.state.reapTick = (self.state.reapTick or 0) + 1
+	if self.state.reapTick >= 100 then
+		self.state.reapTick = 0
+		self:ReapStrandedMessages()
+	end
+end
+
+-- A message line normally fades out chatHoldTime after it arrives (or after the
+-- mouse leaves / edit box loses focus). That fade-out is edge-triggered: a hide
+-- timer is scheduled once and cancelled whenever the line is revealed (hover,
+-- scroll wheel, edit focus). If a reveal cancels the timer but the matching
+-- "re-hide" event never arrives -- e.g. the shared mouse-over flag desyncs
+-- between hover and edit-focus, or a Show() path forgets to reschedule -- the
+-- line is left at full opacity with no pending fade and stays on screen forever.
+-- This sweep finds those stranded lines and re-arms their fade so they catch up
+-- with the rest. It deliberately ignores the frame's own (desync-prone)
+-- mouseOver flag and instead checks the container's reliably-polled hover state.
+function SlidingMessageFrameMixin:ReapStrandedMessages()
+	if self.state.isCombatLog then
+		return
+	end
+
+	-- Pinned messages are meant to stay visible.
+	if self.profile.messagesAlwaysVisible then
+		return
+	end
+
+	-- Real hover state: MainContainerFrame polls MouseIsOver() every frame, so
+	-- its flag is authoritative (unlike this frame's mouseOver, which is shared
+	-- with the edit-focus reveal and is exactly what desyncs).
+	local container = self.window and self.window.container
+	if container and container.state and container.state.mouseOver then
+		return
+	end
+
+	-- The edit box reveal (opt-in) intentionally keeps this window's messages up
+	-- while it is focused; don't fight it.
+	if self.profile.showOnEditFocus then
+		local UIManager = Core:GetModule("UIManager", true)
+		local editBox = UIManager and UIManager.editBox
+		if editBox and editBox.window == self.window and editBox.HasFocus and editBox:HasFocus() then
+			return
+		end
+	end
+
+	for _, message in ipairs(self.state.messages) do
+		-- Shown, at (near) full opacity, with no pending hide timer and no
+		-- in-flight fade == stranded. Re-arm its fade-out like a fresh arrival.
+		if
+			message:IsShown()
+			and not message.hideTimer
+			and not message.fadeHandle
+			and (message:GetAlpha() or 1) > 0.99
+		then
+			message:HideDelay(self.profile.chatHoldTime)
+		end
+	end
 end
 
 function SlidingMessageFrameMixin:Update(incoming)
