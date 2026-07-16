@@ -2,11 +2,9 @@
 BlizOptionsGroup Container
 Simple container widget for the integration of AceGUI into the Blizzard Interface Options
 -------------------------------------------------------------------------------]]
-local Type, Version = "BlizOptionsGroup", 26
+local Type, Version = "BlizOptionsGroup", 20
 local AceGUI = LibStub and LibStub("AceGUI-3.0", true)
-if not AceGUI or (AceGUI:GetWidgetVersion(Type) or 0) >= Version then
-	return
-end
+if not AceGUI or (AceGUI:GetWidgetVersion(Type) or 0) >= Version then return end
 
 -- Lua APIs
 local pairs = pairs
@@ -38,12 +36,8 @@ local function cancel(frame)
 	frame.obj:Fire("cancel")
 end
 
-local function default(frame)
-	frame.obj:Fire("default")
-end
-
-local function refresh(frame)
-	frame.obj:Fire("refresh")
+local function defaults(frame)
+	frame.obj:Fire("defaults")
 end
 
 --[[-----------------------------------------------------------------------------
@@ -94,26 +88,20 @@ local methods = {
 			self.label:SetText(title)
 		end
 		content:SetPoint("BOTTOMRIGHT", -10, 10)
-	end,
+	end
 }
 
 --[[-----------------------------------------------------------------------------
 Constructor
 -------------------------------------------------------------------------------]]
 local function Constructor()
-	local frame = CreateFrame("Frame", nil, InterfaceOptionsFramePanelContainer)
+	local frame = CreateFrame("Frame")
 	frame:Hide()
 
 	-- support functions for the Blizzard Interface Options
 	frame.okay = okay
 	frame.cancel = cancel
-	frame.default = default
-	frame.refresh = refresh
-
-	-- 10.0 support function aliases (cancel has been removed)
-	frame.OnCommit = okay
-	frame.OnDefault = default
-	frame.OnRefresh = refresh
+	frame.defaults = defaults
 
 	frame:SetScript("OnHide", OnHide)
 	frame:SetScript("OnShow", OnShow)
@@ -130,10 +118,10 @@ local function Constructor()
 	content:SetPoint("BOTTOMRIGHT", -10, 10)
 
 	local widget = {
-		label = label,
-		frame = frame,
+		label   = label,
+		frame   = frame,
 		content = content,
-		type = Type,
+		type    = Type
 	}
 	for method, func in pairs(methods) do
 		widget[method] = func

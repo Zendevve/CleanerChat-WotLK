@@ -2,11 +2,9 @@
 Slider Widget
 Graphical Slider, like, for Range values.
 -------------------------------------------------------------------------------]]
-local Type, Version = "Slider", 23
+local Type, Version = "Slider", 20
 local AceGUI = LibStub and LibStub("AceGUI-3.0", true)
-if not AceGUI or (AceGUI:GetWidgetVersion(Type) or 0) >= Version then
-	return
-end
+if not AceGUI or (AceGUI:GetWidgetVersion(Type) or 0) >= Version then return end
 
 -- Lua APIs
 local min, max, floor = math.min, math.max, math.floor
@@ -15,6 +13,10 @@ local tonumber, pairs = tonumber, pairs
 -- WoW APIs
 local PlaySound = PlaySound
 local CreateFrame, UIParent = CreateFrame, UIParent
+
+-- Global vars/functions that we don't upvalue since they might get hooked, or upgraded
+-- List them here for Mikk's FindGlobals script
+-- GLOBALS: GameFontHighlightSmall
 
 --[[-----------------------------------------------------------------------------
 Support functions
@@ -29,13 +31,13 @@ local function UpdateText(self)
 end
 
 local function UpdateLabels(self)
-	local min_value, max_value = (self.min or 0), (self.max or 100)
+	local min, max = (self.min or 0), (self.max or 100)
 	if self.ispercent then
-		self.lowtext:SetFormattedText("%s%%", (min_value * 100))
-		self.hightext:SetFormattedText("%s%%", (max_value * 100))
+		self.lowtext:SetFormattedText("%s%%", (min * 100))
+		self.hightext:SetFormattedText("%s%%", (max * 100))
 	else
-		self.lowtext:SetText(min_value)
-		self.hightext:SetText(max_value)
+		self.lowtext:SetText(min)
+		self.hightext:SetText(max)
 	end
 end
 
@@ -55,13 +57,10 @@ local function Frame_OnMouseDown(frame)
 	AceGUI:ClearFocus()
 end
 
-local function Slider_OnValueChanged(frame, newvalue)
+local function Slider_OnValueChanged(frame)
 	local self = frame.obj
 	if not frame.setup then
-		if self.step and self.step > 0 then
-			local min_value = self.min or 0
-			newvalue = floor((newvalue - min_value) / self.step + 0.5) * self.step + min_value
-		end
+		local newvalue = frame:GetValue()
 		if newvalue ~= self.value and not self.disabled then
 			self.value = newvalue
 			self:Fire("OnValueChanged", newvalue)
@@ -98,14 +97,14 @@ local function EditBox_OnEnterPressed(frame)
 	local self = frame.obj
 	local value = frame:GetText()
 	if self.ispercent then
-		value = value:gsub("%%", "")
+		value = value:gsub('%%', '')
 		value = tonumber(value) / 100
 	else
 		value = tonumber(value)
 	end
-
+	
 	if value then
-		PlaySound(856) -- SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON
+		PlaySound("igMainMenuOptionCheckBoxOn")
 		self.slider:SetValue(value)
 		self:Fire("OnMouseUp", value)
 	end
@@ -128,7 +127,7 @@ local methods = {
 		self:SetHeight(44)
 		self:SetDisabled(false)
 		self:SetIsPercent(nil)
-		self:SetSliderValues(0, 100, 1)
+		self:SetSliderValues(0,100,1)
 		self:SetValue(0)
 		self.slider:EnableMouseWheel(false)
 	end,
@@ -139,16 +138,16 @@ local methods = {
 		self.disabled = disabled
 		if disabled then
 			self.slider:EnableMouse(false)
-			self.label:SetTextColor(0.5, 0.5, 0.5)
-			self.hightext:SetTextColor(0.5, 0.5, 0.5)
-			self.lowtext:SetTextColor(0.5, 0.5, 0.5)
+			self.label:SetTextColor(.5, .5, .5)
+			self.hightext:SetTextColor(.5, .5, .5)
+			self.lowtext:SetTextColor(.5, .5, .5)
 			--self.valuetext:SetTextColor(.5, .5, .5)
-			self.editbox:SetTextColor(0.5, 0.5, 0.5)
+			self.editbox:SetTextColor(.5, .5, .5)
 			self.editbox:EnableMouse(false)
 			self.editbox:ClearFocus()
 		else
 			self.slider:EnableMouse(true)
-			self.label:SetTextColor(1, 0.82, 0)
+			self.label:SetTextColor(1, .82, 0)
 			self.hightext:SetTextColor(1, 1, 1)
 			self.lowtext:SetTextColor(1, 1, 1)
 			--self.valuetext:SetTextColor(1, 1, 1)
@@ -173,13 +172,13 @@ local methods = {
 		self.label:SetText(text)
 	end,
 
-	["SetSliderValues"] = function(self, min_value, max_value, step)
+	["SetSliderValues"] = function(self, min, max, step)
 		local frame = self.slider
 		frame.setup = true
-		self.min = min_value
-		self.max = max_value
+		self.min = min
+		self.max = max
 		self.step = step
-		frame:SetMinMaxValues(min_value or 0, max_value or 100)
+		frame:SetMinMaxValues(min or 0,max or 100)
 		UpdateLabels(self)
 		frame:SetValueStep(step or 1)
 		if self.value then
@@ -192,27 +191,23 @@ local methods = {
 		self.ispercent = value
 		UpdateLabels(self)
 		UpdateText(self)
-	end,
+	end
 }
 
 --[[-----------------------------------------------------------------------------
 Constructor
 -------------------------------------------------------------------------------]]
-local SliderBackdrop = {
+local SliderBackdrop  = {
 	bgFile = "Interface\\Buttons\\UI-SliderBar-Background",
 	edgeFile = "Interface\\Buttons\\UI-SliderBar-Border",
-	tile = true,
-	tileSize = 8,
-	edgeSize = 8,
-	insets = { left = 3, right = 3, top = 6, bottom = 6 },
+	tile = true, tileSize = 8, edgeSize = 8,
+	insets = { left = 3, right = 3, top = 6, bottom = 6 }
 }
 
 local ManualBackdrop = {
 	bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
 	edgeFile = "Interface\\ChatFrame\\ChatFrameBackground",
-	tile = true,
-	edgeSize = 1,
-	tileSize = 5,
+	tile = true, edgeSize = 1, tileSize = 5,
 }
 
 local function Constructor()
@@ -227,7 +222,7 @@ local function Constructor()
 	label:SetJustifyH("CENTER")
 	label:SetHeight(15)
 
-	local slider = CreateFrame("Slider", nil, frame, "BackdropTemplate")
+	local slider = CreateFrame("Slider", nil, frame)
 	slider:SetOrientation("HORIZONTAL")
 	slider:SetHeight(15)
 	slider:SetHitRectInsets(0, 0, -10, 0)
@@ -237,7 +232,7 @@ local function Constructor()
 	slider:SetPoint("LEFT", 3, 0)
 	slider:SetPoint("RIGHT", -3, 0)
 	slider:SetValue(0)
-	slider:SetScript("OnValueChanged", Slider_OnValueChanged)
+	slider:SetScript("OnValueChanged",Slider_OnValueChanged)
 	slider:SetScript("OnEnter", Control_OnEnter)
 	slider:SetScript("OnLeave", Control_OnLeave)
 	slider:SetScript("OnMouseUp", Slider_OnMouseUp)
@@ -249,7 +244,7 @@ local function Constructor()
 	local hightext = slider:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	hightext:SetPoint("TOPRIGHT", slider, "BOTTOMRIGHT", -2, 3)
 
-	local editbox = CreateFrame("EditBox", nil, frame, "BackdropTemplate")
+	local editbox = CreateFrame("EditBox", nil, frame)
 	editbox:SetAutoFocus(false)
 	editbox:SetFontObject(GameFontHighlightSmall)
 	editbox:SetPoint("TOP", slider, "BOTTOM")
@@ -266,14 +261,14 @@ local function Constructor()
 	editbox:SetScript("OnEscapePressed", EditBox_OnEscapePressed)
 
 	local widget = {
-		label = label,
-		slider = slider,
-		lowtext = lowtext,
-		hightext = hightext,
-		editbox = editbox,
+		label       = label,
+		slider      = slider,
+		lowtext     = lowtext,
+		hightext    = hightext,
+		editbox     = editbox,
 		alignoffset = 25,
-		frame = frame,
-		type = Type,
+		frame       = frame,
+		type        = Type
 	}
 	for method, func in pairs(methods) do
 		widget[method] = func
@@ -283,4 +278,4 @@ local function Constructor()
 	return AceGUI:RegisterAsWidget(widget)
 end
 
-AceGUI:RegisterWidgetType(Type, Constructor, Version)
+AceGUI:RegisterWidgetType(Type,Constructor,Version)
