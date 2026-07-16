@@ -177,15 +177,18 @@ jobs:
 
       - name: Build release body
         id: body
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          CHANGELOG: ${{ steps.changelog.outputs.changelog }}
         run: |
           # Build the release body
           {
-            echo "## CleanerChat v${{ steps.version.outputs.version }}"
+            echo "## CleanerChat v${VERSION}"
             echo ""
             echo "A modern chat UI overhaul with message filtering, animations, and extensive customization for WoW 3.3.5a."
             echo ""
             echo "### Changes"
-            echo '${{ steps.changelog.outputs.changelog }}'
+            echo "${CHANGELOG}"
             echo ""
             echo "### Installation"
             echo "1. Download \`CleanerChat.zip\`"
