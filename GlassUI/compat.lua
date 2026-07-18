@@ -1,25 +1,88 @@
 -- Glass WoW 3.3.5 Compatibility Layer
--- Provides polyfills for missing APIs in 3.3.5
+-- Provides polyfills for missing APIs in WotLK
 
 local _G = _G
 
--- NOTE: We used to replace the GLOBAL CreateFrame here to strip the retail-only
--- "BackdropTemplate" from CreateFrame calls made by the (then retail-versioned)
--- bundled Ace3 libraries. That global override ran for EVERY addon in the UI and
--- risked tainting other addons' secure frames (e.g. Shadowed Unit Frames -- see
--- issue #46). The bundled libraries are now the native 3.3.5 versions and no
--- longer use "BackdropTemplate", so the override is unnecessary and has been
--- removed. The BackdropTemplateMixin polyfill below is kept for any code that
--- references the mixin table directly.
+---
+-- Detect if we're on native 3.3.5 vs Ascension/custom servers
+-- Ascension has retail-backported APIs; native 3.3.5 does not
+local isNative335 = true -- Assume native 3.3.5 by default
+
+-- Check for Ascension/custom server features (retail-backported APIs)
+-- These APIs exist on Ascension but not on vanilla 3.3.5 servers
+if
+	_G.C_ClassTalents
+	or _G.C_Spell
+	or _G.GetSpecialization
+	or _G.C_CurrencyInfo
+	or _G.C_MythicPlus
+	or _G.C_AzeriteEmpoweredItem
+then
+	isNative335 = false
+end
+
+-- Also check if BackdropTemplate actually exists as a real template
+-- On Ascension, this is defined by Blizzard; on native 3.3.5 it's not
+-- We test by checking if CreateFrame with BackdropTemplate would work
+-- (Don't actually create to avoid side effects - just check the global)
+if _G.BACKDROP_DIALOG_32_32 or _G.BACKDROP_TOOLTIP_16_16_5555 then
+	isNative335 = false -- These backdrop constants exist on Ascension/retail
+end
+
+-- Expose for debugging and other code that might need it
+_G.GLASS_IS_NATIVE_335 = isNative335
 
 ---
--- BackdropTemplateMixin polyfill
--- Some libraries expect this mixin to exist
+-- BackdropTemplate compatibility for native 3.3.5.
+-- In native 3.3.5, BackdropTemplate doesn't exist as an XML template (frames
+-- have SetBackdrop built-in natively), so any CreateFrame call that inherits
+-- "BackdropTemplate" -- as the embedded AceGUI widgets do -- would error. This
+-- wrapper strips it back out.
+local originalCreateFrame = _G.CreateFrame
+local function GlassCreateFrame(frameType, name, parent, template, id)
+	-- On native 3.3.5, strip out BackdropTemplate since it doesn't exist
+	if isNative335 and template then
+		-- Handle both standalone "BackdropTemplate" and comma-separated lists
+		if template == "BackdropTemplate" then
+			template = nil
+		elseif type(template) == "string" then
+			-- Remove "BackdropTemplate" from comma-separated template list
+			template = template:gsub("BackdropTemplate%s*,%s*", "")
+			template = template:gsub("%s*,%s*BackdropTemplate", "")
+			template = template:gsub("^BackdropTemplate$", "")
+			if template == "" then
+				template = nil
+			end
+		end
+	end
+	return originalCreateFrame(frameType, name, parent, template, id)
+end
+
+-- Only install the wrapper globally on native 3.3.5. On Ascension/custom
+-- servers BackdropTemplate already exists, so overwriting the secure global
+-- CreateFrame would only taint protected frames (e.g. CompactPartyFrame).
+if isNative335 then
+	_G.CreateFrame = GlassCreateFrame
+end
+
+---
+-- CRITICAL: BackdropTemplateMixin must be defined FIRST
+-- Ascension's shared libraries check for this before addon code runs
+-- Must be a proper table with backdrop methods (not just empty)
 if not _G.BackdropTemplateMixin then
 	_G.BackdropTemplateMixin = {
-		OnBackdropLoaded = function(self) end,
-		OnBackdropSizeChanged = function(self) end,
-		ApplyBackdrop = function(self) end,
+		-- OnBackdropLoaded is called by the BackdropTemplate
+		OnBackdropLoaded = function(self)
+			-- No-op: WotLK frames already support SetBackdrop natively
+		end,
+		-- OnBackdropSizeChanged is called when the frame is resized
+		OnBackdropSizeChanged = function(self)
+			-- No-op: WotLK handles this automatically
+		end,
+		-- ApplyBackdrop sets up the backdrop
+		ApplyBackdrop = function(self)
+			-- No-op: In WotLK, SetBackdrop is called directly
+		end,
 		-- These methods delegate to the native frame methods
 		SetBackdrop = function(self, backdrop)
 			if self.SetBackdrop then

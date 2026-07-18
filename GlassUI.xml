@@ -8,6 +8,8 @@
 	<!-- Glass UI widgets (Components/UI folder) -->
 	<Script file="Components\UI\ChatDock.lua"/>
 	<Script file="Components\UI\ChatTab.lua"/>
+	<Script file="Components\UI\CopyChatButton.lua"/>
+	<Script file="Components\UI\CopyChatDialog.lua"/>
 	<Script file="Components\UI\EditBox.lua"/>
 	<Script file="Components\UI\FadingFrame.lua"/>
 	<Script file="Components\UI\MainContainerFrame.lua"/>

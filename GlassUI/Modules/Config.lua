@@ -467,6 +467,17 @@ function C:OnEnable()
 										Core:Dispatch(UpdateConfig("editBoxAnchor", WindowIdFor(info)))
 									end,
 								},
+								editBoxHorizontalPadding = rangeOption({
+									key = "editBoxHorizontalPadding",
+									name = L["Horizontal padding"],
+									desc = "Default: " .. Core.defaults.profile.editBoxHorizontalPadding,
+									order = 2.3,
+									min = 0,
+									max = 100,
+									softMin = 0,
+									softMax = 50,
+									step = 1,
+								}),
 							},
 						},
 						section3 = {
@@ -816,19 +827,6 @@ function C:OnEnable()
 										ProfileFor(info).showTimestamps = input
 									end,
 								},
-								showItemIcons = {
-									name = L["Show item icons"],
-									desc = L["Display icons next to item links in chat messages."],
-									type = "toggle",
-									width = "full",
-									order = 3.36,
-									get = function(info)
-										return ProfileFor(info).showItemIcons
-									end,
-									set = function(info, input)
-										ProfileFor(info).showItemIcons = input
-									end,
-								},
 								scrollIndicatorHeader = {
 									name = L["Scroll Indicator"],
 									type = "header",
@@ -846,23 +844,6 @@ function C:OnEnable()
 									set = function(info, input)
 										ProfileFor(info).hideScrollIndicator = input
 										Core:Dispatch(UpdateConfig("hideScrollIndicator", WindowIdFor(info)))
-									end,
-								},
-								useOverlayMask = {
-									name = L["Use overlay mask texture"],
-									desc = L["Use a decorative mask texture for the scroll indicator instead of a solid background."],
-									type = "toggle",
-									width = "full",
-									order = 3.56,
-									disabled = function(info)
-										return ProfileFor(info).hideScrollIndicator
-									end,
-									get = function(info)
-										return ProfileFor(info).useOverlayMask
-									end,
-									set = function(info, input)
-										ProfileFor(info).useOverlayMask = input
-										Core:Dispatch(UpdateConfig("useOverlayMask", WindowIdFor(info)))
 									end,
 								},
 								scrollIndicatorColor = {
@@ -916,8 +897,7 @@ function C:OnEnable()
 									width = 1,
 									order = 3.7,
 									disabled = function(info)
-										local p = ProfileFor(info)
-										return p.hideScrollIndicator or p.useOverlayMask
+										return ProfileFor(info).hideScrollIndicator
 									end,
 									get = function(info)
 										local c = ProfileFor(info).scrollIndicatorBgColor
@@ -939,8 +919,7 @@ function C:OnEnable()
 									width = 1.5,
 									order = 3.75,
 									disabled = function(info)
-										local p = ProfileFor(info)
-										return p.hideScrollIndicator or p.useOverlayMask
+										return ProfileFor(info).hideScrollIndicator
 									end,
 									min = 0,
 									max = 1,
@@ -1388,6 +1367,20 @@ function C:OnEnable()
 							Core:Dispatch(UpdateConfig("hideSocialButton"))
 						end,
 					},
+					showCopyIcon = {
+						name = L["Show copy icon"],
+						desc = L["Show a small button in the corner of each chat window for opening the Copy Chat Text dialog."],
+						type = "toggle",
+						order = 3,
+						width = "full",
+						get = function()
+							return Core.db.profile.showCopyIcon
+						end,
+						set = function(_, input)
+							Core.db.profile.showCopyIcon = input
+							Core:Dispatch(UpdateConfig("showCopyIcon"))
+						end,
+					},
 				},
 			},
 			about = {
@@ -1495,28 +1488,45 @@ function C:OnEnable()
 end
 
 function C:RefreshConfig()
-	-- A profile switch/copy/reset swaps the whole settings table, and AceDB strips
-	-- the previous profile's default-valued keys out of the old table -- which leaves
-	-- the live Glass frames holding stale references that error on next access
-	-- (e.g. editBoxAnchor, colors). Re-applying settings onto those stale frames is
-	-- unsafe, so prompt for a UI reload, which rebuilds everything cleanly from the
-	-- now-active profile. Only fires on an explicit user profile action (AceDB does
-	-- not fire these callbacks during normal login).
-	if not StaticPopupDialogs["CLEANERCHAT_PROFILE_RELOAD"] then
-		StaticPopupDialogs["CLEANERCHAT_PROFILE_RELOAD"] = {
-			text = "CleanerChat: chat profile changed. Reload the UI to apply it?",
-			button1 = "Reload UI",
-			button2 = "Cancel",
-			OnAccept = function()
-				ReloadUI()
-			end,
-			timeout = 0,
-			whileDead = true,
-			hideOnEscape = true,
-			preferredIndex = 3,
-		}
-	end
-	StaticPopup_Show("CLEANERCHAT_PROFILE_RELOAD")
+	-- Profile changed/copied: broadcast to ALL windows (nil = no filter)
+	-- General
+	Core:Dispatch(UpdateConfig("frameHeight", nil))
+	Core:Dispatch(UpdateConfig("frameWidth", nil))
+	Core:Dispatch(UpdateConfig("framePosition", nil))
+
+	-- Edit box
+	Core:Dispatch(UpdateConfig("editBoxFont", nil))
+	Core:Dispatch(UpdateConfig("editBoxFontSize", nil))
+	Core:Dispatch(UpdateConfig("editBoxFontFlags", nil))
+	Core:Dispatch(UpdateConfig("editBoxBackgroundOpacity", nil))
+	Core:Dispatch(UpdateConfig("editBoxBackgroundColor", nil))
+	Core:Dispatch(UpdateConfig("editBoxAnchor", nil))
+
+	-- Messages
+	Core:Dispatch(UpdateConfig("messageFont", nil))
+	Core:Dispatch(UpdateConfig("messageFontSize", nil))
+	Core:Dispatch(UpdateConfig("messageFontFlags", nil))
+	Core:Dispatch(UpdateConfig("messageAnimations", nil))
+	Core:Dispatch(UpdateConfig("messagesAlwaysVisible", nil))
+	Core:Dispatch(UpdateConfig("chatBackgroundOpacity", nil))
+	Core:Dispatch(UpdateConfig("chatBackgroundColor", nil))
+	Core:Dispatch(UpdateConfig("chatFadeInDuration", nil))
+	Core:Dispatch(UpdateConfig("chatFadeOutDuration", nil))
+	Core:Dispatch(UpdateConfig("scrollIndicatorColor", nil))
+	Core:Dispatch(UpdateConfig("scrollIndicatorOpacity", nil))
+	Core:Dispatch(UpdateConfig("scrollIndicatorBgColor", nil))
+	Core:Dispatch(UpdateConfig("scrollIndicatorBgOpacity", nil))
+	Core:Dispatch(UpdateConfig("hideScrollIndicator", nil))
+
+	-- Top bar (dock)
+	Core:Dispatch(UpdateConfig("dockFont", nil))
+	Core:Dispatch(UpdateConfig("dockFontSize", nil))
+	Core:Dispatch(UpdateConfig("dockFontFlags", nil))
+	Core:Dispatch(UpdateConfig("dockAnimations", nil))
+	Core:Dispatch(UpdateConfig("tabsAlwaysVisible", nil))
+	Core:Dispatch(UpdateConfig("dockBackgroundOpacity", nil))
+	Core:Dispatch(UpdateConfig("dockBackgroundColor", nil))
+	Core:Dispatch(UpdateConfig("tabsOnHover", nil))
 end
 
 function C:OnProfileReset()

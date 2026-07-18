@@ -64,6 +64,11 @@ local function CreateWindow(opts)
 	window.dock.window = window
 	window.pool = Core.Components.CreateSlidingMessageFramePool(window.container, window)
 
+	-- Optional "copy chat text" corner button (off by default, see the
+	-- showCopyIcon setting). Reads window.selectedTab at click time, so it
+	-- always grabs whichever tab is currently showing in this window.
+	window.copyButton = Core.Components.CreateCopyChatButton(window.container, window)
+
 	return window
 end
 

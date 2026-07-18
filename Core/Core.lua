@@ -5,7 +5,6 @@ ns = LibStub("AceAddon-3.0"):NewAddon(ns, Addon, "LibMoreEvents-1.0", "AceConsol
 local L = LibStub("AceLocale-3.0"):GetLocale(Addon)
 
 -- GLOBALS: CHAT_FRAMES, FCF_GetCurrentChatFrame, GetChatTypeIndex
--- Release trigger: rebuild with fixed release workflow.
 
 -- Lua API
 local _G = _G
@@ -220,7 +219,7 @@ local defaults = {
 	capitalizeNames = true, -- capitalize the first letter of player names
 	forceClassColors = true, -- force enable class colors for all chat types
 	moneyPrettify = true, -- use spaces in large gold amounts (e.g. "1 234" instead of "1234")
-	hideOtherCrafts = true, -- hide other players' "<name> creates <item>" craft broadcasts
+	hideOtherCrafts = false, -- hide other players' "<name> creates <item>" craft broadcasts
 	showStartupMessage = true, -- print "Use /cc for settings" on addon load
 	rawDebug = false, -- /ccdebug chat raw/event capture (persists across /reload)
 	oneLineQuestRewards = true, -- combine quest rewards (items, currency, xp) into one line

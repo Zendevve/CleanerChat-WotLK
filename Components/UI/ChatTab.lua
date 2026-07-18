@@ -242,6 +242,18 @@ function ChatTabMixin:Init(slidingMessageFrame)
 			UIDropDownMenu_AddButton(info)
 		end
 
+		-- Copy chat text (opens a selectable, copyable text dump of this tab's
+		-- scrollback -- ported from Chatter's Copy Chat module)
+		info = UIDropDownMenu_CreateInfo()
+		info.text = L["Copy Chat Text"]
+		info.notCheckable = 1
+		info.func = function()
+			if UIManager then
+				UIManager:ShowCopyChatDialog(self.chatFrame)
+			end
+		end
+		UIDropDownMenu_AddButton(info)
+
 		-- Filter header
 		info = UIDropDownMenu_CreateInfo()
 		info.text = FILTERS

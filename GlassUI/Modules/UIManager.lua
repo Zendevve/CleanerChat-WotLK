@@ -6,6 +6,7 @@ local UnlockMover = Constants.ACTIONS.UnlockMover
 local UPDATE_CONFIG = Constants.EVENTS.UPDATE_CONFIG
 
 local CreateChatTab = Core.Components.CreateChatTab
+local CreateCopyChatDialog = Core.Components.CreateCopyChatDialog
 local CreateEditBox = Core.Components.CreateEditBox
 local CreateMoverDialog = Core.Components.CreateMoverDialog
 local CreateWindow = Core.Components.CreateWindow
@@ -41,6 +42,10 @@ function UIManager:OnEnable()
 
 	-- Shared "unlock to move" dialog (one for the whole UI).
 	self.moverDialog = CreateMoverDialog("GlassMoverDialog", UIParent)
+
+	-- Shared "copy chat text" dialog (one for the whole UI, repopulated with
+	-- whichever chat frame's text was last requested).
+	self.copyChatDialog = CreateCopyChatDialog("GlassCopyChatDialog", UIParent)
 
 	-- Main window. CleanerChat renders into this single window today; grouping its
 	-- pieces (mover, container, dock, message-frame pool) behind a Window object is
@@ -1027,6 +1032,13 @@ function UIManager:DeleteWindow(windowId)
 			window.moverFrame:Hide()
 		end
 	end
+	if window.copyButton then
+		if window.copyButton.Destroy then
+			window.copyButton:Destroy()
+		else
+			window.copyButton:Hide()
+		end
+	end
 
 	-- If this was the active (edit-focus) window, hand focus back to main.
 	if self.activeWindow == window then
@@ -1061,4 +1073,12 @@ function UIManager:GetWindowForChatFrame(chatFrameIndex)
 	end
 	-- Default: main window owns it
 	return self.mainWindow, "Main"
+end
+
+-- Pop up the shared "copy chat text" dialog filled with the given native
+-- chat frame's scrollback. Called from the chat tab's right-click menu.
+function UIManager:ShowCopyChatDialog(chatFrame)
+	if self.copyChatDialog then
+		self.copyChatDialog:Populate(chatFrame)
+	end
 end

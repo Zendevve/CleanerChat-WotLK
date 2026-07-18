@@ -15,73 +15,38 @@ local Mixin = Mixin
 
 local ScrollOverlayFrame = {}
 
--- Update background style based on useOverlayMask setting
-function ScrollOverlayFrame:UpdateBackgroundStyle()
-	local useOverlayMask = self.profile.useOverlayMask
-
-	if useOverlayMask then
-		-- Use the overlay mask texture
-		if self.overlayMask then
-			self.overlayMask:Show()
-		end
-		-- Hide the gradient background
-		if self.centerBg then
-			self.centerBg:Hide()
-		end
-		if self.leftBg then
-			self.leftBg:Hide()
-		end
-		if self.rightBg then
-			self.rightBg:Hide()
-		end
-	else
-		-- Use customizable background color and opacity
-		if self.overlayMask then
-			self.overlayMask:Hide()
-		end
-		local bgColor = self.profile.scrollIndicatorBgColor or Colors.codGray
-		local bgOpacity = self.profile.scrollIndicatorBgOpacity or 1
-		self:SetGradientBackground(15, 15, bgColor, bgOpacity)
-	end
-end
-
 function ScrollOverlayFrame:Init()
-	-- Get the chat frame width for full-width overlay
-	local frameWidth = self.profile.frameWidth or 350
-	local overlayHeight = 32
+	-- Keep the overlay just tall enough for the snap-to-bottom arrow and the
+	-- "Unread messages" line.
+	local overlayHeight = 28
 
 	self:SetHeight(overlayHeight)
-	self:SetWidth(frameWidth)
 	self:ClearAllPoints()
 
 	-- Position indicator at the edit box location (outside the chat frame)
 	local mainContainer = self:GetParent():GetParent() -- SlidingMessageFrame's parent is MainContainerFrame
-	-- Offset by -1 horizontally to align with the edit box and messages
-	-- Offset by +1 vertically to sit just above the edit box
-	local anchor = self.profile.editBoxAnchor
-	local yOffset = ((anchor and anchor.yOfs) or -1) + 1
-	if anchor and anchor.position == "ABOVE" then
+	if self.profile.editBoxAnchor.position == "ABOVE" then
 		-- Edit box is above the chat, so indicator is above the main container
-		self:SetPoint("BOTTOMLEFT", mainContainer, "TOPLEFT", -1, yOffset)
-		self:SetPoint("BOTTOMRIGHT", mainContainer, "TOPRIGHT", -1, yOffset)
+		self:SetPoint("BOTTOMLEFT", mainContainer, "TOPLEFT", 0, self.profile.editBoxAnchor.yOfs or 5)
+		self:SetPoint("BOTTOMRIGHT", mainContainer, "TOPRIGHT", 0, self.profile.editBoxAnchor.yOfs or 5)
 	else
 		-- Edit box is below the chat (default), so indicator is below the main container
-		self:SetPoint("TOPLEFT", mainContainer, "BOTTOMLEFT", -1, yOffset)
-		self:SetPoint("TOPRIGHT", mainContainer, "BOTTOMRIGHT", -1, yOffset)
+		self:SetPoint("TOPLEFT", mainContainer, "BOTTOMLEFT", 0, self.profile.editBoxAnchor.yOfs or -5)
+		self:SetPoint("TOPRIGHT", mainContainer, "BOTTOMRIGHT", 0, self.profile.editBoxAnchor.yOfs or -5)
 	end
 
 	self:SetFadeInDuration(0.3)
 	self:SetFadeOutDuration(0.15)
 
-	-- Create overlay mask texture (full-width decorative background)
-	if self.overlayMask == nil then
-		self.overlayMask = self:CreateTexture(nil, "BACKGROUND")
-		self.overlayMask:SetTexture("Interface\\AddOns\\CleanerChat\\Assets\\overlayMask")
-		self.overlayMask:SetAllPoints()
-	end
+	-- Note: Mask textures are not available in WotLK 3.3.5
+	-- We skip the mask functionality for this version
 
-	-- Apply the background style based on user preference
-	self:UpdateBackgroundStyle()
+	-- Use customizable background color and opacity (defaults to codGray, fully solid)
+	local bgColor = self.profile.scrollIndicatorBgColor or Colors.codGray
+	local bgOpacity = self.profile.scrollIndicatorBgOpacity or 1
+	self:SetGradientBackground(15, 15, bgColor, bgOpacity)
+
+	-- Note: AddMaskTexture not available in WotLK 3.3.5
 
 	-- Down arrow icon
 	if self.icon == nil then
@@ -90,7 +55,7 @@ function ScrollOverlayFrame:Init()
 	self.icon:SetTexture("Interface\\AddOns\\CleanerChat\\Assets\\snapToBottomIcon")
 	self.icon:SetWidth(16)
 	self.icon:SetHeight(16)
-	self.icon:SetPoint("BOTTOMLEFT", 15, 8)
+	self.icon:SetPoint("BOTTOMLEFT", 15, 5)
 
 	-- See new messages click area. Keep the original bottom strip layout but
 	-- EnableMouse so it actually receives clicks -- a plain CreateFrame("Frame")
@@ -133,18 +98,14 @@ function ScrollOverlayFrame:UpdatePosition()
 	self:ClearAllPoints()
 
 	local mainContainer = self:GetParent():GetParent()
-	-- Offset by -1 horizontally to align with the edit box and messages
-	-- Offset by +1 vertically to sit just above the edit box
-	local anchor = self.profile.editBoxAnchor
-	local yOffset = ((anchor and anchor.yOfs) or -1) + 1
-	if anchor and anchor.position == "ABOVE" then
+	if self.profile.editBoxAnchor.position == "ABOVE" then
 		-- Edit box is above the chat, so indicator is above the main container
-		self:SetPoint("BOTTOMLEFT", mainContainer, "TOPLEFT", -1, yOffset)
-		self:SetPoint("BOTTOMRIGHT", mainContainer, "TOPRIGHT", -1, yOffset)
+		self:SetPoint("BOTTOMLEFT", mainContainer, "TOPLEFT", 0, self.profile.editBoxAnchor.yOfs or 5)
+		self:SetPoint("BOTTOMRIGHT", mainContainer, "TOPRIGHT", 0, self.profile.editBoxAnchor.yOfs or 5)
 	else
 		-- Edit box is below the chat (default), so indicator is below the main container
-		self:SetPoint("TOPLEFT", mainContainer, "BOTTOMLEFT", -1, yOffset)
-		self:SetPoint("TOPRIGHT", mainContainer, "BOTTOMRIGHT", -1, yOffset)
+		self:SetPoint("TOPLEFT", mainContainer, "BOTTOMLEFT", 0, self.profile.editBoxAnchor.yOfs or -5)
+		self:SetPoint("TOPRIGHT", mainContainer, "BOTTOMRIGHT", 0, self.profile.editBoxAnchor.yOfs or -5)
 	end
 end
 
@@ -154,8 +115,10 @@ function ScrollOverlayFrame:UpdateIndicatorStyle()
 	if self.snapToPresentText then
 		self.snapToPresentText:SetTextColor(indicatorColor.r, indicatorColor.g, indicatorColor.b, indicatorOpacity)
 	end
-	-- Update background style (overlay mask or gradient)
-	self:UpdateBackgroundStyle()
+	-- Update background
+	local bgColor = self.profile.scrollIndicatorBgColor or Colors.codGray
+	local bgOpacity = self.profile.scrollIndicatorBgOpacity or 1
+	self:SetGradientBackground(15, 15, bgColor, bgOpacity)
 	-- Update child alert frame
 	if self.newMessageAlertFrame and self.newMessageAlertFrame.UpdateIndicatorStyle then
 		self.newMessageAlertFrame:UpdateIndicatorStyle()
@@ -172,10 +135,6 @@ function ScrollOverlayFrame:SetScript(name, callback)
 end
 
 function ScrollOverlayFrame:ShowNewMessageAlert()
-	-- Don't show if edit box is focused
-	if self.editBoxFocused then
-		return
-	end
 	-- Unread messages: swap the passive "Bring me to the present" hint for the
 	-- "Unread messages" alert (they share the same slot).
 	if self.snapToPresentText then
@@ -185,28 +144,17 @@ function ScrollOverlayFrame:ShowNewMessageAlert()
 end
 
 function ScrollOverlayFrame:HideNewMessageAlert()
-	-- Hide the alert INSTANTLY (not its fade-out) so it can't remain visible on
-	-- top of the "Bring me to the present" hint we show below -- otherwise both
-	-- labels overlap while the alert fades, especially when scrolling up/down
-	-- quickly.
-	self.newMessageAlertFrame:QuickHide()
-	-- Don't show the default hint if edit box is focused
-	if self.editBoxFocused then
-		return
-	end
+	self.newMessageAlertFrame:Hide()
 	-- Back to the default hint whenever the overlay is shown without unread.
 	if self.snapToPresentText then
 		self.snapToPresentText:Show()
 	end
 end
 
--- Override Show to respect hideScrollIndicator setting and edit box focus
+-- Override Show to respect hideScrollIndicator setting
 function ScrollOverlayFrame:Show()
 	if self.profile.hideScrollIndicator then
 		return -- Don't show if indicator is disabled
-	end
-	if self.editBoxFocused then
-		return -- Don't show if edit box is focused (it would overlap)
 	end
 	-- Call the FadingFrameMixin's Show implementation directly
 	local FadingFrameMixin = Core.Components.FadingFrameMixin

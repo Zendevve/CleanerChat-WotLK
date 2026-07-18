@@ -35,7 +35,6 @@ local UPDATE_CONFIG = Constants.EVENTS.UPDATE_CONFIG
 -- luacheck: push ignore 113
 local CreateFrame = CreateFrame
 local CreateObjectPool = CreateObjectPool
-local GetTime = GetTime
 local Mixin = Mixin
 -- luacheck: pop
 
@@ -175,17 +174,14 @@ function SlidingMessageFrameMixin:Init(chatFrame)
 			-- If scrolled to the bottom, the height of the scroll frame should
 			-- include overflow to account for slide up animations
 			self:SetHeight(self.config.height + self.config.overflowHeight)
-			-- Fade the overlay out with whatever label it's currently showing (e.g.
-			-- the unread alert). Don't swap in the "Bring me to the present" hint
-			-- here, or it briefly flashes over the fading alert. The label is chosen
-			-- fresh the next time the overlay is shown (ShowScrollOverlay).
 			self.overlay:Hide()
+			self.overlay:HideNewMessageAlert()
 			self.state.unreadMessages = false
 		else
 			-- If not, the height should fit the frame exactly so messages don't spill
 			-- under the edit box area
 			self:SetHeight(self.config.height)
-			self:ShowScrollOverlay()
+			self.overlay:Show()
 		end
 
 		-- Show hidden messages
@@ -270,7 +266,15 @@ function SlidingMessageFrameMixin:Init(chatFrame)
 				self.state.mouseOver = true
 
 				if not self.state.scrollAtBottom then
-					self:ShowScrollOverlay()
+					self.overlay:Show()
+				end
+
+				-- Cancel all hide timers when mouse enters
+				for _, message in ipairs(self.state.messages) do
+					if message.hideTimer then
+						message.hideTimer:Cancel()
+						message.hideTimer = nil
+					end
 				end
 
 				-- If messagesOnHover is enabled, fade in all messages
@@ -292,12 +296,10 @@ function SlidingMessageFrameMixin:Init(chatFrame)
 
 				self.overlay:HideDelay(self.profile.chatHoldTime)
 
-				-- Restart every line's fade countdown from now, so leaving the chat gives
-				-- a fresh hold time before lines fade (see UpdateMessageFades).
+				-- Fade out messages when mouse leaves, unless messages are pinned.
 				if not self.profile.messagesAlwaysVisible then
-					local deadline = GetTime() + self.profile.chatHoldTime
 					for _, message in ipairs(self.state.messages) do
-						message.fadeAfter = deadline
+						message:HideDelay(self.profile.chatHoldTime)
 					end
 				end
 			end),
@@ -307,24 +309,15 @@ function SlidingMessageFrameMixin:Init(chatFrame)
 				if window and window ~= self.window then
 					return
 				end
-
-				-- Always hide the scroll overlay (unread / "Bring me to the present"
-				-- indicator) while the edit box is focused so it doesn't overlap the
-				-- input box. This is independent of showOnEditFocus. Hiding the
-				-- overlay frame itself makes its labels invisible while preserving
-				-- their shown-state, so the correct label reappears when it's shown
-				-- again (don't Hide the child labels here, or they stay hidden).
-				if self.overlay then
-					self.overlay.editBoxFocused = true
-					self.overlay:QuickHide()
-				end
-
-				-- Revealing all messages on focus is opt-in via showOnEditFocus.
-				if not self.profile.showOnEditFocus then
-					return
-				end
-
 				self.state.mouseOver = true
+
+				-- Cancel all hide timers
+				for _, message in ipairs(self.state.messages) do
+					if message.hideTimer then
+						message.hideTimer:Cancel()
+						message.hideTimer = nil
+					end
+				end
 
 				-- Always show ALL messages with animation when edit box is focused
 				local fadeDuration = (self.profile.messageAnimations ~= false)
@@ -334,8 +327,9 @@ function SlidingMessageFrameMixin:Init(chatFrame)
 					message:FadeIn(fadeDuration)
 				end
 
-				-- If there are unread messages or scrolled up, snap to the bottom
-				if self.state.unreadMessages or not self.state.scrollAtBottom then
+				-- If there are unread messages or the overlay is visible (scrolled up),
+				-- snap to the bottom just like clicking the overlay would
+				if self.state.unreadMessages or (self.overlay and self.overlay:IsShown()) then
 					self:SnapToBottom()
 				end
 			end),
@@ -343,29 +337,15 @@ function SlidingMessageFrameMixin:Init(chatFrame)
 				if window and window ~= self.window then
 					return
 				end
+				self.state.mouseOver = false
 
-				-- Clear the edit box focus flag so the overlay can show again.
-				if self.overlay then
-					self.overlay.editBoxFocused = false
-				end
+				self.overlay:HideDelay(self.profile.chatHoldTime)
 
-				if self.profile.showOnEditFocus then
-					self.state.mouseOver = false
-
-					self.overlay:HideDelay(self.profile.chatHoldTime)
-
-					-- Restart every line's fade countdown from now (see UpdateMessageFades).
-					if not self.profile.messagesAlwaysVisible then
-						local deadline = GetTime() + self.profile.chatHoldTime
-						for _, message in ipairs(self.state.messages) do
-							message.fadeAfter = deadline
-						end
+				-- Start fade out timers for all messages, unless messages are pinned.
+				if not self.profile.messagesAlwaysVisible then
+					for _, message in ipairs(self.state.messages) do
+						message:HideDelay(self.profile.chatHoldTime)
 					end
-				elseif self.state.unreadMessages or not self.state.scrollAtBottom then
-					-- The overlay was only hidden to avoid overlapping the edit box;
-					-- restore the correct indicator now that typing is done and the user
-					-- is still scrolled up / has unread messages.
-					self:ShowScrollOverlay()
 				end
 			end),
 			Core:Subscribe(UPDATE_CONFIG, function(payload)
@@ -377,22 +357,7 @@ function SlidingMessageFrameMixin:Init(chatFrame)
 		}
 	end
 end
--- Show the scroll overlay with the label that matches the current state: the
--- "Unread messages" alert if there are unread messages, otherwise the passive
--- "Bring me to the present" hint. Centralizing this keeps the label in sync
--- whenever the overlay is shown, so hiding it (e.g. on scroll-to-bottom) never
--- has to pre-swap the label and flash the wrong one during the fade-out.
-function SlidingMessageFrameMixin:ShowScrollOverlay()
-	if not self.overlay then
-		return
-	end
-	self.overlay:Show()
-	if self.state.unreadMessages then
-		self.overlay:ShowNewMessageAlert()
-	else
-		self.overlay:HideNewMessageAlert()
-	end
-end
+
 -- Smoothly scroll to the newest message, clearing the unread state and overlay.
 -- Shared by the scroll-overlay click and the edit-focus reveal.
 function SlidingMessageFrameMixin:SnapToBottom()
@@ -483,16 +448,18 @@ function SlidingMessageFrameMixin:OnConfigChanged(key)
 
 	if key == "messagesAlwaysVisible" then
 		if self.profile.messagesAlwaysVisible then
-			-- Pin every message on screen (UpdateMessageFades skips pinned frames).
+			-- Pin every message on screen and cancel any pending fade-out.
 			for _, message in ipairs(self.state.messages) do
-				message.fadeAfter = nil
+				if message.hideTimer then
+					message.hideTimer:Cancel()
+					message.hideTimer = nil
+				end
 				message:Show()
 			end
 		elseif not self.state.mouseOver then
 			-- Resume the normal fade-out behaviour.
-			local deadline = GetTime() + self.profile.chatHoldTime
 			for _, message in ipairs(self.state.messages) do
-				message.fadeAfter = deadline
+				message:HideDelay(self.profile.chatHoldTime)
 			end
 		end
 	end
@@ -502,7 +469,6 @@ function SlidingMessageFrameMixin:OnConfigChanged(key)
 		or key == "scrollIndicatorOpacity"
 		or key == "scrollIndicatorBgColor"
 		or key == "scrollIndicatorBgOpacity"
-		or key == "useOverlayMask"
 	then
 		if self.overlay and self.overlay.UpdateIndicatorStyle then
 			self.overlay:UpdateIndicatorStyle()
@@ -628,72 +594,6 @@ function SlidingMessageFrameMixin:OnFrame()
 		self.state.incomingMessages = {}
 		self:Update(incoming)
 	end
-
-	-- Fade out any message lines whose hold time has elapsed. Driven every frame
-	-- from a single deadline (see UpdateMessageFades) so lines fade oldest-first
-	-- and none can be stranded on screen.
-	self:UpdateMessageFades()
-end
-
--- Single source of truth for fading message lines out. Each line records a
--- `fadeAfter` timestamp when it arrives (and again whenever a reveal ends); once
--- that time passes and nothing is revealing the chat, the line fades. Driving
--- this from one polled deadline -- instead of per-line timers that get cancelled
--- and rescheduled by hover / scroll / edit-focus -- guarantees lines fade oldest
--- first and can never be left stranded at full opacity (the "some messages never
--- fade / fade out of order" bug).
-function SlidingMessageFrameMixin:UpdateMessageFades()
-	if self.state.isCombatLog then
-		return
-	end
-
-	-- Pinned: never fade.
-	if self.profile.messagesAlwaysVisible then
-		return
-	end
-
-	-- Something is intentionally revealing the chat -> hold every line visible.
-	if self:AreMessagesRevealed() then
-		return
-	end
-
-	local now = GetTime()
-	for _, message in ipairs(self.state.messages) do
-		-- Only consider lines on screen at full opacity that aren't already
-		-- fading; skip hidden / mid-fade ones.
-		if message:IsVisible() and not message.fadeHandle and (message:GetAlpha() or 1) > 0.99 then
-			if not message.fadeAfter then
-				-- Shown but unarmed (e.g. revealed by a scroll then left idle): give
-				-- it a fresh hold so it can never linger on screen forever.
-				message.fadeAfter = now + self.profile.chatHoldTime
-			elseif now >= message.fadeAfter then
-				message.fadeAfter = nil
-				message:Hide()
-			end
-		end
-	end
-end
-
--- True while the chat is being intentionally revealed and lines must stay up:
--- the mouse is over this window, or its edit box is focused with the reveal
--- option on. Uses the container's reliably-polled hover flag rather than this
--- frame's own mouseOver (which is shared with the edit-focus path and can
--- desync -- the original cause of stranded, never-fading lines).
-function SlidingMessageFrameMixin:AreMessagesRevealed()
-	local container = self.window and self.window.container
-	if container and container.state and container.state.mouseOver then
-		return true
-	end
-
-	if self.profile.showOnEditFocus then
-		local UIManager = Core:GetModule("UIManager", true)
-		local editBox = UIManager and UIManager.editBox
-		if editBox and editBox.window == self.window and editBox.HasFocus and editBox:HasFocus() then
-			return true
-		end
-	end
-
-	return false
 end
 
 function SlidingMessageFrameMixin:Update(incoming)
@@ -784,12 +684,9 @@ function SlidingMessageFrameMixin:Update(incoming)
 
 	for _, message in ipairs(newMessages) do
 		message:Show()
-		-- Arm this line's fade countdown. UpdateMessageFades (run every OnFrame) fades
-		-- it once chatHoldTime elapses and nothing is revealing the chat. Deadline-
-		-- based instead of a per-line timer, so lines always fade in arrival order and
-		-- can never be stranded on screen by a cancelled/lost timer.
-		if not self.profile.messagesAlwaysVisible then
-			message.fadeAfter = GetTime() + self.profile.chatHoldTime
+		-- Fade out new messages when mouse is not over, unless messages are pinned.
+		if not self.state.mouseOver and not self.profile.messagesAlwaysVisible then
+			message:HideDelay(self.profile.chatHoldTime)
 		end
 		table.insert(self.state.messages, message)
 

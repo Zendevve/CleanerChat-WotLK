@@ -37,7 +37,6 @@ L['Hide the "<name> created: <item>" messages shown when other players craft ite
 L['Hide the "UI Error: an interface error occurred" notifications the server prints to chat when a UI error happens.'] = true
 L["Show Startup Message"] = true
 L["Print a message on login showing how to open CleanerChat settings."] = true
-L["Chat Formatting"] = true
 L["Use %s for settings."] = true
 L["Chat Debug Capture"] = true
 L["Print the raw text and underlying event for every chat line, for diagnosing filters (same as /ccdebug). Stays on across /reload."] = true
@@ -46,6 +45,8 @@ L["Settings changed - the UI will reload when you close this window."] = true
 L["CleanerChat settings"] = true
 L["New detached window"] = true
 L["Delete window"] = true
+L["Copy Chat Text"] = true
+L["Filter Selection"] = true
 L["Achievements"] = true
 L["Simplify Achievement messages."] = true
 L["Auctions"] = true
@@ -132,6 +133,7 @@ L["Position"] = true
 L["Above"] = true
 L["Below"] = true
 L["Vertical offset"] = true
+L["Horizontal padding"] = true
 L["Hide Combat Log tab"] = true
 L["Hides the Combat Log tab from the chat dock. Requires a UI reload."] = true
 L["Behavior"] = true
@@ -171,8 +173,6 @@ L["When enabled, hovering over the chat reveals faded messages. When disabled, o
 L["Scroll Indicator"] = true
 L["Hide scroll indicator"] = true
 L['Hide the "Unread messages" and "Bring me to the present" indicator completely.'] = true
-L["Use overlay mask texture"] = true
-L["Use a decorative mask texture for the scroll indicator instead of a solid background."] = true
 L["Indicator text color"] = true
 L['Color of the "Unread messages" and "Bring me to the present" text.'] = true
 L["Indicator text opacity"] = true
@@ -223,14 +223,15 @@ L["Rapid"] = true
 -- Timestamps
 L["Show timestamps"] = true
 L["Prepend each message with a timestamp in [HH:MM] format."] = true
-L["Show item icons"] = true
-L["Display icons next to item links in chat messages."] = true
 -- Buttons
 L["Buttons"] = true
 L["Hide Chat Menu button"] = true
 L["Hide the Chat Menu (speech bubble) button that provides access to languages and emotes."] = true
 L["Hide Social button"] = true
 L["Hide the Social (friends) button that appears to the left of the chat frame."] = true
+L["Show copy icon"] = true
+L["Show a small button in the corner of each chat window for opening the Copy Chat Text dialog."] = true
+L["Copy text from this window."] = true
 -- About
 L["About"] = true
 L["Author"] = true

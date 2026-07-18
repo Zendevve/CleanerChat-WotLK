@@ -43,7 +43,7 @@ end
 
 -- OptionsDBs
 -------------------------------------------------------
-local formattingDB = {
+local optionDB = {
 	type = "group",
 	args = {
 		channelNameMode = {
@@ -93,7 +93,7 @@ local formattingDB = {
 			order = 11,
 			name = L["Show Channel Number"],
 			desc = L['Prefix the channel display with its number, e.g. "1. ". Requires the Chat Channel Names filter.'],
-			width = 1.5,
+			width = "full",
 			type = "toggle",
 			disabled = function(info)
 				return not ns.db.filters.channels
@@ -110,7 +110,7 @@ local formattingDB = {
 			order = 12,
 			name = L["Capitalize Channel Name"],
 			desc = L["Capitalize the first letter of the channel name or initial. Requires the Chat Channel Names filter."],
-			width = 1.5,
+			width = "full",
 			type = "toggle",
 			disabled = function(info)
 				return not ns.db.filters.channels
@@ -127,7 +127,7 @@ local formattingDB = {
 			order = 20,
 			name = L["Capitalize Player Names"],
 			desc = L["Capitalize the first letter of player names shown in chat. Requires the Player Names filter."],
-			width = 1.5,
+			width = "full",
 			type = "toggle",
 			disabled = function(info)
 				return not ns.db.filters.names
@@ -144,7 +144,7 @@ local formattingDB = {
 			order = 25,
 			name = L["Force Class Colors"],
 			desc = L["Enable class-colored names for all chat types (Guild, Party, Raid, Whisper, etc.) on login. This overrides Blizzard's default settings."],
-			width = 1.5,
+			width = "full",
 			type = "toggle",
 			set = function(info, value)
 				ns.db.forceClassColors = value
@@ -160,7 +160,7 @@ local formattingDB = {
 			order = 30,
 			name = L["Hide Crafting Broadcasts"],
 			desc = L['Hide the "<name> created: <item>" messages shown when other players craft items nearby. Requires the Learning (Crafting) filter.'],
-			width = 1.5,
+			width = "full",
 			type = "toggle",
 			disabled = function(info)
 				return not ns.db.filters.tradeskills
@@ -177,7 +177,7 @@ local formattingDB = {
 			order = 45,
 			name = L["Show Startup Message"],
 			desc = L["Print a message on login showing how to open CleanerChat settings."],
-			width = 1.5,
+			width = "full",
 			type = "toggle",
 			set = function(info, value)
 				ns.db.showStartupMessage = value
@@ -185,6 +185,11 @@ local formattingDB = {
 			get = function(info)
 				return ns.db.showStartupMessage
 			end,
+		},
+		filterHeader = {
+			order = 100,
+			type = "header",
+			name = L["Filter Selection"],
 		},
 		moneyPrettify = {
 			order = 105,
@@ -415,13 +420,10 @@ Options.GenerateOptionsMenu = function(self)
 		return a.item.name < b.item.name
 	end)
 
-	-- Build the CleanerChat "Filters" category: just the filter on/off toggles.
-	local ccGroup = {
-		type = "group",
-		name = "Filters",
-		order = 1,
-		args = {},
-	}
+	-- Build the CleanerChat "Filters" category from optionDB + the filter toggles.
+	local ccGroup = CopyTable(optionDB)
+	ccGroup.name = "Filters"
+	ccGroup.order = 1
 	local order, count = 0, 0
 	for i, data in ipairs(sorted) do
 		local item
@@ -438,13 +440,6 @@ Options.GenerateOptionsMenu = function(self)
 		end
 	end
 
-	-- Build the "Chat Formatting" category from the formatting/behaviour options
-	-- that previously sat at the top of the Filters tab. Placed right under the
-	-- Filters tab in the left tree (order 1.5, before the Glass categories).
-	local formattingGroup = CopyTable(formattingDB)
-	formattingGroup.name = L["Chat Formatting"]
-	formattingGroup.order = 1.5
-
 	-- Top-level tree. The Glass UI settings are merged in as additional
 	-- categories so everything lives under /cc (Glass no longer has /glass).
 	-- The version is read live from the .toc so the header always matches it.
@@ -455,7 +450,6 @@ Options.GenerateOptionsMenu = function(self)
 		type = "group",
 		args = {
 			cleanerchat = ccGroup,
-			chatformatting = formattingGroup,
 		},
 	}
 

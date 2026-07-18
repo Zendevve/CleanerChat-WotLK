@@ -13,12 +13,8 @@ local _, ns = ...
 local FilterSync = {}
 ns.FilterSync = FilterSync
 
--- Mapping: CleanerChat filter key -> Blizzard message group(s).
--- CONTRACT: this sync only ever ADDS (enables) a message group, never removes
--- one. CleanerChat reformats messages; it must never hide a whole Blizzard chat
--- category, because removing a message group unregisters that CHAT_MSG_* event
--- and breaks other addons / server modules that read it (issue #52). When a
--- filter is off we leave the category exactly as the user has it.
+-- Mapping: CleanerChat filter key -> Blizzard message group(s)
+-- Multiple message groups can map to a single CleanerChat filter
 local CC_TO_BLIZZARD = {
 	experience = { "COMBAT_XP_GAIN" },
 	honor = { "COMBAT_HONOR_GAIN" },
@@ -57,15 +53,16 @@ local function EnableMessageGroup(group)
 	end
 end
 
--- Sync a CleanerChat filter state TO Blizzard's settings.
--- ENABLE-ONLY: we never remove a group here. When a filter is turned off we leave
--- the Blizzard category untouched, so the raw messages keep showing and other
--- addons that read that channel keep working (see the CC_TO_BLIZZARD contract).
-function FilterSync:SyncToBlizzard(filterKey, enabled)
-	if not enabled then
-		return
+-- Disable a message group for the primary chat frame
+local function DisableMessageGroup(group)
+	local chatFrame = GetPrimaryChatFrame()
+	if chatFrame and ChatFrame_RemoveMessageGroup then
+		ChatFrame_RemoveMessageGroup(chatFrame, group)
 	end
+end
 
+-- Sync a CleanerChat filter state TO Blizzard's settings
+function FilterSync:SyncToBlizzard(filterKey, enabled)
 	if isSyncing then
 		return
 	end
@@ -78,7 +75,11 @@ function FilterSync:SyncToBlizzard(filterKey, enabled)
 	isSyncing = true
 
 	for _, group in ipairs(blizzGroups) do
-		EnableMessageGroup(group)
+		if enabled then
+			EnableMessageGroup(group)
+		else
+			DisableMessageGroup(group)
+		end
 	end
 
 	isSyncing = false
@@ -150,48 +151,20 @@ function FilterSync:HookBlizzardFunctions()
 	end
 end
 
--- One-time repair for profiles damaged by older versions, which used to REMOVE
--- Blizzard message groups whenever a filter was off (or defaulted off). That
--- unregistered the matching CHAT_MSG_* events and broke other addons / server
--- modules that read them (e.g. reagent-bank mods over CHAT_MSG_SYSTEM, issue #52).
--- Those removals are persisted in the saved chat layout, so re-add every group we
--- ever mapped, once, to restore visibility. Guarded by a saved flag so we don't
--- fight a user who later hides a category on purpose. isSyncing suppresses the
--- reverse-sync hook so re-adding a group doesn't flip a CleanerChat filter on.
-function FilterSync:RepairMessageGroups()
-	if ns.db and ns.db.chatGroupsRepaired then
-		return
-	end
-	local chatFrame = GetPrimaryChatFrame()
-	if chatFrame and ChatFrame_AddMessageGroup then
-		isSyncing = true
-		for _, blizzGroups in pairs(CC_TO_BLIZZARD) do
-			for _, group in ipairs(blizzGroups) do
-				ChatFrame_AddMessageGroup(chatFrame, group)
-			end
-		end
-		isSyncing = false
-	end
-	if ns.db then
-		ns.db.chatGroupsRepaired = true
-	end
-end
-
 -- Initialize sync system
 function FilterSync:Initialize()
 	-- Hook Blizzard functions for reverse sync
 	self:HookBlizzardFunctions()
 
-	local function run()
-		FilterSync:RepairMessageGroups()
-		FilterSync:SyncAllToBlizzard()
-	end
-
-	-- Defer briefly so the chat frame and its saved layout are fully loaded.
+	-- Sync our settings to Blizzard after a short delay (ensure everything is loaded)
 	if C_Timer and C_Timer.After then
-		C_Timer.After(1, run)
+		C_Timer.After(1, function()
+			FilterSync:SyncAllToBlizzard()
+		end)
 	elseif ns.Timer and ns.Timer.After then
-		ns.Timer.After(1, run)
+		ns.Timer.After(1, function()
+			FilterSync:SyncAllToBlizzard()
+		end)
 	else
 		-- Fallback: use OnUpdate frame
 		local frame = CreateFrame("Frame")
@@ -199,7 +172,7 @@ function FilterSync:Initialize()
 		frame:SetScript("OnUpdate", function(updateFrame, delta)
 			elapsed = elapsed + delta
 			if elapsed > 1 then
-				run()
+				FilterSync:SyncAllToBlizzard()
 				updateFrame:SetScript("OnUpdate", nil)
 			end
 		end)

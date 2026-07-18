@@ -45,18 +45,17 @@ function EditBoxMixin:Init(parent)
 
 	-- New styling
 	self:ClearAllPoints()
-	-- WoW 3.3.5: explicitly set width to match the container (dual anchors may not work reliably on native edit boxes)
-	self:SetWidth(self.profile.frameWidth)
 
-	-- Offset by -1 to compensate for native ChatFrame1EditBox's inherent left offset
-	self:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", -1, self.profile.editBoxAnchor.yOfs)
+	local Xpadding = self.profile.editBoxHorizontalPadding or Constants.EDITBOX_HORIZONTAL_PADDING
+	self:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", Xpadding, self.profile.editBoxAnchor.yOfs)
 
 	if self.profile.editBoxAnchor.position == "ABOVE" then
 		self:ClearAllPoints()
-		self:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", -1, self.profile.editBoxAnchor.yOfs)
+		self:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", Xpadding, self.profile.editBoxAnchor.yOfs)
 	end
 
 	self:SetFontObject("GlassEditBoxFont")
+	self:SetWidth(self.profile.frameWidth - Xpadding)
 	self.header:SetFontObject("GlassEditBoxFont")
 	self.header:SetPoint("LEFT", 8, 0)
 
@@ -136,12 +135,11 @@ function EditBoxMixin:Init(parent)
 	-- When the edit box gains focus (user presses Enter or clicks), reveal the
 	-- chat messages if the option is enabled. Scope the reveal to the window the
 	-- edit box is currently attached to (set via AttachToWindow).
-	-- We always dispatch so the scroll overlay can hide itself while the edit box
-	-- covers that area; the message reveal itself stays gated by showOnEditFocus
-	-- inside the handler.
 	local oldOnEditFocusGained = self:GetScript("OnEditFocusGained")
 	self:SetScript("OnEditFocusGained", function(frame, ...)
-		Core:Dispatch(EDIT_FOCUS_GAINED, self.window)
+		if self.profile.showOnEditFocus then
+			Core:Dispatch(EDIT_FOCUS_GAINED, self.window)
+		end
 		if oldOnEditFocusGained then
 			oldOnEditFocusGained(frame, ...)
 		end
@@ -151,7 +149,9 @@ function EditBoxMixin:Init(parent)
 	-- This ensures the mouseOver state is properly reset when typing is done.
 	local oldOnEditFocusLost = self:GetScript("OnEditFocusLost")
 	self:SetScript("OnEditFocusLost", function(frame, ...)
-		Core:Dispatch(EDIT_FOCUS_LOST, self.window)
+		if self.profile.showOnEditFocus then
+			Core:Dispatch(EDIT_FOCUS_LOST, self.window)
+		end
 		if oldOnEditFocusLost then
 			oldOnEditFocusLost(frame, ...)
 		end
@@ -171,8 +171,18 @@ function EditBoxMixin:Init(parent)
 			self:SetTextInsets()
 		end
 
-		if key == "frameWidth" then
-			self:SetWidth(self.profile.frameWidth)
+		if key == "frameWidth" or key == "editBoxHorizontalPadding" then
+			local xPad = self.profile.editBoxHorizontalPadding or Constants.EDITBOX_HORIZONTAL_PADDING
+			self:SetWidth(self.profile.frameWidth - xPad)
+			-- Re-anchor with new padding
+			local anchorParent = self:GetParent() or parent
+			if self.profile.editBoxAnchor.position == "ABOVE" then
+				self:ClearAllPoints()
+				self:SetPoint("BOTTOMLEFT", anchorParent, "TOPLEFT", xPad, self.profile.editBoxAnchor.yOfs)
+			else
+				self:ClearAllPoints()
+				self:SetPoint("TOPLEFT", anchorParent, "BOTTOMLEFT", xPad, self.profile.editBoxAnchor.yOfs)
+			end
 		end
 
 		if key == "editBoxBackgroundOpacity" or key == "editBoxBackgroundColor" then
@@ -183,13 +193,13 @@ function EditBoxMixin:Init(parent)
 			-- Anchor relative to whichever window container the box is currently
 			-- attached to (it follows the active window), not the original parent.
 			local anchorParent = self:GetParent() or parent
-			self:ClearAllPoints()
-			self:SetWidth(self.profile.frameWidth)
-			-- Offset by -1 to compensate for native ChatFrame1EditBox's inherent left offset
+			local xPad = self.profile.editBoxHorizontalPadding or Constants.EDITBOX_HORIZONTAL_PADDING
 			if self.profile.editBoxAnchor.position == "ABOVE" then
-				self:SetPoint("BOTTOMLEFT", anchorParent, "TOPLEFT", -1, self.profile.editBoxAnchor.yOfs)
+				self:ClearAllPoints()
+				self:SetPoint("BOTTOMLEFT", anchorParent, "TOPLEFT", xPad, self.profile.editBoxAnchor.yOfs)
 			else
-				self:SetPoint("TOPLEFT", anchorParent, "BOTTOMLEFT", -1, self.profile.editBoxAnchor.yOfs)
+				self:ClearAllPoints()
+				self:SetPoint("TOPLEFT", anchorParent, "BOTTOMLEFT", xPad, self.profile.editBoxAnchor.yOfs)
 			end
 		end
 	end)
@@ -202,15 +212,15 @@ function EditBoxMixin:AttachToWindow(parent, profile, window)
 	self.profile = profile or self.profile
 	self.window = window
 
+	local Xpadding = self.profile.editBoxHorizontalPadding or Constants.EDITBOX_HORIZONTAL_PADDING
 	self:SetParent(parent)
 	self:ClearAllPoints()
-	self:SetWidth(self.profile.frameWidth)
-	-- Offset by -1 to compensate for native ChatFrame1EditBox's inherent left offset
 	if self.profile.editBoxAnchor.position == "ABOVE" then
-		self:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", -1, self.profile.editBoxAnchor.yOfs)
+		self:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", Xpadding, self.profile.editBoxAnchor.yOfs)
 	else
-		self:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", -1, self.profile.editBoxAnchor.yOfs)
+		self:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", Xpadding, self.profile.editBoxAnchor.yOfs)
 	end
+	self:SetWidth(self.profile.frameWidth - Xpadding)
 	self.header:SetPoint("LEFT", 8, 0)
 	self:SetTextInsets()
 

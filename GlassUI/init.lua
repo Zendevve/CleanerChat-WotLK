@@ -55,11 +55,12 @@ Core.defaults = {
 		editBoxFont = "Friz Quadrata TT",
 		editBoxFontSize = 12,
 		editBoxFontFlags = "OUTLINE",
-		editBoxBackgroundOpacity = 0.05,
+		editBoxBackgroundOpacity = 0.6,
 		editBoxBackgroundColor = { r = 17 / 255, g = 17 / 255, b = 17 / 255 }, -- codGray
+		editBoxHorizontalPadding = 1,
 		editBoxAnchor = {
 			position = "BELOW",
-			yOfs = -1,
+			yOfs = -5,
 		},
 		showOnEditFocus = true, -- When ON (default), opening the edit box reveals the chat messages.
 
@@ -69,13 +70,13 @@ Core.defaults = {
 		messageFontFlags = "OUTLINE",
 		messageAnimations = true,
 		messagesAlwaysVisible = false,
-		chatBackgroundOpacity = 0.05,
+		chatBackgroundOpacity = 0.15,
 		chatBackgroundColor = { r = 17 / 255, g = 17 / 255, b = 17 / 255 }, -- codGray
 		messageLeading = 3,
 		messageLinePadding = 0.25,
 		messageLeftPadding = 3,
 		messageHistoryLimit = 128,
-		restoreChatMessages = false,
+		restoreChatMessages = true,
 
 		chatHoldTime = 14,
 		chatFadeInDuration = 0.6,
@@ -112,19 +113,18 @@ Core.defaults = {
 		iconTextureYOffset = 4,
 		messagesOnHover = true, -- When ON (default), hovering reveals faded messages. When OFF, only scrolling reveals them.
 		showTimestamps = false, -- When ON, prepend timestamps to messages in [HH:MM] format.
-		showItemIcons = false, -- When ON, show item icons next to item links in chat.
 
 		-- Scroll indicator ("Unread messages" / "Bring me to the present")
 		scrollIndicatorColor = { r = 223 / 255, g = 186 / 255, b = 105 / 255 }, -- apache (gold)
 		scrollIndicatorOpacity = 1, -- fully solid
 		scrollIndicatorBgColor = { r = 17 / 255, g = 17 / 255, b = 17 / 255 }, -- codGray (same as chat bg)
-		scrollIndicatorBgOpacity = 0.05, -- same as chatBackgroundOpacity
+		scrollIndicatorBgOpacity = 0.65, -- slightly transparent
 		hideScrollIndicator = false, -- when true, hides the "Unread messages" / "Bring me to the present" indicator
-		useOverlayMask = true, -- when true, uses the overlay mask texture instead of solid background
 
 		-- Buttons (native Blizzard chat buttons)
 		hideChatMenuButton = true, -- when true, hides the Chat Menu (speech bubble) button
 		hideSocialButton = true, -- when true, hides the Social (friends) button left of chat
+		showCopyIcon = false, -- when true, shows a small "copy chat text" button in the corner of each chat window
 
 		-- Per-window settings (multi-window). The default ("Main") window uses the
 		-- flat keys above; each additional window stores its own full copy of the
@@ -173,15 +173,6 @@ function Core:GetWindowProfile(windowId)
 	local windows = self.db.profile.windows
 	local w = windows and windows[windowId]
 	if w then
-		-- Heal window profiles saved by older versions (or created before a
-		-- setting existed): fill in any key present in the main profile but
-		-- missing here, so downstream reads (e.g. messageLinePadding) never hit
-		-- a nil value. Idempotent -- once complete, the loop is a no-op.
-		for key, value in pairs(self.db.profile) do
-			if key ~= "windows" and w[key] == nil then
-				w[key] = deepCopy(value)
-			end
-		end
 		return w
 	end
 

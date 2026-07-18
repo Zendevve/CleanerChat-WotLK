@@ -3,7 +3,9 @@ Heading Widget
 -------------------------------------------------------------------------------]]
 local Type, Version = "Heading", 20
 local AceGUI = LibStub and LibStub("AceGUI-3.0", true)
-if not AceGUI or (AceGUI:GetWidgetVersion(Type) or 0) >= Version then return end
+if not AceGUI or (AceGUI:GetWidgetVersion(Type) or 0) >= Version then
+	return
+end
 
 -- Lua APIs
 local pairs = pairs
@@ -32,7 +34,7 @@ local methods = {
 			self.left:SetPoint("RIGHT", -3, 0)
 			self.right:Hide()
 		end
-	end
+	end,
 }
 
 --[[-----------------------------------------------------------------------------
@@ -51,6 +53,7 @@ local function Constructor()
 	left:SetHeight(8)
 	left:SetPoint("LEFT", 3, 0)
 	left:SetPoint("RIGHT", label, "LEFT", -5, 0)
+	-- 3.3.5 Compatibility: Use string paths instead of FileDataIDs
 	left:SetTexture("Interface\\Tooltips\\UI-Tooltip-Border")
 	left:SetTexCoord(0.81, 0.94, 0.5, 1)
 
@@ -58,15 +61,16 @@ local function Constructor()
 	right:SetHeight(8)
 	right:SetPoint("RIGHT", -3, 0)
 	right:SetPoint("LEFT", label, "RIGHT", 5, 0)
+	-- 3.3.5 Compatibility: Use string paths instead of FileDataIDs
 	right:SetTexture("Interface\\Tooltips\\UI-Tooltip-Border")
 	right:SetTexCoord(0.81, 0.94, 0.5, 1)
 
 	local widget = {
 		label = label,
-		left  = left,
+		left = left,
 		right = right,
 		frame = frame,
-		type  = Type
+		type = Type,
 	}
 	for method, func in pairs(methods) do
 		widget[method] = func
